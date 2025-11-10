@@ -1,0 +1,26 @@
+# --- Core utilities ---
+python-dotenv
+requests
+tqdm
+
+# --- Notion integration ---
+notion-client
+
+# --- Web app ---
+streamlit
+
+# --- Machine learning / NLP ---
+torch
+transformers
+sentencepiece
+scikit-learn
+pandas
+numpy
+openai
+
+# --- PDF & image processing ---
+PyMuPDF          # import fitz
+Pillow
+
+# --- Optional / dataset handling ---
+datasets
