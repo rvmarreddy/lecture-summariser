@@ -10,8 +10,8 @@ os.environ.setdefault("PYTORCH_MPS_HIGH_WATERMARK_RATIO", "0.0")
 from expand_notes import STYLE_INSTRUCTION
 
 BASE_MODEL = os.getenv("BASE_MODEL", "google/flan-t5-base")
-TRAIN_FILE = os.getenv("TRAIN_FILE", "training_data.jsonl")
-OUTPUT_DIR = os.getenv("FINETUNED_DIR", "finetuned_model")
+TRAIN_FILE = os.getenv("TRAIN_FILE", "models/training_data.jsonl")
+OUTPUT_DIR = os.getenv("FINETUNED_DIR", "models/finetuned_model")
 
 
 def load_pairs(path: str):

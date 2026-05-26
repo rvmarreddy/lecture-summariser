@@ -7,18 +7,14 @@ __pycache__/
 .venv/
 venv/
 
-# Local models, indexes, and large inputs
-finetuned_model/
-book_index/
+# Inputs (large / copyrighted source material)
 books/
 archived_books/
-slides_output/
-diagrams_output/
 
-# Generated outputs
-training_data.jsonl
-lecture_notes.md
-lecture_notes.pdf
-lecture_notes.tex
+# Generated models, indexes, datasets
+models/
+
+# Generated outputs (timestamped notes, diagrams, pandoc intermediates)
+outputs/
 *.pandoc.md
 *_smoke_output.md
