@@ -10,6 +10,7 @@ venv/
 # Inputs (large / copyrighted source material)
 books/
 archived_books/
+inputs/
 
 # Generated models, indexes, datasets
 models/
