@@ -1,132 +1,83 @@
 import os
-import re
 import json
-import random
 from pathlib import Path
-from dotenv import load_dotenv
 
-# === LOAD ENVIRONMENT VARIABLES ===
-load_dotenv()
+# MPS caps GPU memory conservatively (~20GB) and fragments under long-sequence training,
+# triggering spurious OOMs even when system RAM is mostly free. Lifting the soft cap lets
+# training use the real available unified memory. (Must be set before torch is imported.)
+os.environ.setdefault("PYTORCH_MPS_HIGH_WATERMARK_RATIO", "0.0")
 
-# === CONFIGURATION ===
-DATASET_FOLDER = "lecture_notes_dataset"  # Folder with .md lecture notes
-OUTPUT_FILE = "training_data.jsonl"
+from expand_notes import STYLE_INSTRUCTION
 
-# === SYSTEM PROMPT (improved for Notion-style Markdown) ===
-SYSTEM_PROMPT = (
-    "You are a specialised model trained to transform lecture slides and transcripts into structured, "
-    "Notion-compatible Markdown notes for technical subjects. Follow these exact stylistic and structural rules:\n"
-    "\n"
-    "1. Use Markdown headings consistently to indicate hierarchy:\n"
-    "   - `#` for lecture title (e.g. '# W1 L2: Linear Regression')\n"
-    "   - `##` for main section topics (e.g. '## Simple regression example')\n"
-    "   - `###` for sub-sections (e.g. '### Process for solving')\n"
-    "\n"
-    "2. Include relevant metadata (dates, linked PDFs, etc.) at the top when present.\n"
-    "   Example: `[Week1Lec2LinearRegression.pdf](W1%20L2%20Linear%20Regression/Week1Lec2LinearRegression.pdf)`\n"
-    "\n"
-    "3. Maintain callouts using Notion-style <aside> blocks for side notes, examples, or definitions.\n"
-    "   Keep any emojis that already exist, but do not add new ones.\n"
-    "\n"
-    "4. Preserve equations in LaTeX format — `$...$` for inline and `$$...$$` for display math.\n"
-    "   Example:\n"
-    "   ```\n"
-    "   $$\n"
-    "   w_{t+1} = w_{t} - learning_{rate} * dw\n"
-    "   $$\n"
-    "   ```\n"
-    "\n"
-    "5. Keep image references exactly as in the original Markdown:\n"
-    "   - Format: `![Screenshot 2025-10-03 at 10.19.50.png](W1%20L2%20Linear%20Regression/Screenshot_2025-10-03_at_10.19.50.png)`\n"
-    "\n"
-    "6. Use bullet and numbered lists with proper indentation for structure.\n"
-    "\n"
-    "7. Maintain inline emphasis using **bold** for key ideas, variables, and terms.\n"
-    "\n"
-    "8. Preserve code blocks and syntax highlighting (```python, ```bash, etc.).\n"
-    "\n"
-    "9. End each major section with a blank line; ensure readability and consistent spacing.\n"
-    "\n"
-    "10. The output must remain valid Markdown and render properly in Notion without extra tags or HTML "
-    "(other than <aside> blocks).\n"
-    "\n"
-    "11. Ensure the final Markdown is directly convertible to Notion blocks using markdown_to_blocks(), "
-    "including headings, lists, callouts, quotes, code, and equations."
-)
+BASE_MODEL = os.getenv("BASE_MODEL", "google/flan-t5-base")
+TRAIN_FILE = os.getenv("TRAIN_FILE", "training_data.jsonl")
+OUTPUT_DIR = os.getenv("FINETUNED_DIR", "finetuned_model")
 
-# === HELPERS ===
 
-def clean_markdown(text: str) -> str:
-    """Normalize Markdown for consistent fine-tuning."""
-    # Remove base64 inline images
-    text = re.sub(r'!\[.*?\]\(data:image\/[a-zA-Z]+;base64,[^)]+\)', '', text)
-    # Trim trailing spaces
-    text = re.sub(r'[ \t]+$', '', text, flags=re.MULTILINE)
-    # Normalize line endings
-    text = text.replace('\r\n', '\n').replace('\r', '\n')
-    # Collapse >2 blank lines
-    text = re.sub(r'(\n\s*){3,}', '\n\n', text)
-    # Remove spaces inside math delimiters
-    text = re.sub(r'\s*\$\s*', '$', text)
-    # Ensure a blank line before images
-    text = re.sub(r'\n{0,1}!\[', '\n\n![', text)
-    return text.strip()
-
-def collect_md_files(folder: str):
-    p = Path(folder)
-    if not p.exists():
-        print(f"❌ Dataset folder '{folder}' not found.")
-        return []
-    return sorted(p.glob("*.md"))
-
-def make_jsonl(md_files):
+def load_pairs(path: str):
     pairs = []
-    for md in md_files:
-        content = md.read_text(encoding="utf-8").strip()
-        content = clean_markdown(content)
-        if not content:
-            continue
-
-        record = {
-            "messages": [
-                {"role": "system", "content": SYSTEM_PROMPT},
-                {"role": "user", "content": "Reformat this lecture into concise Notion-style Markdown notes."},
-                {"role": "assistant", "content": content}
-            ]
-        }
-        pairs.append(record)
-
-    with open(OUTPUT_FILE, "w", encoding="utf-8") as f:
-        for ex in pairs:
-            json.dump(ex, f)
-            f.write("\n")
-
-    print(f"\n✅ Saved {len(pairs)} examples to {OUTPUT_FILE}")
+    with open(path, encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            if line:
+                pairs.append(json.loads(line))
     return pairs
 
-def preview_examples(pairs, n=3):
-    print("\n🔍 Preview of dataset examples:\n" + "-" * 60)
-    if not pairs:
-        print("❌ No data to preview.")
-        return
-    for sample in random.sample(pairs, min(n, len(pairs))):
-        assistant_text = sample["messages"][2]["content"]
-        print("\n📄 Example:\n" + assistant_text[:300] + ("..." if len(assistant_text) > 300 else ""))
-    print("-" * 60)
-    print("✅ Preview complete.\n")
 
-# === MAIN ===
+def main(epochs: int = 4, batch_size: int = 1, grad_accum: int = 4, lr: float = 3e-4,
+         max_in: int = 448, max_out: int = 448):
+    import torch
+    from datasets import Dataset
+    from transformers import (
+        AutoTokenizer, AutoModelForSeq2SeqLM,
+        Seq2SeqTrainer, Seq2SeqTrainingArguments, DataCollatorForSeq2Seq,
+    )
+
+    if not Path(TRAIN_FILE).exists():
+        raise SystemExit(f"{TRAIN_FILE} not found. Run: python prepare_dataset.py")
+    pairs = load_pairs(TRAIN_FILE)
+    if not pairs:
+        raise SystemExit("No training pairs found.")
+    print(f"Training on {len(pairs)} pairs with base model '{BASE_MODEL}'.")
+
+    tok = AutoTokenizer.from_pretrained(BASE_MODEL)
+    model = AutoModelForSeq2SeqLM.from_pretrained(BASE_MODEL)
+    model.config.use_cache = False  # required when gradient checkpointing is on
+
+    def preprocess(batch):
+        inputs = [f"{STYLE_INSTRUCTION}\n\nExplanation:\n{x}\n\nNotes:" for x in batch["input"]]
+        model_inputs = tok(inputs, max_length=max_in, truncation=True)
+        labels = tok(text_target=batch["output"], max_length=max_out, truncation=True)
+        model_inputs["labels"] = labels["input_ids"]
+        return model_inputs
+
+    ds = Dataset.from_list(pairs).map(preprocess, batched=True, remove_columns=["input", "output"])
+
+    # batch_size=1 + gradient accumulation + checkpointing keeps peak memory under the MPS
+    # cap; the long NLP sections OOM'd a plain batch_size=2, 512-token run.
+    args = Seq2SeqTrainingArguments(
+        output_dir=OUTPUT_DIR,
+        num_train_epochs=epochs,
+        per_device_train_batch_size=batch_size,
+        gradient_accumulation_steps=grad_accum,
+        gradient_checkpointing=True,
+        learning_rate=lr,
+        logging_steps=10,
+        save_strategy="no",
+        report_to="none",
+        fp16=torch.cuda.is_available(),
+    )
+    trainer = Seq2SeqTrainer(
+        model=model,
+        args=args,
+        train_dataset=ds,
+        data_collator=DataCollatorForSeq2Seq(tok, model=model),
+    )
+    trainer.train()
+    trainer.save_model(OUTPUT_DIR)
+    tok.save_pretrained(OUTPUT_DIR)
+    print(f"Saved fine-tuned condenser to '{OUTPUT_DIR}/'. expand_notes will use it automatically.")
+
 
 if __name__ == "__main__":
-    print(f"📁 Scanning '{DATASET_FOLDER}' for Markdown files...")
-    md_files = collect_md_files(DATASET_FOLDER)
-    if not md_files:
-        print("❌ No Markdown files found. Check the dataset folder.")
-        raise SystemExit(1)
-
-    print(f"📄 Found {len(md_files)} Markdown files.")
-    dataset = make_jsonl(md_files)
-    preview_examples(dataset)
-
-    print("🎯 Next: validate with")
-    print(f"   openai tools fine_tunes.prepare_data -f {OUTPUT_FILE}")
+    main()
