@@ -2,7 +2,7 @@ import fitz  # PyMuPDF
 import os
 from typing import List, Dict
 
-def extract_slide_content(pdf_path: str, output_folder: str = "slides_output") -> List[Dict]:
+def extract_slide_content(pdf_path: str, output_folder: str = "outputs/slides_output") -> List[Dict]:
     """Extract text and images from PDF slides.
     Returns: list of {"slide": int, "text": str, "images": [str]}
     """

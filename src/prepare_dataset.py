@@ -8,8 +8,8 @@ from tqdm import tqdm
 from book_retrieval import load_retriever
 from expand_notes import expand_concepts
 
-DATASET_FOLDER = os.getenv("DATASET_FOLDER", "training")
-OUTPUT_FILE = os.getenv("TRAIN_FILE", "training_data.jsonl")
+DATASET_FOLDER = os.getenv("DATASET_FOLDER", "data/training")
+OUTPUT_FILE = os.getenv("TRAIN_FILE", "models/training_data.jsonl")
 
 
 def clean_markdown(text: str) -> str:

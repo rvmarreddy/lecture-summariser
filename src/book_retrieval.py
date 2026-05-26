@@ -7,7 +7,7 @@ import numpy as np
 
 EMBED_MODEL = os.getenv("EMBED_MODEL", "sentence-transformers/all-MiniLM-L6-v2")
 BOOKS_DIR = os.getenv("BOOKS_DIR", "books")
-INDEX_DIR = os.getenv("BOOK_INDEX_DIR", "book_index")
+INDEX_DIR = os.getenv("BOOK_INDEX_DIR", "models/book_index")
 BOOK_SUFFIXES = (".txt", ".md", ".pdf", ".epub")
 
 _embedder = None
@@ -88,7 +88,7 @@ def build_index(books_dir: str = BOOKS_DIR, index_dir: str = INDEX_DIR) -> int:
     ).astype("float32")
 
     out = Path(index_dir)
-    out.mkdir(exist_ok=True)
+    out.mkdir(parents=True, exist_ok=True)
     np.save(out / "embeddings.npy", vectors)
     (out / "passages.json").write_text(json.dumps(passages), encoding="utf-8")
     print(f"Saved index with {len(passages)} passages to '{index_dir}/'.")

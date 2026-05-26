@@ -1,10 +1,15 @@
+import os
+import sys
 import tempfile
+
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "src"))
 
 import streamlit as st
 
 from extract_slides import extract_slide_content
 from expand_notes import expand_slide_content, save_markdown
 from book_retrieval import load_retriever
+from export_pdf import to_pdf, timestamped_output
 
 st.set_page_config(page_title="Lecture Notes Generator", page_icon="🧠", layout="wide")
 st.title("🧠 Lecture Notes Generator (local)")
@@ -58,13 +63,13 @@ if st.button("🚀 Generate notes"):
             )
             progress.progress(i / total, text=f"Slide {i}/{total}")
 
-        out_base = (page_title.strip().replace(" ", "_") or "lecture_notes")
+        stem = page_title.strip().replace(" ", "_") or "lecture_notes"
+        out_base = timestamped_output(stem)
         md_path = save_markdown(expanded, output_path=out_base + ".md")
 
         st.write("📄 Compiling PDF...")
         pdf_path = None
         try:
-            from export_pdf import to_pdf
             combined = "\n\n".join(n["markdown"] for n in expanded)
             pdf_path = to_pdf(combined, out_path=out_base + ".pdf", title=page_title.strip() or "Lecture Notes")
         except Exception as e:
@@ -73,9 +78,10 @@ if st.button("🚀 Generate notes"):
 
     with open(md_path, "rb") as f:
         md_bytes = f.read()
-    st.download_button("📥 Download Markdown", data=md_bytes, file_name=out_base + ".md", mime="text/markdown")
+    dl_name = os.path.basename(out_base)
+    st.download_button("📥 Download Markdown", data=md_bytes, file_name=dl_name + ".md", mime="text/markdown")
     if pdf_path:
         with open(pdf_path, "rb") as f:
-            st.download_button("📥 Download PDF", data=f.read(), file_name=out_base + ".pdf", mime="application/pdf")
+            st.download_button("📥 Download PDF", data=f.read(), file_name=dl_name + ".pdf", mime="application/pdf")
     with st.expander("Preview notes"):
         st.markdown(md_bytes.decode("utf-8"))
