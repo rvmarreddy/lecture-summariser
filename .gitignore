@@ -1,1 +1,24 @@
 .env
+.DS_Store
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Local models, indexes, and large inputs
+finetuned_model/
+book_index/
+books/
+archived_books/
+slides_output/
+diagrams_output/
+
+# Generated outputs
+training_data.jsonl
+lecture_notes.md
+lecture_notes.pdf
+lecture_notes.tex
+*.pandoc.md
+*_smoke_output.md

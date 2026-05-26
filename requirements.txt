@@ -1,26 +1,19 @@
 # --- Core utilities ---
 python-dotenv
-requests
 tqdm
-
-# --- Notion integration ---
-notion-client
+numpy
 
 # --- Web app ---
 streamlit
 
-# --- Machine learning / NLP ---
+# --- Local models / NLP ---
 torch
 transformers
 sentencepiece
-scikit-learn
-pandas
-numpy
-openai
-
-# --- PDF & image processing ---
-PyMuPDF          # import fitz
-Pillow
-
-# --- Optional / dataset handling ---
+accelerate
 datasets
+sentence-transformers      # BERT embeddings for book retrieval
+
+# --- PDF, EPUB & image processing ---
+PyMuPDF                     # import fitz (handles PDF and EPUB)
+Pillow
