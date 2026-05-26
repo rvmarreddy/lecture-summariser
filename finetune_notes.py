@@ -24,8 +24,7 @@ def load_pairs(path: str):
     return pairs
 
 
-def main(epochs: int = 4, batch_size: int = 1, grad_accum: int = 4, lr: float = 3e-4,
-         max_in: int = 448, max_out: int = 448):
+def main(epochs: int = 4, batch_size: int = 2, lr: float = 3e-4, max_in: int = 448, max_out: int = 448):
     import torch
     from datasets import Dataset
     from transformers import (
@@ -42,7 +41,6 @@ def main(epochs: int = 4, batch_size: int = 1, grad_accum: int = 4, lr: float = 
 
     tok = AutoTokenizer.from_pretrained(BASE_MODEL)
     model = AutoModelForSeq2SeqLM.from_pretrained(BASE_MODEL)
-    model.config.use_cache = False  # required when gradient checkpointing is on
 
     def preprocess(batch):
         inputs = [f"{STYLE_INSTRUCTION}\n\nExplanation:\n{x}\n\nNotes:" for x in batch["input"]]
@@ -53,14 +51,14 @@ def main(epochs: int = 4, batch_size: int = 1, grad_accum: int = 4, lr: float = 
 
     ds = Dataset.from_list(pairs).map(preprocess, batched=True, remove_columns=["input", "output"])
 
-    # batch_size=1 + gradient accumulation + checkpointing keeps peak memory under the MPS
-    # cap; the long NLP sections OOM'd a plain batch_size=2, 512-token run.
+    # Plain config: the MPS watermark env var (top of file) lifts the artificial memory cap,
+    # and the 448-token limit bounds the long NLP sequences. Gradient checkpointing /
+    # accumulation are deliberately avoided — on this MPS stack they yielded a model that
+    # never learned (loss stuck at ln|vocab| ~= 10.4).
     args = Seq2SeqTrainingArguments(
         output_dir=OUTPUT_DIR,
         num_train_epochs=epochs,
         per_device_train_batch_size=batch_size,
-        gradient_accumulation_steps=grad_accum,
-        gradient_checkpointing=True,
         learning_rate=lr,
         logging_steps=10,
         save_strategy="no",
