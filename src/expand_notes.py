@@ -3,7 +3,7 @@ from pathlib import Path
 from typing import List, Dict
 
 BASE_MODEL = os.getenv("BASE_MODEL", "google/flan-t5-base")
-FINETUNED_DIR = os.getenv("FINETUNED_DIR", "finetuned_model")
+FINETUNED_DIR = os.getenv("FINETUNED_DIR", "models/finetuned_model")
 
 # Shared between inference (condense_to_style) and training (finetune_notes) so the
 # fine-tuned model sees the same instruction it was trained on.

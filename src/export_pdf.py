@@ -1,6 +1,7 @@
 import re
 import shutil
 import subprocess
+from datetime import datetime
 from pathlib import Path
 
 from diagrams import inject_diagrams
@@ -8,6 +9,12 @@ from diagrams import inject_diagrams
 _PANDOC = shutil.which("pandoc")
 # xelatex has no glyphs for emoji / Notion decoration; strip them before compiling.
 _DROP_GLYPHS = re.compile(r"[\U0001F000-\U0001FAFF☀-➿️]")
+
+
+def timestamped_output(stem: str = "lecture_notes", out_dir: str = "outputs") -> str:
+    """Return 'outputs/<stem>_<YYYYMMDD_HHMMSS>' (no extension); callers append .md/.pdf."""
+    Path(out_dir).mkdir(parents=True, exist_ok=True)
+    return str(Path(out_dir) / f"{stem}_{datetime.now():%Y%m%d_%H%M%S}")
 
 
 def to_pdf(markdown: str, out_path: str = "lecture_notes.pdf", title: str = None) -> str:

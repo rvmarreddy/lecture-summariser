@@ -49,9 +49,9 @@ def render_dot(dot_src: str, out_path: str):
         return None
 
 
-def inject_diagrams(markdown: str, out_dir: str = "diagrams_output") -> str:
+def inject_diagrams(markdown: str, out_dir: str = "outputs/diagrams") -> str:
     """Render detected pipelines to images and insert a reference after each source line."""
-    Path(out_dir).mkdir(exist_ok=True)
+    Path(out_dir).mkdir(parents=True, exist_ok=True)
     out_lines, idx = [], 0
     for line in markdown.splitlines():
         out_lines.append(line)

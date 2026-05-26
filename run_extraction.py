@@ -3,13 +3,15 @@ import sys
 from pathlib import Path
 from typing import List, Dict
 
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "src"))
+
 from extract_slides import extract_slide_content
 from expand_notes import expand_slide_content, save_markdown
-from export_pdf import to_pdf
+from export_pdf import to_pdf, timestamped_output
 from book_retrieval import load_retriever
 
 
-def run_pipeline(pdf_path: str, extra_transcript: str = "", output_name: str = "lecture_notes.md") -> str:
+def run_pipeline(pdf_path: str, extra_transcript: str = "", output_name: str = None) -> str:
     if not os.path.exists(pdf_path):
         raise FileNotFoundError(f"PDF not found: {pdf_path}")
 
@@ -28,13 +30,13 @@ def run_pipeline(pdf_path: str, extra_transcript: str = "", output_name: str = "
             expand_slide_content([slide], retriever=retriever, extra_transcript=extra_transcript)[0]
         )
 
-    md_path = save_markdown(expanded, output_path=output_name)
+    base = str(Path(output_name).with_suffix("")) if output_name else timestamped_output("lecture_notes")
+    md_path = save_markdown(expanded, output_path=base + ".md")
     print(f"\nNotes saved to {md_path}")
 
-    pdf_path = str(Path(output_name).with_suffix(".pdf"))
+    pdf_path = base + ".pdf"
     try:
-        to_pdf("\n\n".join(n["markdown"] for n in expanded), out_path=pdf_path,
-               title=Path(output_name).stem.replace("_", " "))
+        to_pdf("\n\n".join(n["markdown"] for n in expanded), out_path=pdf_path, title="Lecture Notes")
         print(f"PDF saved to {pdf_path}")
     except Exception as e:
         print(f"PDF export failed ({e}); Markdown is still available.")
