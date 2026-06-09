@@ -1,8 +1,8 @@
 # Lecture Summariser
 
-Local, **fully offline** lecture-notes generator. Turns a PDF slide deck into styled,
-textbook-grounded LaTeX revision notes and renders them to PDF. **No external APIs at
-inference** — generation runs entirely on a local [Ollama](https://ollama.com) model.
+Generates LaTeX revision notes from a lecture slide PDF, using a local
+[Ollama](https://ollama.com) model and a textbook for grounding. Runs entirely offline,
+so no API keys are needed and nothing leaves your machine.
 
 ## Pipeline
 
@@ -46,15 +46,6 @@ ollama serve & ollama pull qwen2.5:7b        # or qwen2.5:14b for quality
 .venv/bin/python run_extraction.py <slides.pdf> [transcript.txt]   # CLI
 OLLAMA_MODEL=qwen2.5:14b .venv/bin/python run_extraction.py <slides.pdf>   # higher quality
 ```
-
-## Layout
-
-- `src/` — pipeline modules (`extract_slides`, `book_retrieval`, `note_writer`,
-  `export_pdf`) + the `note_preamble.tex` template + `structure_fewshot.tex` exemplars.
-- `app.py`, `run_extraction.py` — entry points at the repo root.
-- `inputs/books/` — source textbook(s) indexed for grounding; `inputs/slides/` — decks.
-- `models/book_index/` — generated retrieval embeddings + passages.
-- `outputs/` — generated `<topic>_<timestamp>.tex/.pdf` plus LaTeX intermediates.
 
 ## Performance
 
