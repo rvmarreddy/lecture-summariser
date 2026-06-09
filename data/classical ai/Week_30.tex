@@ -1,0 +1,779 @@
+\documentclass[11pt, a4paper]{article}
+
+\usepackage{fontspec}
+\setmainfont{Helvetica Neue}
+\setmonofont{Menlo}
+\usepackage{unicode-math}
+\setmathfont{STIX Two Math}
+
+\usepackage[margin=2cm, top=2cm, bottom=2.5cm]{geometry}
+\usepackage{microtype}
+\usepackage{parskip}
+\setlength{\parskip}{0.6em}
+\setlength{\parindent}{0pt}
+
+\usepackage[colorlinks=true, linkcolor=NavyBlue, urlcolor=NavyBlue, citecolor=NavyBlue]{hyperref}
+\usepackage{xcolor}
+\usepackage[dvipsnames]{xcolor}
+
+\usepackage{amsmath}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{tabularx}
+\newcommand{\thead}[1]{\textbf{#1}}
+
+% --- Graphics ---
+\usepackage{graphicx}
+\graphicspath{{figures/week30/}}
+
+\usepackage{enumitem}
+\setlist[itemize]{leftmargin=1.5em, itemsep=0.2em, topsep=0.3em}
+\setlist[enumerate]{leftmargin=1.5em, itemsep=0.2em, topsep=0.3em}
+
+\usepackage[most]{tcolorbox}
+\tcbuselibrary{breakable, skins, theorems}
+
+\definecolor{defBg}{HTML}{EAF2FB}
+\definecolor{defBd}{HTML}{1F4E79}
+\definecolor{exBg}{HTML}{F4F4F4}
+\definecolor{exBd}{HTML}{555555}
+\definecolor{tipBg}{HTML}{E8F5E9}
+\definecolor{tipBd}{HTML}{2E7D32}
+\definecolor{trapBg}{HTML}{FCE4EC}
+\definecolor{trapBd}{HTML}{AD1457}
+\definecolor{pitBg}{HTML}{FFF8E1}
+\definecolor{pitBd}{HTML}{B27600}
+\definecolor{noteBg}{HTML}{F3E5F5}
+\definecolor{noteBd}{HTML}{6A1B9A}
+\definecolor{tldrBg}{HTML}{E1F5FE}
+\definecolor{tldrBd}{HTML}{0277BD}
+
+\newtcolorbox{defbox}[1][]{enhanced, breakable, colback=defBg, colframe=defBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={Definition: #1}}
+\newtcolorbox{exbox}[1][]{enhanced, breakable, colback=exBg, colframe=exBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={Worked example: #1}}
+\newtcolorbox{exambox}[1][]{enhanced, breakable, colback=tipBg, colframe=tipBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={Exam-mode answer #1}}
+\newtcolorbox{trapbox}[1][]{enhanced, breakable, colback=trapBg, colframe=trapBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={MCQ trap #1}}
+\newtcolorbox{pitfallbox}[1][]{enhanced, breakable, colback=pitBg, colframe=pitBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={Pitfall #1}}
+\newtcolorbox{notebox}[1][]{enhanced, breakable, colback=noteBg, colframe=noteBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={Lecturer aside #1}}
+\newtcolorbox{tldrbox}[1][]{enhanced, breakable, colback=tldrBg, colframe=tldrBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={TL;DR #1}}
+
+\usepackage{titlesec}
+\titleformat{\section}[block]{\Large\bfseries\color{defBd}}{\thesection.}{0.6em}{}
+\titleformat{\subsection}[block]{\large\bfseries\color{defBd!80!black}}{\thesubsection}{0.5em}{}
+\titleformat{\subsubsection}[block]{\normalsize\bfseries}{}{0pt}{}
+\titlespacing*{\section}{0pt}{1.6em}{0.6em}
+\titlespacing*{\subsection}{0pt}{1.2em}{0.4em}
+
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small CM52078 — Week 10}
+\fancyhead[R]{\small Probabilistic Reasoning / Bayesian Networks}
+\fancyfoot[C]{\small\thepage}
+\renewcommand{\headrulewidth}{0.3pt}
+
+\newcommand{\examflag}{\textcolor{tipBd}{\textbf{[EXAM]}}\,}
+\newcommand{\trapflag}{\textcolor{trapBd}{\textbf{[TRAP]}}\,}
+\newcommand{\doflag}{\textcolor{defBd}{\textbf{[DO]}}\,}
+
+\title{\vspace{-1cm}{\Huge\bfseries Week 10 — Probabilistic Reasoning} \\[0.4em]{\large Independence, Bayesian networks, random variables, expected value}}
+\author{\large CM52078 Classical Artificial Intelligence \\[0.2em]\normalsize University of Bath}
+\date{Revision notes}
+
+\begin{document}
+
+\maketitle
+\thispagestyle{empty}
+
+\vspace{1em}
+
+\begin{tldrbox}
+\begin{itemize}[leftmargin=*]
+  \item \textbf{Independence}: $A$ and $B$ are independent iff $P(A \mid B) = P(A)$, equivalently $P(A \cap B) = P(A) \cdot P(B)$. Symmetric.
+  \item \textbf{Conditional independence}: $A \perp B \mid C$ iff $P(A \mid B, C) = P(A \mid C)$. Weaker than independence — and far more common in real situations.
+  \item \textbf{Bayesian network}: a directed acyclic graph (DAG) where nodes are random variables and arrows encode conditional dependence. Each node has a conditional probability table (CPT) over its parents' values.
+  \item \textbf{Joint probability via the BN}: $P(x_1, \dots, x_n) = \prod_{i=1}^n P(x_i \mid \mathrm{parents}(X_i))$. \textbf{Massive saving} over storing the full joint — for a 6-variable network, 12 CPT entries instead of 64.
+  \item \textbf{Reading independence off a BN}: arrow = dependence; no path = independence; ``$X \to Y \to Z$ with no other route'' = $Z \perp X \mid Y$.
+  \item \textbf{Two formal rules}: (1) each node is conditionally independent of its non-descendants given its parents; (2) each node is conditionally independent of all others given its \textbf{Markov blanket} (parents, children, children's parents).
+  \item \textbf{Random variable}: a function from the sample space to the real numbers, $X : \Omega \to \mathbb{R}$. Lets us assign \emph{numerical values} to outcomes (e.g.\ payouts, counts).
+  \item \textbf{Standard discrete distributions}: \textbf{Bernoulli} $B(p)$ (one binary trial), \textbf{Binomial} $B(n, p)$ ($n$ binary trials).
+  \item \textbf{Expected value}: $E(X) = \sum_x x \cdot P(X = x)$. Mean numerical outcome of repeated trials. Compares which gamble or game has the higher long-run payoff.
+\end{itemize}
+\end{tldrbox}
+
+% =====================================================================
+\section{Independence}
+
+\subsection{From the product rule to independence}
+
+Recall the product rule from last week:
+\[
+P(A \cap B) = P(B) \cdot P(A \mid B).
+\]
+The conditional appears because $A$ and $B$ might affect one another. \textbf{If they don't}, the conditional collapses:
+\[
+P(A \mid B) = P(A) \quad \Longleftrightarrow \quad A, B \text{ are independent}.
+\]
+Substituting back, independence gives the simple product:
+\[
+P(A \cap B) = P(A) \cdot P(B).
+\]
+
+\begin{defbox}[Independence]
+Events $A$ and $B$ are \textbf{independent} iff
+\[
+P(A \mid B) = P(A) \quad \Longleftrightarrow \quad P(A \cap B) = P(A) \cdot P(B).
+\]
+The relation is \textbf{symmetric}: $A \perp B \iff B \perp A$.
+\end{defbox}
+
+\textbf{Genuine independence is rare} in real-world scenarios. Two medical symptoms aren't independent because a single underlying disease can cause both. Two stock prices aren't independent because they share macroeconomic exposure. The variables we model are usually entangled in some web of dependencies.
+
+\subsection{Conditional independence — the workhorse}
+
+\begin{defbox}[Conditional independence]
+$A$ is \textbf{conditionally independent} of $B$ given $C$ if
+\[
+P(A \mid B, C) = P(A \mid C).
+\]
+Notation: $A \perp B \mid C$. Once you know $C$, knowing $B$ tells you nothing extra about $A$.
+\end{defbox}
+
+Note that ``ordinary'' independence is the special case with no conditioning variable. Conditional independence is strictly weaker.
+
+\begin{exbox}[A conditional independence in everyday life]
+Let $A$ = ``I get to work on time'', $B$ = ``I leave home on time'', $C$ = ``I catch my train and it's on time.''\\[0.3em]
+$A$ and $B$ are \emph{not} independent: leaving late tends to mean arriving late.\\[0.3em]
+But $A \perp B \mid C$: if you've already conditioned on whether I caught the train (say I rushed and made it despite leaving late), then whether I left home on time gives no further information about my arrival time.\\[0.3em]
+The train-catching status $C$ is the \textbf{reason} for the dependence between $A$ and $B$. Once you know $C$, the dependence vanishes.
+\end{exbox}
+
+\textbf{Symptom example.} Two symptoms (cough, rash) are dependent in the population because both correlate with disease status. But \emph{given} the disease status, they may well be independent — once you fix the cause, the symptoms vary on their own.
+
+\subsubsection*{Equivalent forms of conditional independence}
+
+The following are all equivalent:
+\begin{itemize}
+  \item $A \perp B \mid C$.
+  \item $P(A \mid B, C) = P(A \mid C)$.
+  \item $P(B \mid A, C) = P(B \mid C)$.
+  \item $P(A, B \mid C) = P(A \mid C) \cdot P(B \mid C)$.
+\end{itemize}
+
+The fourth form (factorisation given $C$) is what makes Bayesian networks tractable.
+
+% =====================================================================
+\section{Bayesian networks}
+
+A \textbf{Bayesian network} is a graphical language for capturing dependence, independence, and conditional independence between many random variables in one compact picture.
+
+\subsection{The structure}
+
+\begin{defbox}[Bayesian network]
+A directed acyclic graph (\textbf{DAG}) plus numeric parameters at each node:
+\begin{itemize}[itemsep=0pt, topsep=0pt]
+  \item Nodes are random variables.
+  \item Directed edges encode \emph{direct} dependence (often interpreted as causation, though formally it's just statistical conditioning).
+  \item No directed cycles allowed — you can't follow arrows back to where you started.
+  \item Each node has a \textbf{conditional probability table (CPT)} giving $P(X \mid \mathrm{parents}(X))$.
+\end{itemize}
+\end{defbox}
+
+\textbf{Reading dependencies off the graph (introductory rules):}
+\begin{itemize}
+  \item \textbf{Arrow between $X$ and $Y$} $\Rightarrow$ $X$ and $Y$ are dependent.
+  \item \textbf{No path between $X$ and $Y$} $\Rightarrow$ $X$ and $Y$ are independent.
+  \item \textbf{Path $X \to Y \to Z$ with no other route from $X$ to $Z$} $\Rightarrow$ $Z \perp X \mid Y$.
+\end{itemize}
+
+(These rules don't catch \emph{all} conditional independences. For full coverage you'd use d-separation; this lecture stops at the simpler rules below.)
+
+\begin{center}
+
+\footnotesize\textit{The work-commute Bayesian network as a DAG. Each ellipse is a binary random variable; each arrow points from cause to effect and encodes \textbf{direct dependence}. Apply the three reading rules here: $A$ and $D$ are joined by an arrow, so they are dependent; $C$ (the moon phase) has no arrow to anything, so it is independent of every other variable; and the only route from $B$ to $F$ runs $B \to D \to F$, so $F \perp B \mid D$ --- once you know whether the train was caught, the roadworks tell you nothing more about arriving on time. Notice the graph is acyclic: you can never follow arrows back to a node you started from.}
+\end{center}
+
+\subsection{Three canonical patterns}
+
+Three sub-patterns appear in every BN. Knowing them helps quick reading of conditional independence.
+
+\subsubsection*{Pattern 1: Chain ($X \to Y \to Z$)}
+
+\begin{itemize}
+  \item $X$ and $Z$ are dependent (information flows $X \to Y \to Z$).
+  \item $X \perp Z \mid Y$. Once $Y$ is known, the chain is broken.
+\end{itemize}
+
+\subsubsection*{Pattern 2: Common cause / fork ($X \leftarrow Y \to Z$)}
+
+\begin{itemize}
+  \item $X$ and $Z$ are dependent (common cause $Y$ correlates them).
+  \item $X \perp Z \mid Y$. Once $Y$ is known, the correlation is explained.
+\end{itemize}
+
+\subsubsection*{Pattern 3: Common effect / collider / V-structure ($X \to Y \leftarrow Z$)}
+
+\begin{itemize}
+  \item $X$ and $Z$ are independent unconditionally.
+  \item $X$ and $Z$ are \emph{dependent} given $Y$. Conditioning on a common effect makes its causes correlated. (``Explaining away'': if I see the effect and one cause, I can rule out the other.)
+\end{itemize}
+
+\textbf{This third pattern is the trickiest.} It's the reason the Markov blanket includes children's parents.
+
+\begin{exbox}[Why conditioning on a collider couples its parents]
+$X = $ ``it rained,'' $Z = $ ``the sprinkler ran,'' $Y = $ ``the lawn is wet.'' Either independent cause turns the lawn wet; both are usually independent of each other (rain doesn't depend on sprinkler activity).\\[0.3em]
+\textbf{Unconditional:} $P(X) = 0.3$, $P(Z) = 0.1$, and $X \perp Z$ — knowing it rained tells you nothing about whether the sprinkler ran.\\[0.3em]
+\textbf{Now condition on $Y = T$ (lawn is wet).} The lawn became wet for some reason. If you additionally learn $X = T$ (it rained), that already explains the wetness — so $P(Z \mid Y, X) < P(Z \mid Y)$. The two causes have become \emph{negatively correlated} given the effect, even though they were unconditionally independent. This is ``explaining away.''\\[0.3em]
+\textbf{Why the algebra forces this.} Conditional on $Y$, $P(X, Z \mid Y) = P(X) P(Z) P(Y \mid X, Z) / P(Y)$ — and that final factor $P(Y \mid X, Z)$ does not factor as a function of $X$ alone times a function of $Z$ alone. So $X$ and $Z$ cannot be independent given $Y$. \emph{Conditioning on a child of two parents creates a back-door path through the child that re-couples them.}\\[0.3em]
+\textbf{Consequence for the Markov blanket.} To make a node $X$ conditionally independent of every other node, you must block this back-door. The blocking set must include each of $X$'s children (so paths through them are visible) \emph{and} every other parent of those children (so the V-structure-induced coupling is severed). That's where the children's-parents term in the blanket comes from.
+\end{exbox}
+
+\subsection{Running example}
+
+Six binary variables for whether you arrive at work on time:
+
+\begin{exbox}[The work-commute Bayesian network]
+\begin{itemize}[itemsep=0pt, topsep=0pt]
+  \item $A$ = I leave my house on time.
+  \item $B$ = There are roadworks on the way to the station.
+  \item $C$ = It is a waning gibbous moon.
+  \item $D$ = I catch my train.
+  \item $E$ = My train is delayed.
+  \item $F$ = I arrive at work on time.
+\end{itemize}
+Edges: $A \to D$, $B \to D$, $D \to F$, $E \to F$. Node $C$ is isolated.\\[0.3em]
+\textbf{Implied independence:} $C$ is independent of all other variables (it has no path).\\[0.3em]
+\textbf{Implied conditional independence:} $F \perp B \mid D$ (the only route from $B$ to $F$ goes through $D$).
+\end{exbox}
+
+\subsection{What a Bayesian network represents: the joint probability}
+
+\begin{defbox}[Joint probability factorisation]
+A Bayesian network defines a joint distribution over all its variables:
+\[
+P(x_1, x_2, \dots, x_n) = \prod_{i=1}^n P\bigl(x_i \mid \mathrm{parents}(X_i)\bigr).
+\]
+\end{defbox}
+
+For our example:
+\[
+P(A, B, C, D, E, F) = P(A) \cdot P(B) \cdot P(C) \cdot P(D \mid A, B) \cdot P(E) \cdot P(F \mid D, E).
+\]
+
+\begin{center}
+
+\footnotesize\textit{The general chain rule for Bayesian networks (highlighted box) alongside the work-commute graph it specialises to. The product $\prod_{i=1}^n p(x_i \mid \mathrm{parents}(X_i))$ says: take one factor per variable, and condition each variable on its parents only. The graph fixes what ``parents'' means --- the nodes with arrows pointing \emph{into} the variable. This single formula is the engine of every Bayes-net calculation: read the parents off the picture, write the matching conditional, multiply.}
+\end{center}
+
+\begin{center}
+
+\footnotesize\textit{The same network, now read as a recipe for the joint distribution. Each node contributes exactly one factor to the product, and that factor conditions \textbf{only on the node's parents}. Trace it: $A$, $B$, $C$, $E$ have no incoming arrows, so they contribute plain marginals $P(A)$, $P(B)$, $P(C)$, $P(E)$; $D$ has parents $A$ and $B$, so it contributes $P(D \mid A, B)$; $F$ has parents $D$ and $E$, so it contributes $P(F \mid D, E)$. Multiply the six factors and you have the full joint $P(A,B,C,D,E,F)$ --- this is the chain rule for Bayes nets, and the conditional independences baked into the graph are what let the conditioning sets stay so small.}
+\end{center}
+
+\textbf{Read this carefully.} Variables with no parents ($A, B, C, E$) need only marginal probabilities. Variables with parents need conditionals over those parent values only — \emph{not} over every other variable in the network.
+
+\subsection{Why the BN factorisation saves so much storage}
+
+For 6 binary variables, the full joint has $2^6 = 64$ entries (each row a different combination of T/F). \textbf{Storage is exponential in the number of variables.}
+
+\begin{center}
+
+\footnotesize\textit{The full joint probability table $P(A,B,C,D,E,F)$ stored naively, with no use of network structure. Each of the six binary variables doubles the row count, so the table has $2^6 = 64$ rows --- one per distinct True/False assignment, from all-False at the top to all-True at the bottom. The rightmost column holds one probability value per row. This is the table the BN factorisation lets us avoid: it grows exponentially, so for a few dozen variables it is already too large to store or fill in by hand.}
+\end{center}
+
+Using the BN factorisation:
+\begin{itemize}
+  \item $P(A=T)$: 1 entry (with $P(A=F) = 1 - P(A=T)$).
+  \item $P(B=T)$: 1 entry. $P(C=T)$: 1. $P(E=T)$: 1.
+  \item $P(D=T \mid A, B)$: 4 entries (one per combination of $A, B$).
+  \item $P(F=T \mid D, E)$: 4 entries.
+\end{itemize}
+Total: $1 + 1 + 1 + 1 + 4 + 4 = 12$ entries. \textbf{12 vs.\ 64 — a factor-5 saving for a tiny network.}
+
+\begin{center}
+
+\footnotesize\textit{The same joint distribution stored as the network's six conditional probability tables (CPTs) instead of one 64-row table. The four parentless nodes $A$, $B$, $C$, $E$ each need a single number, $P(\cdot = \text{True})$ --- the False probability is fixed by ``probabilities sum to 1.'' The two nodes with parents are larger: $P(D = \text{True} \mid A, B)$ has one row per combination of its two parents ($2^2 = 4$ rows) and likewise $P(F = \text{True} \mid D, E)$ has 4. Counting only the highlighted probability cells gives $1+1+1+1+4+4 = 12$ values --- the ``12 elements'' the slide flags, versus 64 for the naive table.}
+\end{center}
+
+For real networks with hundreds of variables, the saving is the difference between feasible and infeasible. \textbf{This compactness is the whole point of Bayesian networks.}
+
+\subsubsection*{General formula for CPT entries}
+
+For each binary node $X$ with $|\mathrm{parents}(X)| = k$:
+\[
+\text{CPT entries needed} = 2^k.
+\]
+
+(Why $2^k$? For each combination of parent values — $2^k$ of them — we need the conditional probability $P(X = T \mid \text{parents})$. The $X = F$ case is determined by ``probabilities sum to 1.'')
+
+For a $k$-valued node with binary parents: $2^{|\mathrm{parents}|}$ parent combinations $\times$ $(k - 1)$ entries each.
+
+\examflag{}Past papers like to ask you to count CPT entries given a network and binary variables. The trick: each variable contributes $2^{|\mathrm{parents}|}$ entries.
+
+\subsection{Worked numbers: the alarm network}
+
+The lecturer's classic textbook example (Russell \& Norvig). Five binary variables: \emph{Burglary}, \emph{Earthquake}, \emph{Alarm}, \emph{JohnCalls}, \emph{MaryCalls}. Edges: Burglary $\to$ Alarm, Earthquake $\to$ Alarm, Alarm $\to$ JohnCalls, Alarm $\to$ MaryCalls.
+
+CPTs (truncated):
+\[
+P(B = T) = 0.001, \quad P(E = T) = 0.002.
+\]
+\[
+P(A = T \mid B, E):\ TT = 0.95,\ TF = 0.94,\ FT = 0.29,\ FF = 0.001.
+\]
+\[
+P(J = T \mid A): A = T \to 0.90, A = F \to 0.05.
+\]
+\[
+P(M = T \mid A): A = T \to 0.70, A = F \to 0.01.
+\]
+
+\begin{center}
+
+\footnotesize\textit{The classic alarm Bayesian network with its CPTs attached. \emph{Burglary} and \emph{Earthquake} are parentless, so each has a one-row table giving $P(\cdot = \text{true})$. \emph{Alarm} has both as parents: its CPT has a row for every $B,E$ combination ($tt, tf, ft, ff$), e.g.\ the alarm fires with probability $0.95$ when both occur but only $0.001$ on its own. \emph{JohnCalls} and \emph{MaryCalls} each depend only on \emph{Alarm}, so their tables have two rows ($A = t$ or $f$). The worked sum below multiplies one selected entry from each table; this is exactly the chain-rule factorisation $P(j,m,a,\neg b,\neg e) = P(j \mid a)P(m \mid a)P(a \mid \neg b, \neg e)P(\neg b)P(\neg e)$ read straight off the graph. Image credit: Russell \& Norvig, AIMA.}
+\end{center}
+
+\begin{exbox}[Computing $P(j, m, a, \neg b, \neg e)$]
+The joint probability of John and Mary both calling, alarm going off, but no burglary and no earthquake:
+\begin{align*}
+P(j, m, a, \neg b, \neg e) &= P(j \mid a) \cdot P(m \mid a) \cdot P(a \mid \neg b, \neg e) \cdot P(\neg b) \cdot P(\neg e) \\
+&= 0.90 \cdot 0.70 \cdot 0.001 \cdot 0.999 \cdot 0.998 \\
+&\approx 0.000628.
+\end{align*}
+\textbf{The probability of a false alarm scenario where both neighbours call: about 0.06\%.}
+\end{exbox}
+
+\subsubsection*{CPT entry count for the alarm network}
+
+\begin{itemize}
+  \item $B$: no parents. $2^0 = 1$ entry.
+  \item $E$: no parents. $1$ entry.
+  \item $A$: 2 parents ($B$, $E$). $2^2 = 4$ entries.
+  \item $J$: 1 parent ($A$). $2^1 = 2$ entries.
+  \item $M$: 1 parent ($A$). $2$ entries.
+\end{itemize}
+\textbf{Total: $1 + 1 + 4 + 2 + 2 = 10$ entries.} The full joint over 5 binary variables would have $2^5 = 32$. Saving: a factor of about 3.
+
+% =====================================================================
+\section{Reading conditional independences off a BN}
+
+The introductory rules don't handle every case. Two stronger rules cover most past-paper scenarios.
+
+\begin{center}
+
+\footnotesize\textit{The two formal conditional-independence rules, side by side, for the same target node $X$ (dark grey). \textbf{Left --- non-descendants rule:} shading the $U$ nodes ($X$'s parents) makes $X$ independent of all its non-descendants; the $Z$ nodes are non-descendants and the shaded parents block every path to them. \textbf{Right --- Markov blanket:} the grey ring is $X$'s parents ($U$), its children ($Y$), \emph{and} its children's other parents ($Z$); conditioning on this whole ring makes $X$ independent of everything outside it. Note why $Z$ (the children's parents) must be in the ring: $X \to Y \leftarrow Z$ is a collider, so conditioning on the child $Y$ couples $X$ to $Z$, and that new path must be blocked. Image credit: Russell \& Norvig, AIMA.}
+\end{center}
+
+\subsection{Rule 1: non-descendants given parents}
+
+\begin{defbox}[Non-descendants rule]
+Each node is conditionally independent of its \textbf{non-descendants} given its \textbf{parents}.\\[0.3em]
+A non-descendant of $X$ is any node not reachable by following arrows forward from $X$.
+\end{defbox}
+
+In the work-commute example: $D$'s parents are $A$ and $B$. $D$'s non-descendants are everything except $F$ (i.e., $A$, $B$, $C$, $E$). Given $\{A, B\}$, $D$ is independent of $C$ and $E$.
+
+\textbf{Why does this hold?} Because in the BN's joint factorisation, $D$'s factor depends only on $A$ and $B$ (its parents). Conditioning on $A, B$ fixes everything that affects $D$'s distribution.
+
+\subsection{Rule 2: the Markov blanket}
+
+\begin{defbox}[Markov blanket]
+The \textbf{Markov blanket} of node $X$ consists of:
+\begin{itemize}[itemsep=0pt, topsep=0pt]
+  \item $X$'s parents,
+  \item $X$'s children,
+  \item $X$'s children's parents (i.e., the spouses of $X$'s children — the other parents of any of $X$'s children).
+\end{itemize}
+\textbf{Each node is conditionally independent of every other node given its Markov blanket.}
+\end{defbox}
+
+\textbf{The asymmetry that catches everyone:} the blanket includes children's \emph{parents}, but not parents' \emph{children}. (Why? Because parents already block paths upward, but two paths converging at a common child create a new dependency you have to block — that's the V-structure / collider pattern from earlier.)
+
+\begin{exbox}[Markov blanket in the work-commute example]
+For node $D$:
+\begin{itemize}[itemsep=0pt, topsep=0pt]
+  \item Parents: $A$, $B$.
+  \item Children: $F$.
+  \item Children's parents (other than $D$): $E$ (the other parent of $F$).
+\end{itemize}
+$D$'s Markov blanket = $\{A, B, F, E\}$. Given this set, $D$ is independent of any other node in the network — in this case, just $C$.\\[0.3em]
+For node $E$: parents = $\emptyset$, children = $\{F\}$, children's parents = $\{D\}$. Blanket = $\{F, D\}$. Given $D$ and $F$, $E$ is independent of $A$, $B$, $C$.
+\end{exbox}
+
+\subsubsection*{Worked example: Markov blanket of $A$ in the alarm network}
+
+\begin{exbox}[Markov blanket of $A$ (Alarm)]
+\textbf{Network:} $B \to A$, $E \to A$, $A \to J$, $A \to M$.\\[0.3em]
+\begin{itemize}[itemsep=0pt, topsep=0pt]
+  \item Parents of $A$: $B$, $E$.
+  \item Children of $A$: $J$, $M$.
+  \item Children's parents (other than $A$): none — $J$ has only $A$ as parent, $M$ has only $A$.
+\end{itemize}
+\textbf{Markov blanket of $A$ = $\{B, E, J, M\}$.} Given these four, $A$ is independent of \dots\ well, there are no other variables in this 5-node network. So in this small example, the blanket is the whole rest of the graph.
+\end{exbox}
+
+\begin{trapbox}[: ``children's parents'' is asymmetric]
+A favourite past-paper trap. The blanket includes \emph{children's parents}, NOT \emph{parents' children}. Don't get tripped up — try writing the blanket on a small example before answering.\\[0.3em]
+\textbf{Why the asymmetry exists.} It's the V-structure / collider pattern: $X \to Y \leftarrow Z$. Without conditioning on $Y$, $X$ and $Z$ are independent. Conditioning on $Y$ creates dependence between them. So to fully isolate a node from the rest of the graph, you need to block these new dependencies — which means including the spouses of your children in the blanket.
+\end{trapbox}
+
+% =====================================================================
+\section{Random variables}
+
+So far we've talked about events and outcomes abstractly. \textbf{Random variables} promote outcomes to numerical values, which lets us compute averages and use standard distributions.
+
+\subsection{Definition}
+
+\begin{defbox}[Random variable]
+A \textbf{random variable} is a function from the sample space to the real numbers, $X : \Omega \to \mathbb{R}$. It assigns a numerical value to each outcome.
+\end{defbox}
+
+\textbf{Important.} The same probabilistic experiment can have many random variables on it.
+
+\begin{exbox}[Two random variables on a two-coin-toss experiment]
+\textbf{Sample space:} $\{HH, HT, TH, TT\}$, fair coin.\\[0.3em]
+\textbf{Random variable $X$:} ``count the heads.'' $X(HH) = 2, X(HT) = 1, X(TH) = 1, X(TT) = 0$.\\[0.3em]
+\textbf{Random variable $W$:} ``gambling game where you start with $\pounds 1$ and each heads doubles, each tails halves.'' $W(HH) = 4, W(HT) = 1, W(TH) = 1, W(TT) = \frac{1}{4}$.\\[0.3em]
+\textbf{Same experiment, different random variables, different expected values.} The choice of random variable depends on what you want to measure.
+\end{exbox}
+
+\subsection{Discrete vs.\ continuous}
+
+\begin{defbox}[Discrete vs.\ continuous random variable]
+A random variable is \textbf{discrete} if its range is finite or countably infinite (e.g., dice rolls, integer counts). It is \textbf{continuous} if its range is uncountably infinite (e.g., heights, weights, real-valued measurements).
+\end{defbox}
+
+The mathematics of discrete and continuous random variables is different (continuous needs probability density functions and integrals). \textbf{This unit focuses on discrete} — the random variables in Bayesian networks (binary truth values) are discrete.
+
+\subsection{Standard discrete distributions}
+
+\subsubsection*{Bernoulli distribution $B(p)$}
+
+A single binary trial with probability $p$ of ``success.''
+\[
+P(X = 1) = p, \qquad P(X = 0) = 1 - p.
+\]
+$X \sim B(p)$.
+
+Coin flip with probability $p$ of heads. Each binary node in a Bayes net (conditioning on parents) has Bernoulli-distributed values.
+
+\subsubsection*{Binomial distribution $B(n, p)$}
+
+$n$ independent Bernoulli trials with success probability $p$. The random variable counts the number of successes:
+\[
+P(X = k) = \binom{n}{k} p^k (1 - p)^{n - k}.
+\]
+$X \sim B(n, p)$.
+
+For $n = 3$:
+\[
+P(X = 0) = (1-p)^3, \quad P(X = 1) = 3 p (1-p)^2, \quad P(X = 2) = 3 p^2 (1-p), \quad P(X = 3) = p^3.
+\]
+
+\subsubsection*{Other distributions to know in passing}
+
+\begin{itemize}
+  \item \textbf{Categorical}: a single roll of a $k$-sided die. Each outcome has its own probability $p_i$ with $\sum p_i = 1$.
+  \item \textbf{Multinomial}: $n$ rolls of a $k$-sided die. Generalises binomial.
+  \item \textbf{Poisson}: count of rare events in a fixed interval. Rate $\lambda$. $P(X = k) = e^{-\lambda} \lambda^k / k!$.
+  \item \textbf{Geometric}: number of Bernoulli trials until the first success. $P(X = k) = (1-p)^{k-1} p$.
+\end{itemize}
+
+\textbf{Out of scope for this exam} but worth recognising in passing.
+
+% =====================================================================
+\section{Expected value}
+
+\subsection{Definition and rationale}
+
+\begin{defbox}[Expected value (expectation)]
+For a discrete random variable $X$:
+\[
+E(X) = \sum_x x \cdot P(X = x).
+\]
+The long-run average value of $X$ if the experiment is repeated many times.
+\end{defbox}
+
+\textbf{Why we care.} Random variables let us assign numerical values to outcomes; expectation gives a single summary number for ``what to expect on average.'' It's how we compare gambles, choose between policies, and value uncertain payoffs.
+
+\textbf{Linearity of expectation.} A useful property: $E(aX + bY) = a E(X) + b E(Y)$, regardless of whether $X$ and $Y$ are independent.
+
+\subsection{Two simple examples}
+
+\begin{exbox}[Coin-flip and dice-roll expectations]
+\textbf{Coin flip} with $X(H) = 1, X(T) = 0$. Fair coin:
+\[
+E(X) = 1 \cdot \tfrac{1}{2} + 0 \cdot \tfrac{1}{2} = 0.5.
+\]
+\textbf{Dice roll} with $X(\text{face}) = \text{face number}$:
+\[
+E(X) = \sum_{x = 1}^{6} x \cdot \tfrac{1}{6} = \frac{1 + 2 + 3 + 4 + 5 + 6}{6} = \frac{21}{6} = 3.5.
+\]
+The expected value of a single die roll is 3.5. \textbf{Note: 3.5 isn't a possible single outcome.} Expectation is an average over many trials.
+\end{exbox}
+
+\subsection{Expectation depends on the random variable, not just the experiment}
+
+\begin{exbox}[Comparing two gambles on the same experiment]
+Two-coin-toss experiment, fair coin. Compare:\\[0.3em]
+\textbf{Variable $X$ (count heads):} $X(HH) = 2, X(HT) = X(TH) = 1, X(TT) = 0$. Each outcome with probability $\frac{1}{4}$.
+\[
+E(X) = \frac{2 + 1 + 1 + 0}{4} = 1.
+\]
+\textbf{Variable $W$ (start with $\pounds 1$, heads doubles, tails halves):} $W(HH) = 4, W(HT) = W(TH) = 1, W(TT) = \frac{1}{4}$.
+\[
+E(W) = \frac{4 + 1 + 1 + 0.25}{4} = \frac{6.25}{4} = \frac{25}{16} \approx 1.56.
+\]
+\textbf{Game $W$ has the higher expected value} — you'd rather play it. Despite the same sample space and probabilities, the random variable changes the answer.
+\end{exbox}
+
+\textbf{Standard MCQ pattern:} ``which game would you prefer?'' or ``what is the expected fine?'' — compute the expectation by summing $x \cdot P(X = x)$ over all values.
+
+\begin{exbox}[Expected fine for parking in an alley]
+You park your scooter; there's a 5\% chance an inspector walks past and gives you a $\pounds 60$ fine. What's the expected fine?
+\[
+E(\text{Fine}) = 60 \cdot 0.05 + 0 \cdot 0.95 = 3.
+\]
+$\pounds 3$ — long-run average cost per parking. (Decision rule: park here only if convenience is worth more than $\pounds 3$.)
+\end{exbox}
+
+\subsubsection*{Expected reward from a probability table}
+
+\begin{exbox}[{Expected reward from a joint probability table}]
+Joint $P(\text{Reward}, \text{State})$:\\
+\begin{center}
+\begin{tabular}{@{}lcc@{}}
+\toprule
+ & State 1 & State 2 \\
+\midrule
+Reward = 5  & 0.1 & 0.3 \\
+Reward = 10 & 0.5 & 0.1 \\
+\bottomrule
+\end{tabular}
+\end{center}
+\textbf{First, marginalise to get $P(\text{Reward})$:}
+\[
+P(\text{Reward} = 5) = 0.1 + 0.3 = 0.4, \quad P(\text{Reward} = 10) = 0.5 + 0.1 = 0.6.
+\]
+\textbf{Then expected reward:}
+\[
+E(\text{Reward}) = 5 \cdot 0.4 + 10 \cdot 0.6 = 2 + 6 = 8.
+\]
+\end{exbox}
+
+% =====================================================================
+\section{Naive Bayes}
+
+A particularly useful Bayes-net topology shows up so often it has its own name.
+
+\begin{defbox}[Naive Bayes classifier]
+A Bayesian network with one ``class'' node $C$ and many ``feature'' nodes $F_1, F_2, \dots, F_n$, all of which are children of $C$. The features are assumed \emph{conditionally independent given the class}.\\[0.3em]
+The factorised joint:
+\[
+P(C, F_1, \dots, F_n) = P(C) \cdot \prod_{i=1}^n P(F_i \mid C).
+\]
+\end{defbox}
+
+\textbf{Why ``naive''?} Because the conditional-independence assumption is usually false in practice — features are usually correlated even given the class. But the assumption keeps the model tractable, and naive Bayes often performs surprisingly well as a baseline classifier.
+
+\subsubsection*{Use in classification}
+
+To classify a new instance with features $f_1, \dots, f_n$, compute:
+\[
+P(C = c \mid f_1, \dots, f_n) \propto P(C = c) \cdot \prod_{i=1}^n P(f_i \mid C = c).
+\]
+Pick the class $c$ that maximises this. Common in spam filters, medical diagnosis, sentiment analysis.
+
+\subsubsection*{Worked example: spam filtering}
+
+\begin{exbox}[Naive Bayes spam classification]
+Class $S \in \{\text{spam}, \text{ham}\}$. Three features:
+\begin{itemize}[itemsep=0pt, topsep=0pt]
+  \item $K$: contains keyword from watchlist.
+  \item $R$: positive sender reputation.
+  \item $L$: long message.
+\end{itemize}
+\textbf{Joint via naive Bayes:}
+\[
+P(K, R, L, S) = P(S) \cdot P(K \mid S) \cdot P(R \mid S) \cdot P(L \mid S).
+\]
+Given a message with $K = 1, R = 0, L = 0$, classify by computing both $P(\text{spam} \mid K, R, L)$ and $P(\text{ham} \mid K, R, L)$ and picking the larger.
+\end{exbox}
+
+% =====================================================================
+\section{Inference in Bayes nets (briefly)}
+
+The whole point of building a BN is to answer queries like ``given evidence $E$, what's the probability of variable $X$ being true?''
+
+\begin{itemize}
+  \item \textbf{Exact inference} via variable elimination or junction tree algorithms. Works for small networks; complexity $O(2^n)$ in the worst case (NP-hard in general).
+  \item \textbf{Approximate inference} via sampling (Gibbs sampling, MCMC, particle filtering). Works for large networks at the cost of accuracy.
+\end{itemize}
+
+\textbf{Out of scope for this exam.} For exam purposes you need to:
+\begin{itemize}
+  \item Read the joint factorisation off the network.
+  \item Compute joint probabilities of specific configurations using CPTs.
+  \item Apply Bayes' theorem manually for small queries.
+  \item Identify conditional independences via the rules above.
+\end{itemize}
+
+% =====================================================================
+\section{Exam-mode answers}
+
+\begin{exambox}[(MCQ): Which of the following Bayesian networks describes the situation: ``Weather causes traffic and umbrella; traffic causes delay; nothing causes weather''?]
+\textit{Variables: $W$ (Weather), $T$ (Traffic), $U$ (Umbrella), $D$ (Delay).}\\[0.3em]
+\textit{Correct edges: $W \to T$, $W \to U$, $T \to D$.}\\[0.3em]
+\textit{Trap distractors usually have edges in wrong direction or extra/missing edges.}
+\end{exambox}
+
+\begin{exambox}[(MCQ): For the BN above, which of the following is the correct factorised joint probability?]
+\textit{Apply $P(x_1, \dots, x_n) = \prod P(x_i \mid \mathrm{parents}(X_i))$.}
+\[
+P(W, T, U, D) = P(W) \cdot P(T \mid W) \cdot P(U \mid W) \cdot P(D \mid T).
+\]
+\textit{Trap: $P(W, T, U, D) = P(W) P(T) P(U) P(D)$ — assumes everything's independent (false). $P(W \mid T, U, D) P(T \mid U, D) P(U \mid D) P(D)$ — generic chain rule, doesn't exploit conditional independences from the network.}
+\end{exambox}
+
+\begin{exambox}[(MCQ): Consider a Bayes network with all variables binary. The minimum total number of elements required to store the joint distribution, using the BN factorisation? (Network: $W \to T$, $W \to U$, $T \to D$, $D$ has no other parents, $W$ has no parents.)]
+\textit{For each binary node, store $2^{|\mathrm{parents}|}$ entries (one per parent combination, given the other entry is $1 - p$):}
+\begin{itemize}[leftmargin=*, itemsep=0pt, topsep=0pt]
+  \item $W$ has no parents: $2^0 = 1$ entry.
+  \item $T$ has 1 parent ($W$): $2^1 = 2$ entries.
+  \item $U$ has 1 parent ($W$): $2$ entries.
+  \item $D$ has 1 parent ($T$): $2$ entries.
+\end{itemize}
+\textit{Total: $1 + 2 + 2 + 2 = 7$ entries.}
+\end{exambox}
+
+\begin{exambox}[(MCQ): Which of the following statements about a Bayesian network are true? Mark all that apply.]
+\textit{TRUE:}
+\begin{itemize}[leftmargin=*, itemsep=0pt, topsep=0pt]
+  \item ``A node is conditionally independent of its non-descendants given its parents.''
+  \item ``Each node is conditionally independent of all others given its Markov blanket.''
+  \item ``A Bayesian network can compactly represent a joint distribution that would otherwise require an exponentially large table.''
+\end{itemize}
+\textit{FALSE: ``Two nodes connected by a directed edge are always independent'' (false — they're directly dependent).}
+\end{exambox}
+
+\begin{exambox}[(MCQ): A patient presents with three symptoms (fever, cough, fatigue). Assume conditional independence of the symptoms given flu. Which expression gives $P(\mathrm{flu} \mid \mathrm{fever}, \mathrm{cough}, \mathrm{fatigue})$?]
+\textit{Bayes plus conditional independence (Naive Bayes):}
+\[
+P(\mathrm{flu} \mid \mathrm{symptoms}) = \frac{P(\mathrm{fever} \mid \mathrm{flu}) P(\mathrm{cough} \mid \mathrm{flu}) P(\mathrm{fatigue} \mid \mathrm{flu}) P(\mathrm{flu})}{P(\mathrm{fever}, \mathrm{cough}, \mathrm{fatigue})}.
+\]
+\textit{Conditional independence given flu lets you factor the joint $P(\text{symptoms} \mid \text{flu})$ into individual products. This is the Naive Bayes form.}
+\end{exambox}
+
+% =====================================================================
+\section*{Key equations / algorithms cheat sheet}
+
+\textbf{Independence:}
+\[
+A \perp B \iff P(A \mid B) = P(A) \iff P(A \cap B) = P(A) \cdot P(B).
+\]
+
+\textbf{Conditional independence:}
+\[
+A \perp B \mid C \iff P(A \mid B, C) = P(A \mid C).
+\]
+
+\textbf{Bayesian network factorisation:}
+\[
+P(x_1, \dots, x_n) = \prod_{i=1}^n P\bigl(x_i \mid \mathrm{parents}(X_i)\bigr).
+\]
+
+\textbf{CPT entries per binary node:} $2^{|\mathrm{parents}|}$ (storing $P(X = T \mid \cdot)$; the $F$ entry is $1 -$ that).
+
+\textbf{Conditional independence rules:}
+\begin{itemize}[itemsep=0pt, topsep=0pt]
+  \item Each node $X$ $\perp$ its non-descendants $\mid$ its parents.
+  \item Each node $X$ $\perp$ all other nodes $\mid$ its Markov blanket = (parents, children, children's parents).
+\end{itemize}
+
+\textbf{Three sub-patterns:}
+\begin{itemize}[itemsep=0pt, topsep=0pt]
+  \item Chain $X \to Y \to Z$: $X \perp Z \mid Y$.
+  \item Fork $X \leftarrow Y \to Z$: $X \perp Z \mid Y$.
+  \item Collider $X \to Y \leftarrow Z$: $X \perp Z$ unconditionally; $X \not\perp Z \mid Y$.
+\end{itemize}
+
+\textbf{Random variable:} $X : \Omega \to \mathbb{R}$.
+
+\textbf{Standard distributions:}
+\[
+\text{Bernoulli } B(p): P(X = 1) = p, \; P(X = 0) = 1 - p.
+\]
+\[
+\text{Binomial } B(n, p): P(X = k) = \binom{n}{k} p^k (1 - p)^{n - k}.
+\]
+
+\textbf{Expected value (discrete):}
+\[
+E(X) = \sum_x x \cdot P(X = x).
+\]
+
+\textbf{Linearity of expectation:}
+\[
+E(aX + bY) = a E(X) + b E(Y) \text{ regardless of independence}.
+\]
+
+\textbf{Naive Bayes:}
+\[
+P(C, F_1, \dots, F_n) = P(C) \prod_i P(F_i \mid C).
+\]
+
+% =====================================================================
+\section*{Pitfalls and MCQ traps consolidated}
+
+\begin{trapbox}[summary]
+\begin{tabular}{@{}p{6.5cm}p{8cm}@{}}
+\toprule
+\thead{Trap} & \thead{Right answer} \\
+\midrule
+``Independent $\Leftrightarrow$ mutually exclusive'' & \textbf{Opposite!} ME means $A \cap B = \emptyset$. Independence is $P(A \cap B) = P(A)P(B)$. \\
+``$P(A \cap B) = P(A) P(B)$ always''               & \textbf{Only if independent.} \\
+``All variables in a real-world model are independent'' & \textbf{Rarely.} Conditional independence is more common. \\
+Markov blanket = parents + children                  & \textbf{Plus children's parents.} \\
+Bayes net edges represent causation                   & Often, but \textbf{strictly they encode dependence}. Reverse direction is sometimes equivalent. \\
+``Joint = $P(A) P(B) \dots$ when network has structure'' & \textbf{No}, multiply each $P(X \mid \mathrm{parents}(X))$. \\
+Random variables are events                            & \textbf{No}, they are functions $\Omega \to \mathbb{R}$. \\
+Expected value is the most-likely outcome              & \textbf{No}, it's the long-run average. \\
+``$X \to Y \leftarrow Z$ implies $X \perp Z$ given $Y$'' & \textbf{No, the opposite!} Collider conditioning creates dependence. \\
+\bottomrule
+\end{tabular}
+\end{trapbox}
+
+\textbf{Other confusions:}
+
+\begin{itemize}
+  \item \textbf{Bayes net direction.} The lecturer used ``causation'' as a teaching analogy. Strictly, the network just encodes which variables are conditionally dependent. Two networks with reversed edges \emph{can} represent the same joint, but with different parametrisations.
+  \item \textbf{$2^{|\mathrm{parents}|}$ vs.\ $2^{|\mathrm{parents}|} \cdot 2$.} Past papers ask for ``minimum entries.'' For binary nodes, $2^{|\mathrm{parents}|}$ entries suffice (the other half is determined by ``probabilities sum to 1''). For $k$-valued nodes, it's $2^{|\mathrm{parents}|} \cdot (k - 1)$.
+  \item \textbf{Discrete vs.\ continuous random variables.} The Bayesian-network examples in this lecture all use discrete (typically binary) variables. Continuous BNs are a separate topic.
+  \item \textbf{Naive Bayes.} A common Bayes-net topology in the past papers: a ``class'' node points to many ``feature'' nodes, with the features assumed conditionally independent given the class. The full joint is $P(\text{class}) \prod P(\text{feature}_i \mid \text{class})$.
+  \item \textbf{Expected value is linear.} $E(aX + bY) = a E(X) + b E(Y)$ — useful for combining payoffs or losses across multiple variables. \emph{Doesn't require independence.}
+  \item \textbf{Don't confuse expectation with mode.} The expectation $E(X) = 3.5$ for a die isn't a possible single roll; it's the average across many rolls.
+  \item \textbf{Three sub-patterns to memorise.} Chain, fork, collider. The first two have the same independence structure ($X \perp Z \mid Y$); the collider has the opposite ($X \perp Z$ \emph{without} conditioning, $X \not\perp Z$ \emph{with}).
+\end{itemize}
+
+% =====================================================================
+\section*{Self-check questions}
+
+\begin{enumerate}
+  \item \textbf{Distinguish} independence and mutual exclusivity. Give an example of each.
+  \item \textbf{Define} conditional independence. Construct a small example where $A$ and $B$ are dependent, but $A \perp B \mid C$.
+  \item \textbf{Explain} why genuine independence between two variables is rare in real-world settings, but conditional independence is common.
+  \item \textbf{Describe} the three sub-patterns (chain, fork, collider) and the conditional independence each implies (or breaks).
+  \item \textbf{Describe} a Bayesian network. What information is encoded in the graph, and what is encoded in the conditional probability tables?
+  \item \textbf{Compute} the number of entries needed to store the full joint over 6 binary variables. Compare to the BN factorisation for a network with the parent-counts $\{0, 0, 0, 2, 0, 2\}$.
+  \item \textbf{Apply} the joint-factorisation formula to a 4-node BN with edges $W \to T$, $W \to U$, $T \to D$. Write out $P(W, T, U, D)$.
+  \item \textbf{Identify} the Markov blanket for a given node in a BN. Justify your answer using the definition.
+  \item \textbf{Explain} why the Markov blanket includes children's parents but not parents' children.
+  \item \textbf{Compute} $P(\text{burglary} \mid \text{alarm})$ using the alarm-network CPTs and Bayes' rule. (Marginalise over earthquake.)
+  \item \textbf{Distinguish} discrete and continuous random variables with examples. Which kind do Bayesian networks (in this lecture) use?
+  \item \textbf{Describe} the Bernoulli and Binomial distributions. What scenario does each model?
+  \item \textbf{Compute} the expected value of a 3-coin-flip experiment scored by ``$\pounds 1$ per heads.''
+  \item \textbf{Compare} two random variables defined on the same experiment that have different expected values. Explain why the experiment alone doesn't determine the expectation.
+  \item \textbf{Apply} naive Bayes to classify a sentence as spam or ham, given priors and per-word likelihoods of your choosing.
+  \item \textbf{State} linearity of expectation. Does it require independence? Why not?
+\end{enumerate}
+
+\end{document}

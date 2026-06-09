@@ -1,0 +1,629 @@
+\documentclass[11pt, a4paper]{article}
+
+% --- Fonts and engine ---
+\usepackage{fontspec}
+\setmainfont{Helvetica Neue}
+\setmonofont{Menlo}
+\usepackage{unicode-math}
+\setmathfont{STIX Two Math}
+
+% --- Layout ---
+\usepackage[margin=2cm, top=2cm, bottom=2.5cm]{geometry}
+\usepackage{microtype}
+\usepackage{parskip}
+\setlength{\parskip}{0.6em}
+\setlength{\parindent}{0pt}
+
+% --- Typography and links ---
+\usepackage[colorlinks=true, linkcolor=NavyBlue, urlcolor=NavyBlue, citecolor=NavyBlue]{hyperref}
+\usepackage{xcolor}
+\usepackage[dvipsnames]{xcolor}
+
+% --- Math and tables ---
+\usepackage{amsmath}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{tabularx}
+\usepackage{graphicx}
+\graphicspath{{figures/week07/}}
+\newcommand{\thead}[1]{\textbf{#1}}
+
+% --- Lists ---
+\usepackage{enumitem}
+\setlist[itemize]{leftmargin=1.5em, itemsep=0.2em, topsep=0.3em}
+\setlist[enumerate]{leftmargin=1.5em, itemsep=0.2em, topsep=0.3em}
+
+% --- Boxed callouts ---
+\usepackage[most]{tcolorbox}
+\tcbuselibrary{breakable, skins, theorems}
+
+% Color palette
+\definecolor{defBg}{HTML}{EAF2FB}
+\definecolor{defBd}{HTML}{1F4E79}
+\definecolor{exBg}{HTML}{F4F4F4}
+\definecolor{exBd}{HTML}{555555}
+\definecolor{tipBg}{HTML}{E8F5E9}
+\definecolor{tipBd}{HTML}{2E7D32}
+\definecolor{trapBg}{HTML}{FCE4EC}
+\definecolor{trapBd}{HTML}{AD1457}
+\definecolor{pitBg}{HTML}{FFF8E1}
+\definecolor{pitBd}{HTML}{B27600}
+\definecolor{noteBg}{HTML}{F3E5F5}
+\definecolor{noteBd}{HTML}{6A1B9A}
+\definecolor{tldrBg}{HTML}{E1F5FE}
+\definecolor{tldrBd}{HTML}{0277BD}
+
+\newtcolorbox{defbox}[1][]{enhanced, breakable, colback=defBg, colframe=defBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={Definition: #1}}
+\newtcolorbox{exbox}[1][]{enhanced, breakable, colback=exBg, colframe=exBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={Worked example: #1}}
+\newtcolorbox{exambox}[1][]{enhanced, breakable, colback=tipBg, colframe=tipBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={Exam-mode answer #1}}
+\newtcolorbox{trapbox}[1][]{enhanced, breakable, colback=trapBg, colframe=trapBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={MCQ trap #1}}
+\newtcolorbox{pitfallbox}[1][]{enhanced, breakable, colback=pitBg, colframe=pitBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={Pitfall #1}}
+\newtcolorbox{notebox}[1][]{enhanced, breakable, colback=noteBg, colframe=noteBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={Lecturer aside #1}}
+\newtcolorbox{tldrbox}[1][]{enhanced, breakable, colback=tldrBg, colframe=tldrBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={TL;DR #1}}
+
+\usepackage{titlesec}
+\titleformat{\section}[block]{\Large\bfseries\color{defBd}}{\thesection.}{0.6em}{}
+\titleformat{\subsection}[block]{\large\bfseries\color{defBd!80!black}}{\thesubsection}{0.5em}{}
+\titleformat{\subsubsection}[block]{\normalsize\bfseries}{}{0pt}{}
+\titlespacing*{\section}{0pt}{1.6em}{0.6em}
+\titlespacing*{\subsection}{0pt}{1.2em}{0.4em}
+
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small CM52054 — Week 7}
+\fancyhead[R]{\small Optimisation Basics 1}
+\fancyfoot[C]{\small\thepage}
+\renewcommand{\headrulewidth}{0.3pt}
+
+\newcommand{\examflag}{\textcolor{tipBd}{\textbf{[EXAM]}}\,}
+\newcommand{\trapflag}{\textcolor{trapBd}{\textbf{[TRAP]}}\,}
+\newcommand{\doflag}{\textcolor{defBd}{\textbf{[DO]}}\,}
+
+\title{\vspace{-1cm}{\Huge\bfseries Week 7 — Optimisation Basics 1} \\[0.4em]{\large Convexity, search families, the gradient-descent skeleton, partial derivatives, gradient, Hessian}}
+\author{\large CM52054 Foundational Machine Learning \\[0.2em]\normalsize University of Bath \,$\cdot$\, Dr Wenbin Li}
+\date{Revision notes}
+
+\begin{document}
+
+\maketitle
+\thispagestyle{empty}
+
+\vspace{1em}
+
+\begin{tldrbox}
+\begin{itemize}[leftmargin=*]
+  \item ML \emph{is} optimisation: every model fits by minimising some loss $L(\boldsymbol\theta)$. Week 7 sets up the language; Weeks 8 and 9 instantiate it for linear regression with gradient descent (1st order) and Newton's method (2nd order).
+  \item A function is \textbf{convex} if every chord lies above the graph: any local minimum is the global minimum, so an optimiser that can find a local min is guaranteed correct. Real-world losses are usually \textbf{non-convex}, so the working strategy is ``perform convex within non-convex'' — assume each local region behaves convexly and accept the resulting local optimum.
+  \item Four families of optimisers: \textbf{(1) brute-force / exhaustive search} (try everything; explodes combinatorially — $4^4 = 256$ for 4-queens, $64^{64}\!\approx\!10^{115}$ at scale); \textbf{(2) random / grid search} (sample the space; cheaper but no optimality guarantee); \textbf{(3) numerical / meta-heuristic methods} (simulated annealing, particle swarm, MCMC — controlled-randomness approximators); \textbf{(4) gradient-based search} (use derivative information to pick a direction).
+  \item The \textbf{generic iterative optimisation loop}: $t \leftarrow 0$, initial guess $\mathbf{x}_t$; while not terminated: pick direction $\mathbf{p}_t$, pick step size $\alpha_t$, update $\mathbf{x}_{t+1} = \mathbf{x}_t + \alpha_t\mathbf{p}_t$, $t \leftarrow t+1$. Three design choices: \textbf{direction, step size, termination}.
+  \item In gradient descent, $\mathbf{p}_t = -\nabla f(\mathbf{x}_t)$ — the negative gradient is the direction of steepest \emph{descent}. The minus sign matters: gradient points uphill, you go downhill.
+  \item Termination conditions are not unique. Three common ones: \textbf{maximum iterations} reached, \textbf{gradient $\approx 0$} (you have arrived at a stationary point), or \textbf{progress $\|\mathbf{x}_{t+1} - \mathbf{x}_t\|$ tiny} (you stopped moving). Combine them in priority order; ``either condition fires'' is the typical implementation.
+  \item Mathematical infrastructure: \textbf{partial derivative} ($\partial f/\partial x_i$ holds the other variables fixed); \textbf{gradient} $\nabla f(\mathbf{x}) = [\partial f/\partial x_1, \ldots, \partial f/\partial x_n]^\top$ assembles them as a vector pointing in the direction of fastest \emph{increase}; \textbf{Hessian} $\mathbf{H}$ is the matrix of second partials, symmetric for twice-continuously differentiable $f$, and is what Week 9's Newton's method consumes.
+  \item \examflag{}Question 3 of the past paper is built directly on this material — gradient derivation, the SGD update form, when Newton's method applies, $\lambda$ scaling with sample size $N$. Make these reflexive.
+\end{itemize}
+\end{tldrbox}
+
+% =====================================================================
+\section{What ``optimisation'' means here}
+
+\subsection{ML reduces to optimisation}
+
+Every supervised model — decision trees, linear regression, logistic regression, SVMs, neural networks — has the same skeleton:
+
+\begin{enumerate}
+  \item Pick a parametric family of functions $f_{\boldsymbol\theta}(\mathbf{x})$ (a tree of fixed depth, a linear hyperplane, a network of fixed architecture).
+  \item Pick a \textbf{loss function} $L(\boldsymbol\theta)$ that scores how badly $f_{\boldsymbol\theta}$ fits the data.
+  \item \textbf{Minimise} $L(\boldsymbol\theta)$ over $\boldsymbol\theta$ to recover the parameters.
+\end{enumerate}
+
+Step 3 is optimisation. Everything in this lecture pair is the language and the toolkit for step 3. The lecturer makes a point of this: ``optimisation is the gap between data and model — minimising the gap finds the best abstracted representation of the data.''
+
+This is why the optimisation block sits at the start of the second half of the unit: it is the engine that powers the regression methods (Weeks 8, 10), regularised methods (Week 21), and SVMs (Weeks 25--29) that follow.
+
+\begin{notebox}[: three-week roadmap]
+Wenbin announces the structure on slide 6: \emph{Week 7} introduces optimisation, runs through simple 1D and 2D examples, and reviews the maths (partial derivatives, gradient, Hessian). \emph{Week 8} solves a linear regression problem analytically and via 1st-order steepest gradient descent. \emph{Week 9} swaps in Newton's method (2nd-order) and discusses optimiser variants (SGD, mini-batch). Treat Weeks 7--9 as a single arc when revising.
+\end{notebox}
+
+\subsection{The intuition: finding the biggest apple}
+
+The framing example throughout the lecture is: \emph{how do you find the biggest apple on a tree?} If the only attribute is size, the search space is one-dimensional and the loss surface (size flipped to ``minimise distance from largest'') is a smooth, single-bowl shape — convex. A computer can solve this trivially.
+
+Add attributes — colour, position, ripeness — and the surface becomes high-dimensional and bumpy. A human can eyeball ``the highest point'' on a 3D plot, but a computer can only see the function value at points it has explicitly evaluated. This is the asymmetry that motivates everything in the lecture: \textbf{the optimiser only ever sees a small local neighbourhood and must decide where to look next.}
+
+\subsection{Convex vs.\ non-convex}
+
+\begin{defbox}[Convex function]
+A function $f : \mathbb{R}^n \to \mathbb{R}$ is \textbf{convex} if for every pair of points $\mathbf{x}, \mathbf{y}$ in its domain and every $\lambda \in [0,1]$,
+\[
+f(\lambda \mathbf{x} + (1-\lambda)\mathbf{y}) \;\le\; \lambda f(\mathbf{x}) + (1-\lambda) f(\mathbf{y}).
+\]
+Geometrically: the chord joining $(\mathbf{x}, f(\mathbf{x}))$ and $(\mathbf{y}, f(\mathbf{y}))$ lies on or above the graph of $f$. \textbf{Strictly convex} replaces $\le$ with $<$ for $\lambda \in (0,1)$ and $\mathbf{x}\ne\mathbf{y}$.
+\end{defbox}
+
+\textbf{Why convexity matters.} If $f$ is convex, then \emph{every local minimum is the global minimum} — the bowl has only one bottom. Any algorithm that descends to a stationary point recovers the unique optimum. Strict convexity additionally guarantees the optimum is \emph{unique} (there is one and only one $\boldsymbol\theta^*$).
+
+\textbf{What real ML problems look like.} Most non-trivial loss surfaces in ML are non-convex: deep networks, mixtures, structured models, anything with hidden variables. A non-convex surface has multiple peaks and valleys; a gradient-based optimiser starting at point $A$ may settle at a different local minimum than one starting at point $B$.
+
+\begin{tabularx}{\linewidth}{@{}lXX@{}}
+\toprule
+\thead{Aspect} & \thead{Convex problem} & \thead{Non-convex problem} \\
+\midrule
+Local min & is the global min          & may be a worse-than-global trap \\
+Initial guess matters? & No — same answer every time & Yes — different starts can give different answers \\
+Theory       & well-developed, clean guarantees & no general theory; case-by-case heuristics \\
+Typical strategy & Run any descent method to convergence & ``Perform convex within non-convex'': split the surface, treat each region as if convex, accept local optimum \\
+\bottomrule
+\end{tabularx}
+
+\begin{center}
+
+\footnotesize\textit{Non-convex (left) vs convex (right) loss surfaces rendered as 3D energy landscapes. The \textbf{non-convex} surface has multiple peaks, ridges, and valleys --- a gradient-based optimiser starting in the wrong basin can settle at a local minimum far from the best solution. The \textbf{convex} surface (labelled ``The biggest apple'') has a single bowl with one unambiguous bottom; any descent method that reaches a stationary point is guaranteed to have found the global optimum. This contrast is why the lecture distinguishes convex and non-convex problems before introducing any algorithm. \textit{Photo credit: Mathworks.}}
+\end{center}
+
+\examflag{}A common true/false claim in past papers is ``for convex problems, batch gradient descent with the right step size is guaranteed to converge to the global optimum, whereas SGD is not.'' The first half is true — convexity plus an appropriate step size is enough for batch GD. The second half is more subtle: SGD can also converge in expectation under decreasing step sizes, but the answer the marker wants here is \emph{true} as stated, because the question explicitly says ``guaranteed to eventually converge.''
+
+\begin{pitfallbox}[: ``convex'' is about the loss surface, not the data]
+Students often confuse the convexity of the data distribution (irrelevant) with the convexity of $L(\boldsymbol\theta)$ as a function of $\boldsymbol\theta$ (the only thing that matters for optimisation). Linear regression with a quadratic loss is \emph{always} convex in $\boldsymbol\theta$, regardless of how the data are distributed. Logistic regression's negative log-likelihood is also convex in $\boldsymbol\theta$. Neural networks are not.
+\end{pitfallbox}
+
+% =====================================================================
+\section{Four families of optimisation methods}
+
+The lecturer enumerates four broad families before zeroing in on gradient-based search. The list itself is examinable: \examflag{}question 2 of the practice exercise asks ``name four broad ways to obtain solutions to optimisation problems discussed in the lecture.''
+
+\begin{enumerate}
+  \item \textbf{Naive exhaustive search} (brute force).
+  \item \textbf{Random / grid search.}
+  \item \textbf{Numerical approximations / meta-heuristic methods} (simulated annealing, genetic / particle swarm / ant colony, MCMC).
+  \item \textbf{Gradient-based direction search} — 1st order (gradient descent) and 2nd order (Newton's method).
+\end{enumerate}
+
+\subsection{Brute force / exhaustive search}
+
+\begin{defbox}[Brute force]
+Generate \emph{every} possible candidate solution and evaluate the objective at each one. Return the best.
+\end{defbox}
+
+\textbf{When it works.} The candidate set is small and discrete. Sorting apples by size to find the biggest is a brute-force search.
+
+\textbf{Why it doesn't scale.} The lecturer's running example is the $N$-queens problem on an $N\times N$ board. Place $k$ queens on a $k \times k$ board so no queen attacks any other. Naive enumeration (try every assignment of queens to squares) gives $k^{k^2}$ candidates: at $k=4$ this is $4^{16} = 4{,}294{,}967{,}296$, and even with the trivial pruning ``one queen per column'' it's $k^k$ which is $4^4 = 256$. At $k=8$ it's $8^8 \approx 1.7\times 10^7$. At $k=64$ it is $64^{64}\!\approx\!10^{115}$ — far beyond any feasible computation. \textbf{Exhaustive search is rarely usable beyond toy problems.}
+
+\subsection{Random search vs.\ grid search}
+
+When evaluating every point is too expensive, evaluate only a \emph{sample} of points. Two sampling strategies:
+
+\begin{itemize}
+  \item \textbf{Grid search}: lay points on a uniform lattice across the search space. Predictable coverage; easy to reason about.
+  \item \textbf{Random search}: sample points uniformly at random. Unpredictable, but with a useful property in high dimensions (see below).
+\end{itemize}
+
+\begin{notebox}[: when does random beat grid?]
+\examflag{}Practice question 5: ``when might random search outperform grid search?'' The lecturer's answer: when the problem has \emph{some inputs that matter much more than others}. With a grid, you waste evaluations along axes that don't affect the loss — every point at a given level of the unimportant axis tests the same level of the important axis. With random sampling, every point gives a fresh value of every axis, so a fixed budget covers the important axis much more densely. The classic Bergstra--Bengio (2012) figure on slide 10 illustrates this: a $9$-point grid only tests three distinct values of the important parameter, whereas a $9$-point random sample tests nine.
+\end{notebox}
+
+\begin{center}
+
+\footnotesize\textit{Grid search (left) vs random search (right) over a 2D parameter space where only one axis (horizontal, ``Important parameter'') meaningfully affects the loss --- illustrated by the green peak running along the top of that axis. \textbf{Grid layout}: 9 evaluations on a $3\times3$ grid test only \emph{three} distinct values of the important parameter (one per column). \textbf{Random layout}: 9 randomly placed evaluations test up to \emph{nine} distinct values of the important parameter, giving a much denser probe of the axis that actually matters. This is the Bergstra--Bengio (2012) result the lecturer cites: random search wins whenever important and unimportant parameters coexist, which is almost always. \textit{Photos from Wikipedia.}}
+\end{center}
+
+\textbf{Trade-off.} Sampling methods are a budget-vs-guarantee bargain: you save evaluations but \emph{cannot guarantee} you find the optimum. The denser your sampling, the closer to brute force you get; the sparser, the cheaper, but with more risk of missing the peak.
+
+\subsection{Numerical / meta-heuristic methods}
+
+These are \emph{controlled-randomness} algorithms inspired by physical or biological processes. The lecturer covers three at a high level — you should be able to describe each one in one or two sentences but you are not asked to derive them.
+
+\subsubsection*{Simulated annealing}
+
+\begin{defbox}[Annealing (the physical process)]
+A heat treatment in which a material is heated to a high temperature and then cooled slowly. The high temperature lets atoms move freely and fill defects in the crystal lattice; the slow cool lets them settle into a low-energy, stable configuration.
+\end{defbox}
+
+\begin{defbox}[Simulated annealing (the optimisation algorithm)]
+An iterative method that maintains a candidate solution $\mathbf{x}_t$ and at each step proposes a random perturbation. The size of the perturbation is governed by a temperature parameter $T_t$ that starts large and decreases over time. Early iterations make big jumps and tolerate uphill moves (escaping local minima); late iterations make small jumps and effectively only accept downhill moves (settling into a basin).
+\end{defbox}
+
+\begin{center}
+
+\footnotesize\textit{The physical annealing process (top) and its algorithmic analogue (bottom). \textbf{Top schematic}: a steel sheet passes through heating and controlled cooling stages --- the high-temperature ``anneal'' phase lets atoms rearrange and remove dislocations, while slow cooling locks in a low-energy crystal structure. \textbf{Bottom graph}: the temperature schedule $T_t$ decreases over time (left curve). At high $T$ (early), the loss surface sampled by the algorithm is rough with many minima (top-right inset); as $T$ falls the effective surface smooths out (middle inset) until at low $T$ the algorithm commits to a single basin (bottom-right inset). Reading across: high temperature $=$ explore widely and accept uphill moves; low temperature $=$ exploit the current basin and only accept downhill moves.}
+\end{center}
+
+\textbf{Why mimic annealing?} Local search alone gets stuck in local minima. Allowing occasional uphill moves at high temperature lets the algorithm climb out of shallow basins; cooling then enforces commitment.
+
+\textbf{Two parameters.} Number of particles (or restarts) and the temperature schedule. \examflag{}Practice question 4: ``in one sentence, what is simulated annealing trying to mimic and why?'' Answer: \emph{the heating-and-cooling of a metal, in order to escape local minima early on and settle into a deep basin late.}
+
+\subsubsection*{Particle swarm}
+
+A population of candidate solutions (``particles'') is scattered through the search space. Each particle moves and shares information with its neighbours; if any particle has found a better point, the others bias their movement toward that direction. The optimum emerges from the collective.
+
+The lecturer admits ``the maths is quite complex'' and does not derive it; the conceptual point is that local information shared across a population can outperform a single greedy walk.
+
+\subsubsection*{Markov Chain Monte Carlo (MCMC)}
+
+\begin{defbox}[Markov chain]
+A sequence of random states $X_0, X_1, X_2, \ldots$ in which the next state depends \emph{only} on the current state, not on the entire history. Memoryless.
+\end{defbox}
+
+MCMC walks a Markov chain whose long-run distribution of visit frequencies is the (unknown) target distribution. After many steps, the histogram of visited points approximates the target. Useful when the target distribution is a black box you can only sample from. Common in robotics for state estimation; in ML for Bayesian inference (Week 10 will lean on the same intuition).
+
+\textbf{Cost.} ``Properly hours of time'' (the lecturer) — a single chain of a million steps converges slowly. Modern variants use multiple chains in parallel.
+
+\subsection{Gradient-based direction search}
+
+The fourth family is the focus of the rest of the unit, and of the next two weeks.
+
+\begin{defbox}[Gradient-based direction search]
+An iterative optimiser that uses the \emph{gradient} (or higher derivatives) of $f$ at the current point to choose a direction of motion guaranteed to decrease $f$ locally. \emph{First-order} methods use only $\nabla f$ (gradient descent); \emph{second-order} methods use $\nabla f$ and the Hessian $\mathbf{H}$ (Newton's method, Week 9).
+\end{defbox}
+
+\examflag{}Practice question 3: ``what does gradient-based direction search mean? Give two examples.'' Answer: \emph{at each iteration, compute the gradient of the loss at the current point and use it to choose a descent direction. Examples: gradient descent (1st order, uses $\nabla L$); Newton's method (2nd order, uses $\nabla L$ and $\mathbf{H}$).}
+
+\begin{tabularx}{\linewidth}{@{}lXX@{}}
+\toprule
+\thead{Family} & \thead{Strength} & \thead{Weakness} \\
+\midrule
+Brute force & Guaranteed optimal & Combinatorial blow-up \\
+Random / grid & Cheap, parallel-friendly & No optimum guarantee \\
+Annealing / swarm / MCMC & Escapes local minima; works on black-box objectives & Slow; many parameters; stochastic \\
+Gradient-based & Fast, principled, scales to high dim & Needs differentiable $f$; gets stuck in local minima for non-convex \\
+\bottomrule
+\end{tabularx}
+
+% =====================================================================
+\section{The generic iterative optimisation loop}
+
+This is the single most examinable abstraction in Week 7. \examflag{}Practice question 6 asks for it verbatim. The past paper's question 3 is built around its specialisation to gradient descent.
+
+\begin{defbox}[Generic iterative optimisation loop]
+\begin{enumerate}
+  \item Initialise: $t \leftarrow 0$; pick an initial guess $\mathbf{x}_t$.
+  \item While the termination condition is not met:
+  \begin{enumerate}
+    \item Find a direction $\mathbf{p}_t$ to move.
+    \item Decide a step size $\alpha_t$ along $\mathbf{p}_t$.
+    \item Update $\mathbf{x}_{t+1} = \mathbf{x}_t + \alpha_t \mathbf{p}_t$.
+    \item $t \leftarrow t+1$.
+  \end{enumerate}
+\end{enumerate}
+\end{defbox}
+
+Memorise the four-line core. Every gradient-based optimiser in the unit is a specific choice of \textbf{$\mathbf{p}_t$}, \textbf{$\alpha_t$}, and \textbf{termination}.
+
+\subsection{Three design questions}
+
+\begin{enumerate}
+  \item \textbf{Which direction?} For gradient descent, $\mathbf{p}_t = -\nabla f(\mathbf{x}_t)$. The minus sign is critical: $\nabla f$ points in the direction of fastest \emph{increase}, so the negative gradient is the direction of fastest \emph{decrease}. For Newton's method (Week 9), $\mathbf{p}_t = -\mathbf{H}^{-1}\nabla f(\mathbf{x}_t)$.
+  \item \textbf{How big a step?} The step size $\alpha_t$ (also called \textbf{learning rate}) is a scalar that you set or schedule. Too big and you overshoot the minimum and oscillate; too small and convergence is glacial. Adaptive step sizes (Wk 8 / Wk 9) reduce $\alpha_t$ as you approach the minimum.
+  \item \textbf{When to stop?} Three standard termination rules, often combined:
+    \begin{itemize}
+      \item \textbf{Maximum iterations}: $t \ge T_{\max}$. Always include this as a safety net.
+      \item \textbf{Gradient near zero}: $\|\nabla f(\mathbf{x}_t)\| \le \epsilon_g$. You have arrived at a stationary point.
+      \item \textbf{Progress near zero}: $\|\mathbf{x}_{t+1} - \mathbf{x}_t\| \le \epsilon_x$, or equivalently $\alpha_t \|\mathbf{p}_t\| \le \epsilon_x$. You have stopped moving.
+    \end{itemize}
+    \examflag{}Practice question 7 asks for two such conditions. Practice question 11 asks how to combine them: typically \emph{either-or} (stop when any one fires) with maximum iterations as the outermost guard.
+\end{enumerate}
+
+\begin{pitfallbox}[: ``stopped moving'' $\ne$ ``found the minimum'']
+Progress-based termination ($\|\mathbf{x}_{t+1} - \mathbf{x}_t\|$ small) is necessary but not sufficient for being at a minimum. If $\alpha_t$ is shrinking adaptively, the update can be tiny even when the gradient is still appreciable. Always pair progress-based stopping with a gradient check, or you will declare convergence when you haven't actually found a stationary point.
+\end{pitfallbox}
+
+% =====================================================================
+\section{The 1D walkthrough — building intuition step by step}
+
+Slides 17--29 walk through gradient descent on a 1D convex function step by step. The key conceptual lesson is what the optimiser \emph{sees}.
+
+\subsection{Setup}
+
+The objective is $f : \mathbb{R} \to \mathbb{R}$, drawn as a smooth bowl. The true optimum sits at $x_*$ at the bottom. The optimiser starts at some initial guess $x_0$ on the side of the bowl.
+
+\textbf{Crucial constraint.} The optimiser cannot see the whole curve — it only knows $f$ at the points it has explicitly evaluated. The picture in your head should be a foggy landscape where you can probe a small neighbourhood of your current position but everything beyond is hidden.
+
+\begin{center}
+
+\footnotesize\textit{A 1D convex objective $f(\mathbf{x})$ (blue curve). The horizontal axis is the parameter $\mathbf{x}$; the vertical axis is the function value. The dotted lines mark the \textbf{global optimum} $\mathbf{x}_*$ with optimal value $f(\mathbf{x}_*)$. This is the ``oracle view'' --- a human looking at the full curve can immediately identify $\mathbf{x}_*$, but the optimiser only probes the curve at explicitly evaluated points. Every algorithm in this section is trying to find $\mathbf{x}_*$ without access to the full picture.}
+\end{center}
+
+\subsection{One iteration}
+
+At $x_0$, the optimiser inspects the function in a tiny neighbourhood $x_0 \pm \delta$. Three pieces of information come out:
+
+\begin{itemize}
+  \item $f(x_0 + \delta) > f(x_0)$ — moving right increases $f$.
+  \item $f(x_0 - \delta) < f(x_0)$ — moving left decreases $f$.
+  \item Therefore the descent direction is to the left.
+\end{itemize}
+
+In the limit $\delta \to 0$, this look-around \emph{is} the derivative:
+\[
+f'(x_0) \;=\; \lim_{\delta \to 0} \frac{f(x_0 + \delta) - f(x_0)}{\delta}.
+\]
+Sign of $f'(x_0)$ determines direction: positive means the function rises to the right, so go left; negative means it rises to the left, so go right. \textbf{This is why gradient descent uses $-f'$:} the negation flips the ``where the function rises'' to ``where it falls.''
+
+\subsection{The trajectory}
+
+Starting from $x_0$ and applying the loop, the iterates trace
+\[
+x_0 \;\to\; x_1 \;\to\; x_2 \;\to\; x_3 \;\to\; \cdots \;\to\; x_t
+\]
+moving toward the bottom of the bowl. Two qualitative observations:
+
+\begin{enumerate}
+  \item \textbf{Direction may flip near the optimum.} If $\alpha$ is fixed and not too small, $x_2$ may overshoot the minimum and end up on the other side, after which $x_3$ moves back. This is the canonical zig-zag of fixed-step gradient descent.
+  \item \textbf{Progress slows near the optimum.} As $|f'(x_t)|$ decreases, each step is shorter (because $\Delta x_t = -\alpha f'(x_t)$). At the minimum $f'(x_*) = 0$ and the algorithm stalls — that is precisely the \emph{gradient-near-zero} termination condition firing.
+\end{enumerate}
+
+\examflag{}For a convex 1D function with appropriate $\alpha$, the iterates converge: $x_t \to x_*$, the global minimum.
+
+\begin{center}
+
+\footnotesize\textit{The 1D iterative search has converged: the orange dot sits at $\mathbf{x}_t$ on the curve, directly above the bottom of the bowl, and the label confirms \textbf{global optimum} $\mathbf{x}_t = \mathbf{x}_*$. At this point $f'(\mathbf{x}_t) \approx 0$ --- the gradient-near-zero termination condition fires --- and the algorithm stops. On a convex function this is the correct outcome; on a non-convex function the same termination could fire at a saddle point or local minimum.}
+\end{center}
+
+\begin{pitfallbox}[: gradient descent does \emph{not} ``find the minimum'' — it finds a stationary point]
+The algorithm stops when $f'(x) \approx 0$. On a convex function, the only such point is the global min. On a non-convex function, you might stop at:
+\begin{itemize}
+  \item a local minimum (a basin you got stuck in),
+  \item a saddle point (zero gradient but not a minimum),
+  \item a flat region (zero gradient that may persist for a long stretch).
+\end{itemize}
+The convexity assumption is what licenses ``stationary point $=$ global min,'' not the algorithm itself.
+\end{pitfallbox}
+
+% =====================================================================
+\section{The 2D extension — direction becomes a vector}
+
+In two or more dimensions, ``the function is increasing/decreasing'' is no longer a single sign — there are infinitely many directions to go. The role of the derivative is taken over by the \textbf{gradient vector}, which simultaneously encodes \emph{which direction increases $f$ fastest} and \emph{how steeply}.
+
+\begin{center}
+
+\footnotesize\textit{A 2D objective function shown as a \textbf{colour-coded contour map}: colour encodes function value, with dark blue the lowest (best) and yellow/green the highest. The elliptical contours reveal that the bowl is elongated --- the function decreases much faster along one axis than the other. The orange dot marks the \textbf{true global optimum} $\mathbf{x}_*$ at the centre. Unlike the 1D case, choosing a descent direction now requires a 2D vector, not just a sign --- this is exactly the role of the gradient $\nabla f(\mathbf{x})$.}
+\end{center}
+
+\subsection{From scalar derivative to gradient vector}
+
+\begin{defbox}[Partial derivative]
+For $f(\mathbf{x}) = f(x_1, \ldots, x_n)$, the partial derivative with respect to $x_i$ is
+\[
+\frac{\partial f}{\partial x_i}(\mathbf{x}) \;=\; \lim_{\Delta x_i \to 0}\frac{f(x_1, \ldots, x_i + \Delta x_i, \ldots, x_n) - f(x_1, \ldots, x_n)}{\Delta x_i},
+\]
+i.e.\ the ordinary derivative of $f$ in the $x_i$ direction with all other coordinates held fixed.
+\end{defbox}
+
+\begin{defbox}[Gradient]
+The \textbf{gradient} of $f$ at $\mathbf{x}$ is the column vector of partial derivatives:
+\[
+\nabla f(\mathbf{x}) \;=\; \left[\,\frac{\partial f}{\partial x_1},\;\frac{\partial f}{\partial x_2},\;\ldots,\;\frac{\partial f}{\partial x_n}\,\right]^{\!\top}.
+\]
+$\nabla f(\mathbf{x})$ is itself a vector field over the input space. At any point $\mathbf{x}$, $\nabla f(\mathbf{x})$ points in the direction of fastest \emph{increase} and its magnitude $\|\nabla f(\mathbf{x})\|$ equals the rate of that fastest increase.
+\end{defbox}
+
+\textbf{Why a vector?} In 1D there are only two directions; the sign of $f'$ tells you which one descends. In $n$ dimensions you need both \emph{which direction} (the unit vector $\nabla f / \|\nabla f\|$) and \emph{how steep} (the magnitude $\|\nabla f\|$). The gradient packages both.
+
+\subsection{Worked example: a simple bowl}
+
+\begin{exbox}[{$f(x_1, x_2) = x_1^2 + x_2^2$ at $\mathbf{x}_P = [2,2]^\top$}]
+\textbf{Step 1 — partial derivatives.}
+\[
+\frac{\partial f}{\partial x_1} = 2x_1, \qquad \frac{\partial f}{\partial x_2} = 2x_2.
+\]
+\textbf{Step 2 — gradient as a vector.}
+\[
+\nabla f(\mathbf{x}) = \begin{bmatrix} 2x_1 \\ 2x_2 \end{bmatrix}.
+\]
+\textbf{Step 3 — evaluate at $\mathbf{x}_P = [2,2]^\top$.}
+\[
+\nabla f(\mathbf{x}_P) = \begin{bmatrix} 4 \\ 4 \end{bmatrix}.
+\]
+\textbf{Reading the answer.} At $(2,2)$, $f$ increases fastest along the direction $[1,1]^\top/\sqrt{2}$ (45° toward the upper-right), at rate $\|\nabla f\| = \sqrt{16+16} = 4\sqrt 2$. To \emph{decrease} $f$, walk in the opposite direction — toward the origin, where the minimum sits at $\nabla f(\mathbf{0}) = \mathbf{0}$.
+\end{exbox}
+
+\doflag{}This is exactly practice question 8. Make sure you can do partial differentiation, assemble the gradient as a column vector, and evaluate it at a point without thinking.
+
+\subsection{One step of gradient descent in 2D}
+
+Continuing the same setup: $\mathbf{x}_0 = [2,2]^\top$, learning rate $\alpha = 0.1$, descent direction $\mathbf{p}_0 = -\nabla f(\mathbf{x}_0) = -[4,4]^\top$.
+
+\begin{exbox}[{One steepest-descent step on $f(x_1, x_2) = x_1^2 + x_2^2$}]
+\[
+\mathbf{x}_1 \;=\; \mathbf{x}_0 + \alpha\,\mathbf{p}_0 \;=\; \mathbf{x}_0 - \alpha\,\nabla f(\mathbf{x}_0)
+\;=\; \begin{bmatrix} 2 \\ 2 \end{bmatrix} - 0.1 \begin{bmatrix} 4 \\ 4 \end{bmatrix} \;=\; \begin{bmatrix} 1.6 \\ 1.6 \end{bmatrix}.
+\]
+\textbf{Sanity check.} $f(\mathbf{x}_0) = 4 + 4 = 8$; $f(\mathbf{x}_1) = 2.56 + 2.56 = 5.12$. The loss decreased, as required. After many such steps the iterates would walk along the line $x_1 = x_2$ toward the origin.
+\end{exbox}
+
+\doflag{}This is practice question 9. Notice that for this perfectly symmetric bowl the gradient direction always points exactly at the origin — every step lands on the line $x_1 = x_2$. For an elongated bowl (an asymmetric quadratic) the trajectory zig-zags. \emph{Newton's method (Week 9) eliminates the zig-zag for any quadratic.}
+
+\begin{center}
+
+\footnotesize\textit{The 2D gradient search has converged: the yellow dot $\mathbf{x}_t$ sits at the centre of the dark-blue region --- the global minimum --- after a sequence of iterative steps (shown as small green arrows fanning out from the converged point, indicating the near-zero gradient vectors at termination). The colour field is the same elongated bowl as before; dark blue encodes the lowest $f$ values and yellow/green the highest. Notice how the final iterates cluster tightly around $\mathbf{x}_* = \mathbf{x}_t$, confirming convergence: the gradient is essentially $\mathbf{0}$ and the progress-based termination condition also fires.}
+\end{center}
+
+\subsection{Reflex drill — gradient of a regularised quadratic loss \doflag}
+
+Past-paper Q3a hinges on this exact derivation. Memorise the pattern: \emph{matrix calculus identity, applied twice}.
+
+\begin{exbox}[{Gradient of $L(\mathbf{w}) = \|\mathbf{X}\mathbf{w} - \mathbf{y}\|^2 + \lambda\|\mathbf{w}\|^2$}]
+$\mathbf{X}$ is the $N \times D$ design matrix, $\mathbf{y}$ the $N$-vector of targets, $\mathbf{w}$ the $D$-vector of parameters. Expand the squared norms.
+\[
+L(\mathbf{w}) \;=\; (\mathbf{X}\mathbf{w}-\mathbf{y})^\top(\mathbf{X}\mathbf{w}-\mathbf{y}) + \lambda\,\mathbf{w}^\top\mathbf{w}
+            \;=\; \mathbf{w}^\top\mathbf{X}^\top\mathbf{X}\mathbf{w} - 2\,\mathbf{y}^\top\mathbf{X}\mathbf{w} + \mathbf{y}^\top\mathbf{y} + \lambda\,\mathbf{w}^\top\mathbf{w}.
+\]
+\textbf{Two identities you need.} For any symmetric $\mathbf{A}$ and any vector $\mathbf{b}$:
+\[
+\nabla_{\mathbf{w}}\bigl(\mathbf{w}^\top\mathbf{A}\mathbf{w}\bigr) = 2\mathbf{A}\mathbf{w}, \qquad
+\nabla_{\mathbf{w}}\bigl(\mathbf{b}^\top\mathbf{w}\bigr) = \mathbf{b}.
+\]
+Apply termwise:
+\begin{itemize}[leftmargin=*, itemsep=0pt, topsep=0pt]
+  \item $\nabla\!\bigl(\mathbf{w}^\top\mathbf{X}^\top\mathbf{X}\mathbf{w}\bigr) = 2\,\mathbf{X}^\top\mathbf{X}\mathbf{w}$ (using $\mathbf{A} = \mathbf{X}^\top\mathbf{X}$, symmetric by construction).
+  \item $\nabla\!\bigl(-2\,\mathbf{y}^\top\mathbf{X}\mathbf{w}\bigr) = -2\,\mathbf{X}^\top\mathbf{y}$ (using $\mathbf{b} = -2\mathbf{X}^\top\mathbf{y}$).
+  \item $\nabla\!\bigl(\mathbf{y}^\top\mathbf{y}\bigr) = \mathbf{0}$ (no $\mathbf{w}$).
+  \item $\nabla\!\bigl(\lambda\,\mathbf{w}^\top\mathbf{w}\bigr) = 2\lambda\,\mathbf{w}$.
+\end{itemize}
+\textbf{Result.}
+\[
+\boxed{\;\nabla L(\mathbf{w}) \;=\; 2\,\mathbf{X}^\top\bigl(\mathbf{X}\mathbf{w} - \mathbf{y}\bigr) + 2\lambda\,\mathbf{w}.\;}
+\]
+\textbf{Closed-form normal equations.} Set $\nabla L = 0$: $(\mathbf{X}^\top\mathbf{X} + \lambda \mathbf{I})\mathbf{w}^* = \mathbf{X}^\top\mathbf{y}$, so $\mathbf{w}^* = (\mathbf{X}^\top\mathbf{X} + \lambda \mathbf{I})^{-1}\mathbf{X}^\top\mathbf{y}$. The $\lambda \mathbf{I}$ term shifts the eigenvalues of $\mathbf{X}^\top\mathbf{X}$ upward by $\lambda$, which is what makes ridge regression numerically stable when $\mathbf{X}^\top\mathbf{X}$ is ill-conditioned.\\[0.3em]
+\textbf{Reading-back.} The data-fit gradient $2\mathbf{X}^\top(\mathbf{X}\mathbf{w}-\mathbf{y})$ pulls $\mathbf{w}$ toward the residual-minimising direction; the regularisation gradient $2\lambda\mathbf{w}$ pulls it back toward zero. The optimum balances them — exactly what Week 21's $\lambda$-vs-$N$ tuning intuition relies on.
+\end{exbox}
+
+\subsection{Local probing without a closed-form gradient}
+
+Practice question 10 highlights a real-world variant: \emph{you cannot differentiate $f$ analytically — only evaluate it at points.} The 1D look-around heuristic from slides 19--22 still works:
+
+\begin{enumerate}
+  \item At $x_t$, evaluate $f(x_t - \delta)$ and $f(x_t + \delta)$ for some small $\delta$.
+  \item If $f(x_t - \delta) < f(x_t + \delta)$, move left; otherwise move right.
+\end{enumerate}
+
+\textbf{Drawback.} You cannot guarantee a global optimum. The probe radius $\delta$ controls the trade-off:
+\begin{itemize}
+  \item Too small: very local view; long convergence; risk of missing structure.
+  \item Too large: jump over the minimum; instability; wasted evaluations.
+\end{itemize}
+This is essentially \emph{finite-difference gradient descent}, and is what optimisers fall back on when the objective is a black box (e.g.\ when $f$ is the output of a simulator or a non-differentiable model).
+
+% =====================================================================
+\section{The Hessian — what comes next}
+
+The gradient is the first-order derivative information. The \textbf{Hessian} is the second-order analogue, and Week 9 (Newton's method) needs it. We define it here so the symbol is in place when you get there.
+
+\begin{defbox}[Hessian matrix]
+For $f : \mathbb{R}^n \to \mathbb{R}$ twice continuously differentiable, the \textbf{Hessian} is the $n \times n$ matrix of second partial derivatives:
+\[
+\mathbf{H}(f(\mathbf{x})) \;=\;
+\begin{pmatrix}
+\dfrac{\partial^2 f}{\partial x_1\partial x_1} & \dfrac{\partial^2 f}{\partial x_1\partial x_2} & \cdots & \dfrac{\partial^2 f}{\partial x_1\partial x_n} \\[0.4em]
+\dfrac{\partial^2 f}{\partial x_2\partial x_1} & \dfrac{\partial^2 f}{\partial x_2\partial x_2} & \cdots & \dfrac{\partial^2 f}{\partial x_2\partial x_n} \\[0.2em]
+\vdots & \vdots & \ddots & \vdots \\[0.2em]
+\dfrac{\partial^2 f}{\partial x_n\partial x_1} & \dfrac{\partial^2 f}{\partial x_n\partial x_2} & \cdots & \dfrac{\partial^2 f}{\partial x_n\partial x_n}
+\end{pmatrix}.
+\]
+For $f$ twice continuously differentiable, the mixed partials commute (Schwarz's theorem), so $\mathbf{H}$ is \textbf{symmetric}.
+\end{defbox}
+
+Two facts to keep in mind for Week 9:
+
+\begin{enumerate}
+  \item \textbf{Symmetry matters computationally.} Symmetric matrices admit faster algorithms: Cholesky factorisation, eigen-decomposition, etc. The lecturer notes ``computers like symmetric matrices — almost 100 times faster'' than the general case.
+  \item \textbf{Curvature.} $\mathbf{H}$ encodes how the gradient itself changes — the curvature of $f$. For a convex function, $\mathbf{H}$ is positive semi-definite everywhere; for a strictly convex function, positive definite. Newton's method uses this curvature information to choose a smarter step size automatically.
+\end{enumerate}
+
+\subsection{Worked Hessian: the same bowl}
+
+\begin{exbox}[{Hessian of $f(x_1, x_2) = x_1^2 + x_2^2$}]
+$\partial^2 f / \partial x_1^2 = 2$, $\partial^2 f / \partial x_2^2 = 2$, and the mixed partials $\partial^2 f / \partial x_1 \partial x_2 = \partial^2 f / \partial x_2 \partial x_1 = 0$. So
+\[
+\mathbf{H} \;=\; \begin{pmatrix} 2 & 0 \\ 0 & 2 \end{pmatrix} \;=\; 2\mathbf{I}.
+\]
+A scalar multiple of the identity — the surface curves equally in every direction. This is why every gradient step on this bowl points cleanly at the origin.
+\end{exbox}
+
+\textbf{Forward link.} In Week 9, Newton's update rule is
+\[
+\mathbf{x}_{t+1} \;=\; \mathbf{x}_t - \mathbf{H}(\mathbf{x}_t)^{-1}\,\nabla f(\mathbf{x}_t).
+\]
+For a quadratic $f$, $\mathbf{H}$ is constant and Newton's method jumps to the minimum in \emph{one step}.
+
+% =====================================================================
+\section{Exam-mode answers}
+
+The Wk7 material maps directly to the optimisation strand of the exam: question 3 (compulsory, full optimisation derivation), parts of question 1 (true/false on convergence properties), and parts of question 2 (MCQ on optimisation factors and GD-vs-Newton trade-offs). Below are mark-style answers in the lecturer's expected style.
+
+\begin{exambox}[(MCQ): Which factors are most important in steepest-descent optimisation for linear regression? (mark all that apply)]
+\textit{Correct: \textbf{per-step optimisation direction} (you must descend), \textbf{step size} (controls overshoot/convergence speed), \textbf{termination condition} (when to stop). Size of dataset is irrelevant in the basic batch formulation — it only changes the per-step cost, not the algorithm's mechanics.}\\[0.3em]
+\textit{Marker rationale: the three knobs identified by the generic loop (direction, step size, termination) are the three answers; ``size of dataset'' is the trap distractor that confuses ``what affects the solution'' with ``what affects per-iteration cost.''}
+\end{exambox}
+
+\begin{exambox}[(True/False): For convex problems, given an appropriate batch size, batch gradient descent is guaranteed to converge to the global optimum of a loss function. Stochastic gradient descent is not.]
+\textit{\textbf{True}, as stated. Convex $L$ plus an appropriate (sufficiently small, possibly decreasing) step size yields convergence of batch GD to the unique global minimum. SGD's noise prevents \emph{deterministic} convergence — its iterates fluctuate around the optimum unless the step size is decayed appropriately. The marker is checking that you know convexity is the licence for the global guarantee, and that SGD trades a global guarantee for cheaper iterations.}
+\end{exambox}
+
+\begin{exambox}[Concept: ``Why study convex optimisation when real-world problems are non-convex?'']
+\textit{Three reasons earn full marks. (1) Convex problems have a clean theory with strong guarantees: any local minimum is global, so a descent algorithm is provably correct. (2) Non-convex problems lack such a general theory — practitioners decompose them into local convex sub-problems and apply convex tools (``perform convex within non-convex''). (3) Many ML losses are in fact convex in the parameters even when the data are arbitrary — linear and logistic regression are the central examples, so the convex toolkit covers a large part of the unit on its own.}
+\end{exambox}
+
+\begin{exambox}[{\doflag{}Compute: gradient of $f(x_1, x_2) = x_1^2 + x_2^2$ at $\mathbf{x} = (2,2)$, and one steepest-descent step with $\alpha = 0.1$.}]
+\textit{\textbf{Step 1 — partials.} $\partial f / \partial x_1 = 2x_1$, $\partial f / \partial x_2 = 2x_2$. (1 mark)}\\[0.3em]
+\textit{\textbf{Step 2 — gradient.} $\nabla f(\mathbf{x}) = [2x_1,\,2x_2]^\top$. At $(2,2)$: $\nabla f = [4,4]^\top$. (1 mark)}\\[0.3em]
+\textit{\textbf{Step 3 — descent step.} $\mathbf{x}_1 = \mathbf{x}_0 - \alpha\nabla f(\mathbf{x}_0) = [2,2]^\top - 0.1\cdot[4,4]^\top = [1.6,\,1.6]^\top$. (1 mark)}\\[0.3em]
+\textit{\textbf{Step 4 — sanity.} $f(\mathbf{x}_0) = 8$, $f(\mathbf{x}_1) = 5.12$. Loss decreased — the step is in the descent direction. (1 mark)}
+\end{exambox}
+
+\begin{exambox}[Concept: write the generic iterative optimisation loop and its three design choices.]
+\textit{\textbf{Loop.}}\\[0.2em]
+\textit{\quad 1.\ $t \leftarrow 0$; pick initial $\mathbf{x}_t$.}\\
+\textit{\quad 2.\ While termination not met:}\\
+\textit{\qquad (a) Find direction $\mathbf{p}_t$.}\\
+\textit{\qquad (b) Choose step size $\alpha_t$.}\\
+\textit{\qquad (c) $\mathbf{x}_{t+1} = \mathbf{x}_t + \alpha_t\mathbf{p}_t$.}\\
+\textit{\qquad (d) $t \leftarrow t+1$.}\\[0.2em]
+\textit{\textbf{Three design choices:} the direction (gradient descent: $-\nabla f$; Newton's: $-\mathbf{H}^{-1}\nabla f$); the step size (fixed, scheduled, or adaptive); the termination condition (max iterations, gradient $\approx 0$, or progress $\approx 0$, often combined).}
+\end{exambox}
+
+\begin{exambox}[Concept: name two termination conditions and explain the trade-off in combining them.]
+\textit{Two conditions: \textbf{maximum iteration count} ($t \ge T_{\max}$) and \textbf{gradient near zero} ($\|\nabla f(\mathbf{x}_t)\| \le \epsilon_g$).}\\[0.3em]
+\textit{Trade-off: the iteration cap is a hard wall that prevents runaway loops but may stop you before convergence; the gradient check captures convergence but cannot trigger if the step size has collapsed (you are stuck even though the gradient is still appreciable). A robust implementation combines them: the gradient check is the convergence test, the iteration cap the safety net, and a third progress check ($\|\mathbf{x}_{t+1} - \mathbf{x}_t\|$ small) catches the stuck case. Either fires \(\Rightarrow\) stop.}
+\end{exambox}
+
+% =====================================================================
+\section*{Key equations cheat sheet}
+\addcontentsline{toc}{section}{Key equations cheat sheet}
+
+\begin{tabularx}{\linewidth}{@{}lX@{}}
+\toprule
+\thead{Object} & \thead{Definition / formula} \\
+\midrule
+Convexity & $f(\lambda\mathbf{x} + (1-\lambda)\mathbf{y}) \le \lambda f(\mathbf{x}) + (1-\lambda) f(\mathbf{y})$ for $\lambda \in [0,1]$ \\
+Partial derivative & $\dfrac{\partial f}{\partial x_i} = \lim_{\Delta x_i \to 0} \dfrac{f(\ldots, x_i + \Delta x_i, \ldots) - f(\ldots, x_i, \ldots)}{\Delta x_i}$ \\[0.6em]
+Gradient & $\nabla f(\mathbf{x}) = \left[\dfrac{\partial f}{\partial x_1}, \ldots, \dfrac{\partial f}{\partial x_n}\right]^\top$ \\[0.6em]
+Hessian & $\mathbf{H}_{ij} = \dfrac{\partial^2 f}{\partial x_i \partial x_j}$; symmetric for $f \in C^2$ \\[0.6em]
+Generic update & $\mathbf{x}_{t+1} = \mathbf{x}_t + \alpha_t \mathbf{p}_t$ \\
+Gradient descent direction & $\mathbf{p}_t = -\nabla f(\mathbf{x}_t)$ \\
+Newton's direction (Wk 9) & $\mathbf{p}_t = -\mathbf{H}(\mathbf{x}_t)^{-1}\nabla f(\mathbf{x}_t)$ \\
+Termination — iter cap & $t \ge T_{\max}$ \\
+Termination — gradient & $\|\nabla f(\mathbf{x}_t)\| \le \epsilon_g$ \\
+Termination — progress & $\|\mathbf{x}_{t+1} - \mathbf{x}_t\| \le \epsilon_x$ \\
+\bottomrule
+\end{tabularx}
+
+% =====================================================================
+\section*{Pitfalls and traps consolidated}
+\addcontentsline{toc}{section}{Pitfalls and traps consolidated}
+
+\begin{itemize}
+  \item \textbf{Convexity is about $L(\boldsymbol\theta)$, not the data.} Linear regression is convex regardless of the input distribution.
+  \item \textbf{Sign of the gradient:} $\nabla f$ points uphill; you go downhill; the minus sign in $\mathbf{x}_{t+1} = \mathbf{x}_t - \alpha\nabla f$ is non-negotiable.
+  \item \textbf{Stationary point $\ne$ minimum.} On non-convex $f$, $\nabla f = \mathbf{0}$ may be a saddle, plateau, or local min. Convexity is the licence for ``stationary $\Rightarrow$ global min.''
+  \item \textbf{``Stopped moving'' $\ne$ ``converged.''} A shrinking $\alpha_t$ can fake convergence. Always pair progress-based termination with a gradient check.
+  \item \textbf{Random search beats grid search} when input dimensions vary in importance. The reverse can hold when every input matters about equally.
+  \item \textbf{Newton's method ``can be applied to any optimisation problem.''} \trapflag{}False — Newton requires twice-differentiable $f$ and an invertible Hessian. Past paper Q1.3 marks this False.
+  \item \textbf{Dataset size is not a key factor in steepest-descent for linear regression.} It changes per-step cost, not the algorithm. Past paper MCQ Q2.1 trap.
+\end{itemize}
+
+% =====================================================================
+\section*{Self-check questions}
+\addcontentsline{toc}{section}{Self-check questions}
+
+\textit{No answers given. Verb cues — \emph{describe} = define and elaborate; \emph{explain} = mechanism plus reasoning; \emph{derive} / \emph{compute} = show every step on paper; \emph{compare} = parallel structure with both differences and (sometimes) similarities.}
+
+\begin{enumerate}
+  \item Describe what makes a function convex, and explain why convexity matters to optimisation algorithms.
+  \item Explain the strategy ``perform convex within non-convex.'' Why is it the working approach in practice?
+  \item Name four families of optimisation methods covered in the lecture and give one defining strength of each.
+  \item Explain the difference between grid search and random search. Under what conditions does random search outperform grid search?
+  \item Describe simulated annealing in two sentences. What physical process is it mimicking and why?
+  \item Define the partial derivative $\partial f / \partial x_i$ and the gradient $\nabla f(\mathbf{x})$.
+  \item Compute $\nabla f$ for $f(x_1, x_2) = x_1^2 + x_2^2$ and evaluate at $\mathbf{x} = (2,2)$.
+  \item Perform one steepest-descent step on $f(x_1, x_2) = x_1^2 + x_2^2$ with $\alpha = 0.1$ starting from $(2,2)$.
+  \item Write the generic iterative optimisation loop. Identify the three design choices.
+  \item List three common termination conditions and explain why no single one suffices on its own.
+  \item Compute the Hessian of $f(x_1, x_2) = x_1^2 + x_2^2$. Explain why the Hessian is symmetric for any twice-continuously differentiable function.
+  \item Explain why the negative gradient is the direction of steepest descent (not the gradient itself).
+  \item A practitioner has a black-box objective $f$ they cannot differentiate analytically. Describe a finite-difference gradient-descent procedure they could still run, and identify two ways the choice of probe radius $\delta$ affects the result.
+  \item True or false: Newton's method can be applied to any optimisation problem. Justify your answer.
+  \item Compare batch gradient descent and stochastic gradient descent in terms of (a) computational cost per iteration and (b) convergence guarantees on convex problems.
+\end{enumerate}
+
+\end{document}

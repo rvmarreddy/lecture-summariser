@@ -1,0 +1,509 @@
+\documentclass[11pt, a4paper]{article}
+\usepackage{fontspec}\setmainfont{Helvetica Neue}\setmonofont{Menlo}
+\usepackage{unicode-math}\setmathfont{STIX Two Math}
+\usepackage[margin=2cm, top=2cm, bottom=2.5cm]{geometry}
+\usepackage{microtype}\usepackage{parskip}
+\setlength{\parskip}{0.6em}\setlength{\parindent}{0pt}
+\usepackage[colorlinks=true, linkcolor=NavyBlue, urlcolor=NavyBlue, citecolor=NavyBlue]{hyperref}
+\usepackage{xcolor}\usepackage[dvipsnames]{xcolor}
+\usepackage{amsmath}\usepackage{booktabs}\usepackage{array}\usepackage{tabularx}
+\usepackage{graphicx}
+\graphicspath{{figures/week29/}}
+\newcommand{\thead}[1]{\textbf{#1}}
+\usepackage{enumitem}
+\setlist[itemize]{leftmargin=1.5em, itemsep=0.2em, topsep=0.3em}
+\setlist[enumerate]{leftmargin=1.5em, itemsep=0.2em, topsep=0.3em}
+\usepackage[most]{tcolorbox}\tcbuselibrary{breakable, skins, theorems}
+\definecolor{defBg}{HTML}{EAF2FB}\definecolor{defBd}{HTML}{1F4E79}
+\definecolor{exBg}{HTML}{F4F4F4}\definecolor{exBd}{HTML}{555555}
+\definecolor{tipBg}{HTML}{E8F5E9}\definecolor{tipBd}{HTML}{2E7D32}
+\definecolor{trapBg}{HTML}{FCE4EC}\definecolor{trapBd}{HTML}{AD1457}
+\definecolor{pitBg}{HTML}{FFF8E1}\definecolor{pitBd}{HTML}{B27600}
+\definecolor{noteBg}{HTML}{F3E5F5}\definecolor{noteBd}{HTML}{6A1B9A}
+\definecolor{tldrBg}{HTML}{E1F5FE}\definecolor{tldrBd}{HTML}{0277BD}
+\newtcolorbox{defbox}[1][]{enhanced, breakable, colback=defBg, colframe=defBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={Definition: #1}}
+\newtcolorbox{exbox}[1][]{enhanced, breakable, colback=exBg, colframe=exBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={Worked example: #1}}
+\newtcolorbox{exambox}[1][]{enhanced, breakable, colback=tipBg, colframe=tipBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={Exam-mode answer #1}}
+\newtcolorbox{trapbox}[1][]{enhanced, breakable, colback=trapBg, colframe=trapBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={MCQ trap #1}}
+\newtcolorbox{pitfallbox}[1][]{enhanced, breakable, colback=pitBg, colframe=pitBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={Pitfall #1}}
+\newtcolorbox{notebox}[1][]{enhanced, breakable, colback=noteBg, colframe=noteBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={Lecturer aside #1}}
+\newtcolorbox{tldrbox}[1][]{enhanced, breakable, colback=tldrBg, colframe=tldrBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={TL;DR #1}}
+\usepackage{titlesec}
+\titleformat{\section}[block]{\Large\bfseries\color{defBd}}{\thesection.}{0.6em}{}
+\titleformat{\subsection}[block]{\large\bfseries\color{defBd!80!black}}{\thesubsection}{0.5em}{}
+\titleformat{\subsubsection}[block]{\normalsize\bfseries}{}{0pt}{}
+\titlespacing*{\section}{0pt}{1.6em}{0.6em}\titlespacing*{\subsection}{0pt}{1.2em}{0.4em}
+\usepackage{fancyhdr}\pagestyle{fancy}\fancyhf{}
+\fancyhead[L]{\small CM52054 — Week 29}\fancyhead[R]{\small Kernel Methods}
+\fancyfoot[C]{\small\thepage}\renewcommand{\headrulewidth}{0.3pt}
+\newcommand{\examflag}{\textcolor{tipBd}{\textbf{[EXAM]}}\,}
+\newcommand{\trapflag}{\textcolor{trapBd}{\textbf{[TRAP]}}\,}
+\newcommand{\doflag}{\textcolor{defBd}{\textbf{[DO]}}\,}
+\title{\vspace{-1cm}{\Huge\bfseries Week 29 — Kernel Methods in Machine Learning} \\[0.4em]{\large Formal kernel definition; building new kernels from old; polynomial, exponential, Gaussian; cosine kernel; comparison to deep learning}}
+\author{\large CM52054 Foundational Machine Learning \\[0.2em]\normalsize University of Bath \,$\cdot$\, Dr Rohit Babbar}
+\date{Revision notes}
+\begin{document}\maketitle\thispagestyle{empty}\vspace{1em}
+
+\begin{tldrbox}
+\begin{itemize}[leftmargin=*]
+  \item Wk29 makes the kernel notion from Wk26 rigorous and develops the \textbf{construction calculus}: which functions are kernels, and how to build new kernels from old ones.
+  \item \textbf{Formal definition} \doflag{}: $k : \mathcal{X}\times\mathcal{X} \to \mathbb{R}$ is a kernel iff there exists a feature space $\mathcal{H}$ (a Hilbert space) and a feature map $\phi : \mathcal{X} \to \mathcal{H}$ such that $k(\mathbf{x}, \mathbf{x}') = \langle\phi(\mathbf{x}), \phi(\mathbf{x}')\rangle_{\mathcal{H}}$.
+  \item \textbf{$\mathcal{X}$ doesn't need to be a vector space} — can be documents, graphs, strings, time series. Kernels generalise inner products to arbitrary input domains.
+  \item \textbf{Feature map is non-unique.} The linear kernel $k(x, x') = \langle x, x'\rangle$ admits $\phi_1(x) = x$ in $\mathcal{H}_1 = \mathbb{R}$ and $\phi_2(x) = (x, x)/\sqrt 2$ in $\mathcal{H}_2 = \mathbb{R}^2$ — both give the same kernel.
+  \item \textbf{Past paper Q2(6)}: Kernel methods can handle (a) high-dim data, (b) non-linear relationships, (c) neither, (d) both. \textbf{Answer: (d)} — both, simultaneously.
+  \item \textbf{Construction rules} \doflag{} (memorise these — used in all kernel proofs):
+  \begin{itemize}
+    \item \textbf{Positive scalar multiple}: $\alpha k$ is a kernel for $\alpha > 0$.
+    \item \textbf{Conic sum}: $\sum_j \alpha_j k_j$ is a kernel for $\alpha_j > 0$.
+    \item \textbf{Product}: $k_1 \cdot k_2$ is a kernel.
+    \item \textbf{Mapping wrap}: $\hat k(\mathbf{x}, \mathbf{x}') = f(\mathbf{x}) k(\mathbf{x}, \mathbf{x}') f(\mathbf{x}')$ is a kernel for any function $f$.
+    \item \textbf{Difference is NOT generally a kernel}: counter-example by setting $\mathbf{x} = \mathbf{x}'$.
+  \end{itemize}
+  \item \textbf{Canonical kernels and their proofs}:
+  \begin{itemize}
+    \item \textbf{Linear}: $k(\mathbf{x}, \mathbf{x}') = \langle\mathbf{x}, \mathbf{x}'\rangle$. Trivially a kernel.
+    \item \textbf{Polynomial}: $k(\mathbf{x}, \mathbf{x}') = (\langle\mathbf{x},\mathbf{x}'\rangle + c)^m$. Proof: binomial theorem expands to a conic sum of products of linear kernels.
+    \item \textbf{Cosine}: $k(x, x') = \cos(x - x') = \cos(x)\cos(x') + \sin(x)\sin(x')$. Feature map $\phi(x) = (\cos x, \sin x)$. \emph{$\cos(x + x')$ is NOT a kernel} — counter-example at $x = x' = \pi/3$.
+    \item \textbf{Exponential}: $k(\mathbf{x}, \mathbf{x}') = \exp(\langle\mathbf{x}, \mathbf{x}'\rangle)$. Proof: Taylor series of $e^z$ as a conic sum of polynomial kernels.
+    \item \textbf{Gaussian / RBF}: $k(\mathbf{x}, \mathbf{x}') = \exp(-\|\mathbf{x}-\mathbf{x}'\|^2 / 2\sigma^2)$. Proof: rewrite using $\|\mathbf{x}-\mathbf{x}'\|^2 = \|\mathbf{x}\|^2 + \|\mathbf{x}'\|^2 - 2\langle\mathbf{x}, \mathbf{x}'\rangle$, then mapping rule.
+  \end{itemize}
+  \item \textbf{Kernel methods vs deep learning}: kernels embed inputs into a fixed feature space (chosen by the practitioner). Deep nets \emph{learn} the feature representation end-to-end. ``Kernels were the backbone of ML from early 90's to about a decade ago.''
+\end{itemize}
+\end{tldrbox}
+
+% =====================================================================
+\section{Where Wk29 fits}
+
+Wk26 introduced kernels intuitively: the SVM dual depends only on $\phi(\mathbf{x}_i)^\top\phi(\mathbf{x}_j)$, so we can replace these inner products with a function $K(\mathbf{x}_i, \mathbf{x}_j)$ that computes the same value without ever forming $\phi$. Wk29 makes this rigorous and develops a construction calculus.
+
+\textbf{Why the dual — the cost of the explicit dot product.} \examflag{}The dual objective contains $\sum_{i,j}\phi(\mathbf{x}_i)^\top\phi(\mathbf{x}_j)$ over every pair of training points. Forming $\phi$ explicitly means computing a dot product in the feature space for each pair — and a nonlinear feature transformation can blow the dimensionality up enormously (e.g. $10^3 \to 10^4 \to 10^5$ dimensions, possibly a million). The cost is therefore \emph{quadratic} in the number of training points $n$ and \emph{linear} in the (possibly exploding) feature dimension. Kernels exist precisely to compute that same inner product directly via $k(\mathbf{x}_i, \mathbf{x}_j)$, without ever forming $\phi$ — this is the core ``why'' of the topic.
+
+\textbf{The $n$-vs-$d$ historical framing.} There are two scaling factors: the number of training samples $n$, and the data/feature dimensionality $d$. Decades ago $n$ was small (pre-big-data, no GPUs) — typically thousands, not millions — so the binding constraint was the high dimensionality of $\phi(\mathbf{x})$, which is exactly what kernels relieve.
+
+\textbf{The core questions Wk29 answers:}
+\begin{itemize}
+  \item What \emph{is} a kernel formally? When does a feature space $\mathcal{H}$ and feature map $\phi$ exist?
+  \item How do we build new kernels from existing ones?
+  \item How do we \emph{prove} a given function is a kernel?
+\end{itemize}
+
+\textbf{Cross-references to Wk26} (recall, do not re-derive):
+\begin{itemize}
+  \item Soft-margin SVM, hinge loss, KKT conditions — Wk26 §2--§4.
+  \item Dual SVM formulation, kernel SVM, prediction rule — Wk26 §6--§7.
+  \item Polynomial and Gaussian/RBF kernels (introduced informally) — Wk26 §7.
+\end{itemize}
+
+% =====================================================================
+\section{Formal kernel definition}
+
+\subsection{The general definition}
+
+\begin{defbox}[Kernel function]
+For a non-empty set $\mathcal{X}$, a function $k : \mathcal{X}\times\mathcal{X} \to \mathbb{R}$ is a \textbf{kernel} if there exists a \emph{feature space} $\mathcal{H}$ (a Hilbert space) and a \emph{feature map} $\phi : \mathcal{X} \to \mathcal{H}$ such that
+\[
+k(\mathbf{x}, \mathbf{x}') \;=\; \langle\phi(\mathbf{x}), \phi(\mathbf{x}')\rangle_{\mathcal{H}} \qquad \forall \mathbf{x}, \mathbf{x}' \in \mathcal{X}.
+\]
+\end{defbox}
+
+Three points to read carefully:
+\begin{itemize}
+  \item \textbf{$\mathcal{X}$ does not need to be a vector space.} It can be a set of documents, graphs, strings, images, time series — anything with a notion of ``individual instance.'' The kernel implicitly defines an inner-product structure even when no natural one exists in $\mathcal{X}$.
+  \item \textbf{$\phi$ is the feature map}, $\mathcal{H}$ the feature space.
+  \item \textbf{$\mathcal{H}$ must be a Hilbert space} — a vector space with a well-defined inner product. The technical conditions are not examinable; treat $\mathcal{H}$ as ``a vector space, possibly infinite-dimensional, in which inner products make sense.'' When $\mathcal{H}$ is infinite-dimensional the inner product is an infinite sum, and the Hilbert-space condition is precisely what guarantees that this sum converges to a finite number rather than diverging.
+\end{itemize}
+
+\begin{center}
+
+\footnotesize\textit{A dataset that illustrates why a linear decision boundary is insufficient. \textbf{Blue crosses} and \textbf{red crosses} form two classes whose boundary is a winding, nonlinear contour --- no single straight line (or hyperplane in higher dimensions) can separate them. The \textbf{green-circled points} are the support vectors: the examples lying closest to, or straddling, the decision boundary and therefore determining its shape. This is the fundamental motivation for kernel methods --- by mapping the data into a richer feature space $\mathcal{H}$ via the feature map $\phi$, a linear hyperplane in $\mathcal{H}$ can implement the curved boundary visible here.}
+\end{center}
+
+\subsection{The inner-product axioms (non-examinable, for completeness)}
+
+\begin{defbox}[Inner product --- the one examinable property]
+The lecturer states explicitly that you will \emph{not} be asked to write down the full definition of an inner product. The only property to retain is \textbf{positive definiteness}: for an inner product $\langle\cdot, \cdot\rangle : V\times V \to \mathbb{R}$,
+\[
+\langle v, v\rangle \ge 0 \quad\text{for all } v\in V, \qquad \text{with equality iff } v = \mathbf{0}.
+\]
+\end{defbox}
+
+\textbf{Examinable takeaway from this aside.} The first axiom ($\langle v, v\rangle \ge 0$) is the foundation for the ``$\mathbf{x} = \mathbf{x}'$ trick'' used to disprove proposed kernels.
+
+\subsection{The non-uniqueness of feature maps}
+
+For a given kernel, the feature map and Hilbert space are \textbf{not unique}. The simplest example: the linear kernel $k(x, x') = \langle x, x'\rangle$ on $\mathbb{R}$.
+
+\begin{exbox}[Two valid feature maps for the linear kernel]
+\textbf{Option 1.} $\phi_1(x) = x$, $\mathcal{H}_1 = \mathbb{R}$. Then $\langle\phi_1(x), \phi_1(x')\rangle = x\,x' = k(x, x')$. $\checkmark$\\[0.3em]
+\textbf{Option 2.} $\phi_2(x) = (x/\sqrt 2,\, x/\sqrt 2)$, $\mathcal{H}_2 = \mathbb{R}^2$. Then
+\[
+\langle\phi_2(x), \phi_2(x')\rangle = (x/\sqrt 2)(x'/\sqrt 2) + (x/\sqrt 2)(x'/\sqrt 2) = x x' = k(x, x'). \;\checkmark
+\]
+\end{exbox}
+
+Both feature maps yield the same kernel. \textbf{Two consequences:}
+\begin{itemize}
+  \item When asked to ``provide a feature map,'' any valid one earns marks.
+  \item Two SVMs trained with the same kernel but conceptually different $\phi$ are computationally identical.
+\end{itemize}
+
+% =====================================================================
+\section{Construction rules --- building kernels from kernels}
+
+To prove a candidate function is a kernel, you can either (a) construct an explicit feature map (rare, hard for complex kernels), or (b) build the function from known kernels using a small set of construction rules. The construction-rule approach is what the lecture emphasises.
+
+\subsection{Positive scalar multiple}
+
+\begin{defbox}[Positive scalar multiple of a kernel is a kernel]
+If $k$ is a kernel and $\alpha > 0$, then $\alpha k$ is also a kernel.
+\end{defbox}
+
+\begin{exbox}[\doflag{}Proof]
+$k(\mathbf{x}, \mathbf{x}') = \langle\phi(\mathbf{x}), \phi(\mathbf{x}')\rangle_{\mathcal{H}}$ for some $\phi, \mathcal{H}$.
+\[
+\alpha k(\mathbf{x}, \mathbf{x}') = \alpha\langle\phi(\mathbf{x}), \phi(\mathbf{x}')\rangle_{\mathcal{H}} = \langle\sqrt{\alpha}\,\phi(\mathbf{x}),\,\sqrt{\alpha}\,\phi(\mathbf{x}')\rangle_{\mathcal{H}}.
+\]
+The new feature map is $\sqrt{\alpha}\,\phi$ in the same Hilbert space.\hfill\textbf{QED}
+\end{exbox}
+
+\textbf{Why $\alpha > 0$?} If $\alpha < 0$ then $\alpha\langle\phi(\mathbf{x}), \phi(\mathbf{x})\rangle_{\mathcal{H}} \le 0$ for $\phi(\mathbf{x}) \ne \mathbf{0}$, violating positive-definiteness. \textbf{Negative-scalar multiples are not kernels.}
+
+\subsection{Conic sum (positive linear combination)}
+
+\begin{defbox}[Conic sum of kernels is a kernel]
+If $k_1, \ldots, k_K$ are kernels and $\alpha_1, \ldots, \alpha_K > 0$, then $\sum_{j=1}^K \alpha_j k_j$ is a kernel.
+\end{defbox}
+
+\begin{exbox}[\doflag{}Proof]
+Each $k_j(\mathbf{x}, \mathbf{x}') = \langle\phi_j(\mathbf{x}), \phi_j(\mathbf{x}')\rangle_{\mathcal{H}_j}$. Then
+\[
+\sum_j \alpha_j k_j(\mathbf{x}, \mathbf{x}') = \sum_j \langle\sqrt{\alpha_j}\phi_j(\mathbf{x}),\,\sqrt{\alpha_j}\phi_j(\mathbf{x}')\rangle_{\mathcal{H}_j}.
+\]
+Define the augmented feature map $\hat\phi(\mathbf{x}) = (\sqrt{\alpha_1}\phi_1(\mathbf{x}), \ldots, \sqrt{\alpha_K}\phi_K(\mathbf{x}))$ in the direct sum $\hat{\mathcal{H}} = \mathcal{H}_1 \oplus \cdots \oplus \mathcal{H}_K$. Then
+\[
+\sum_j \alpha_j k_j(\mathbf{x}, \mathbf{x}') = \langle\hat\phi(\mathbf{x}), \hat\phi(\mathbf{x}')\rangle_{\hat{\mathcal{H}}}.
+\]
+The conic sum is therefore an inner product in the concatenated feature space.\hfill\textbf{QED}
+\end{exbox}
+
+\textbf{Concatenation as direct sum.} The new feature space is a stacked vector — features of $k_1$ followed by features of $k_2$, etc. ``$\mathbb{R}^2 \oplus \mathbb{R}^1 = \mathbb{R}^3$.''
+
+\subsection{Product (without proof)}
+
+\begin{defbox}[Product of kernels is a kernel]
+If $k_1, k_2$ are kernels, then $k_1(\mathbf{x}, \mathbf{x}')\cdot k_2(\mathbf{x}, \mathbf{x}')$ is a kernel.
+\end{defbox}
+
+The lecture states this fact without proof (the proof requires tensor-product Hilbert spaces). Take it as given for construction-style problems.
+
+\subsection{Mapping wrap}
+
+\begin{defbox}[Function-times-kernel-times-function is a kernel]
+For any function $f : \mathcal{X} \to \mathbb{R}$ and any kernel $k$,
+\[
+\hat k(\mathbf{x}, \mathbf{x}') = f(\mathbf{x})\,k(\mathbf{x}, \mathbf{x}')\,f(\mathbf{x}')
+\]
+is also a kernel.
+\end{defbox}
+
+\begin{exbox}[\doflag{}Proof]
+$k(\mathbf{x}, \mathbf{x}') = \langle\phi(\mathbf{x}), \phi(\mathbf{x}')\rangle_{\mathcal{H}}$.
+\[
+f(\mathbf{x})k(\mathbf{x}, \mathbf{x}')f(\mathbf{x}') = f(\mathbf{x})\langle\phi(\mathbf{x}), \phi(\mathbf{x}')\rangle_{\mathcal{H}} f(\mathbf{x}') = \langle f(\mathbf{x})\phi(\mathbf{x}),\,f(\mathbf{x}')\phi(\mathbf{x}')\rangle_{\mathcal{H}}.
+\]
+The new feature map is $f(\mathbf{x})\phi(\mathbf{x})$ in the \emph{same} Hilbert space $\mathcal{H}$.\hfill\textbf{QED}
+\end{exbox}
+
+\textbf{Use case.} Whenever a candidate kernel can be factored as $f(\mathbf{x}) g(\langle\mathbf{x}, \mathbf{x}'\rangle, \ldots) f(\mathbf{x}')$ with $g$ already a kernel, the candidate is too. The Gaussian kernel proof below uses this trick.
+
+\subsection{Difference is not generally a kernel}
+
+\begin{defbox}[$k_1 - k_2$ is generally NOT a kernel]
+For two kernels $k_1, k_2$, the difference $k_1 - k_2$ is not necessarily a kernel.
+\end{defbox}
+
+\begin{exbox}[Counterexample sketch]
+Suppose for some $\mathbf{x}\in\mathcal{X}$, $k_1(\mathbf{x}, \mathbf{x}) - k_2(\mathbf{x}, \mathbf{x}) < 0$. (If not, swap the roles to get the inequality the other way.)\\[0.3em]
+If $k_1 - k_2$ were a kernel, there would exist $\phi$ and $\mathcal{H}$ such that
+\[
+k_1(\mathbf{x}, \mathbf{x}') - k_2(\mathbf{x}, \mathbf{x}') = \langle\phi(\mathbf{x}), \phi(\mathbf{x}')\rangle_{\mathcal{H}}.
+\]
+At $\mathbf{x} = \mathbf{x}'$, the right-hand side is $\|\phi(\mathbf{x})\|^2_{\mathcal{H}} \ge 0$ (positive-definiteness). But the left-hand side is negative — contradiction. So $k_1 - k_2$ is not a kernel for that pair.\hfill\textbf{QED}
+\end{exbox}
+
+\textbf{Memorise this trick.} The ``$\mathbf{x} = \mathbf{x}'$ argument'' is the canonical way to show a candidate is \emph{not} a kernel. We use it again to disprove $\cos(x + x')$.
+
+% =====================================================================
+\section{Canonical kernels and their proofs}
+
+\subsection{The polynomial kernel}
+
+\begin{defbox}[Polynomial kernel]
+For $\mathbf{x}, \mathbf{x}' \in \mathbb{R}^d$, $c \ge 0$, $m \ge 1$ integer:
+\[
+k(\mathbf{x}, \mathbf{x}') = (\langle\mathbf{x}, \mathbf{x}'\rangle + c)^m.
+\]
+With $m = 1, c = 0$: \textbf{linear kernel} $k(\mathbf{x}, \mathbf{x}') = \langle\mathbf{x}, \mathbf{x}'\rangle$.
+\end{defbox}
+
+\begin{exbox}[\doflag{}Proof that the polynomial kernel is a kernel]
+Apply the binomial theorem:
+\[
+(\langle\mathbf{x}, \mathbf{x}'\rangle + c)^m = \sum_{i=0}^m \binom{m}{i} c^{m-i} \langle\mathbf{x}, \mathbf{x}'\rangle^i.
+\]
+Each term consists of:
+\begin{itemize}
+  \item $\binom{m}{i} c^{m-i} \ge 0$ (positive coefficient).
+  \item $\langle\mathbf{x}, \mathbf{x}'\rangle^i$, a product of $i$ copies of the linear kernel $\langle\mathbf{x}, \mathbf{x}'\rangle$. By the product-of-kernels rule, each $\langle\mathbf{x}, \mathbf{x}'\rangle^i$ is a kernel.
+\end{itemize}
+The whole sum is a conic sum of kernels with positive coefficients, hence a kernel.\hfill\textbf{QED}
+\end{exbox}
+
+\begin{center}
+
+\footnotesize\textit{A concrete demonstration of the feature-map idea. \textbf{Left}: the original 2-D input space spanned by $x^{(1)}$ and $x^{(2)}$, where the \textbf{red} and \textbf{blue} clusters interleave and no straight line separates them. \textbf{Right}: the same data after introducing a third feature $x^{(1)} x^{(2)}$ (the product of the two original features), lifting each point into 3-D. In this richer space the two classes lie on opposite sides of the grey separating plane --- the data has become linearly separable. This is exactly what the polynomial kernel $k(\mathbf{x}, \mathbf{x}') = (\langle\mathbf{x}, \mathbf{x}'\rangle + c)^m$ achieves implicitly: the binomial expansion corresponds to the set of all monomial features up to degree $m$, so the dual SVM never needs to form $\phi(\mathbf{x})$ explicitly --- the kernel function computes the necessary inner products directly.}
+\end{center}
+
+\textbf{What the polynomial feature space concretely is.} For a 2-D input $\mathbf{x} = (x^{(1)}, x^{(2)})$, the degree-2 polynomial kernel corresponds to the explicit feature map
+\[
+\phi(\mathbf{x}) = \big(1,\; x^{(1)},\; x^{(2)},\; x^{(1)}x^{(2)},\; (x^{(1)})^2,\; (x^{(2)})^2\big).
+\]
+A degree-$m$ polynomial kernel gives all $m$-th-order \textbf{feature interactions}: for $m = 2$ these are the pairwise products and squares above; for larger $m$ the feature space contains correspondingly higher-order interactions among the input coordinates.
+
+\subsection{The cosine kernel --- and what's not a kernel}
+
+\begin{defbox}[Cosine kernel]
+For $x, x' \in \mathbb{R}$:
+\[
+k_{\text{cos}}(x, x') = \cos(x - x').
+\]
+\end{defbox}
+
+\begin{exbox}[\doflag{}Proof: cosine kernel via the cosine subtraction formula]
+Use $\cos(x - x') = \cos x\cos x' + \sin x\sin x'$:
+\[
+k_{\text{cos}}(x, x') = \cos x\cos x' + \sin x\sin x' = \langle\phi(x), \phi(x')\rangle
+\]
+with $\phi(x) = (\cos x, \sin x) \in \mathbb{R}^2$.\hfill\textbf{QED}
+\end{exbox}
+
+\textbf{Note the explicit feature map.} The cosine kernel maps the real line to the unit circle in $\mathbb{R}^2$.
+
+\textbf{Compare: $\cos(x + x')$ is NOT a kernel.}
+
+\begin{exbox}[\doflag{}Counterexample showing $\cos(x + x')$ is not a kernel]
+Set $x = x' = \pi/3$:
+\[
+\cos(x + x') = \cos(2\pi/3) = -0.5 < 0.
+\]
+But $\langle\phi(x), \phi(x)\rangle = \|\phi(x)\|^2 \ge 0$ for any feature map. Contradiction. So no feature map exists.\hfill\textbf{QED}
+\end{exbox}
+
+\textbf{The lesson.} Small algebraic differences (sum vs difference inside $\cos$) can flip a kernel into a non-kernel. The $\mathbf{x} = \mathbf{x}'$ trick disposes of candidates quickly.
+
+\subsection{The exponential kernel}
+
+\begin{defbox}[Exponential kernel]
+For $\mathbf{x}, \mathbf{x}' \in \mathbb{R}^d$:
+\[
+k_{\text{exp}}(\mathbf{x}, \mathbf{x}') = \exp(\langle\mathbf{x}, \mathbf{x}'\rangle).
+\]
+\end{defbox}
+
+\begin{exbox}[\doflag{}Proof: exponential kernel via Taylor series]
+Use $e^z = \sum_{i=0}^\infty z^i / i!$:
+\[
+\exp(\langle\mathbf{x}, \mathbf{x}'\rangle) = \sum_{i=0}^\infty \frac{\langle\mathbf{x}, \mathbf{x}'\rangle^i}{i!}.
+\]
+Each term:
+\begin{itemize}
+  \item $1/i! \ge 0$ (positive coefficient).
+  \item $\langle\mathbf{x}, \mathbf{x}'\rangle^i$ is a kernel (product of linear kernels).
+\end{itemize}
+The infinite sum is a conic sum of kernels — a kernel.\hfill\textbf{QED}
+\end{exbox}
+
+\textbf{Why this matters.} The exponential kernel feature space is the infinite-dimensional space of all polynomials in $\mathbf{x}$. The Taylor expansion makes this concrete.
+
+\subsection{The Gaussian / RBF kernel}
+
+\begin{defbox}[Gaussian / RBF kernel]
+For $\mathbf{x}, \mathbf{x}' \in \mathbb{R}^d$ and fixed bandwidth $\sigma > 0$:
+\[
+k_{\text{Gauss}}(\mathbf{x}, \mathbf{x}') = \exp\!\left(-\frac{\|\mathbf{x} - \mathbf{x}'\|^2}{2\sigma^2}\right).
+\]
+\textbf{Translation invariant} — depends only on $\mathbf{x} - \mathbf{x}'$.
+\end{defbox}
+
+\begin{exbox}[\doflag{}Proof: Gaussian kernel]
+Expand $\|\mathbf{x} - \mathbf{x}'\|^2 = \|\mathbf{x}\|^2 + \|\mathbf{x}'\|^2 - 2\langle\mathbf{x}, \mathbf{x}'\rangle$:
+\[
+\exp\!\left(-\frac{\|\mathbf{x} - \mathbf{x}'\|^2}{2\sigma^2}\right) = \exp\!\left(-\frac{\|\mathbf{x}\|^2}{2\sigma^2}\right)\cdot \exp\!\left(\frac{\langle\mathbf{x}, \mathbf{x}'\rangle}{\sigma^2}\right) \cdot \exp\!\left(-\frac{\|\mathbf{x}'\|^2}{2\sigma^2}\right).
+\]
+\textbf{Read this as a mapping wrap.} Define $f(\mathbf{x}) = \exp(-\|\mathbf{x}\|^2 / 2\sigma^2)$. The middle factor is the exponential kernel $\exp(\langle\mathbf{x}, \mathbf{x}'\rangle / \sigma^2)$ — itself a kernel by the previous proof (apply the $\sigma^{-2}$ rescaling first). So
+\[
+k_{\text{Gauss}}(\mathbf{x}, \mathbf{x}') = f(\mathbf{x})\cdot k_{\text{exp}}(\mathbf{x}, \mathbf{x}'/\sigma^2)\cdot f(\mathbf{x}').
+\]
+By the mapping-wrap rule, this is a kernel.\hfill\textbf{QED}
+\end{exbox}
+
+\textbf{The infinite feature space.} The exponential kernel's feature space is infinite-dimensional. The mapping wrap by $f$ doesn't change that. \textbf{The Gaussian kernel's feature space is therefore infinite-dimensional.} You cannot ever form $\phi(\mathbf{x})$ explicitly — but the kernel function gives you the inner product directly. This is why kernels are so powerful.
+
+\subsection{\texorpdfstring{The bandwidth $\sigma$ as a knob}{The bandwidth sigma as a knob}}
+
+\begin{tabularx}{\linewidth}{@{}lXX@{}}
+\toprule
+\thead{Bandwidth $\sigma$} & \thead{Behaviour} & \thead{SVM consequence} \\
+\midrule
+Small $\sigma$ & each training point's influence is highly localised & overfitting risk; complex, wiggly decision boundaries \\
+Large $\sigma$ & each training point's influence is broad        & under-fitting; smooth decision boundaries, more like linear \\
+\bottomrule
+\end{tabularx}
+
+\textbf{Cross-validate $\sigma$.} The bandwidth is a hyperparameter to tune, like $C$ in soft-margin SVM. ``RBF kernel with $\gamma = 0.1, C = 1$'' (where $\gamma = 1/(2\sigma^2)$) is the typical sklearn default tune-from.
+
+% =====================================================================
+\section{Comparison with deep learning --- where do the features come from?}
+
+\textbf{In an SVM with a kernel}, the feature map $\phi$ is fixed. You choose it (explicitly via $\phi$, or implicitly via the kernel) before seeing the data. The model learns a linear separator in the feature space, but the feature space is given.
+
+\textbf{In a deep network}, the feature map $\phi$ is learned end-to-end. Each layer produces a new representation; the optimisation finds a feature space in which the data is linearly separable (or at least cleanly classifiable by the final layer).
+
+\begin{tabularx}{\linewidth}{@{}lXX@{}}
+\toprule
+& \thead{Kernel SVM} & \thead{Deep neural network} \\
+\midrule
+Feature representation & fixed by kernel choice                  & learned from data \\
+Optimisation problem  & convex (QP)                               & non-convex (many local optima) \\
+Sample efficiency     & high — works on small datasets          & lower — typically needs many samples \\
+Computational scaling & $O(n^2)$ or worse in $n$ training points & $O(n)$ per pass; many passes \\
+Source of non-linearity & non-linear kernel feature map         & non-linear activation functions \\
+Era of dominance      & 1990s --- mid-2010s                       & mid-2010s --- present \\
+\bottomrule
+\end{tabularx}
+
+\textbf{Lecturer's framing.} ``In the context of SVM, the role of non-linear features (arising out of product or other similar operations) explicitly gives non-linearity. The same effect can be achieved implicitly in a computationally efficient manner by using kernels. However, the feature transformation corresponding to the above operations is fixed and is relatively hard to learn in problem-dependent manner. Deep learning is about learning feature representations as part of a non-convex problem.''
+
+\textbf{Both have their roles.} Kernel SVMs remain the dominant choice on small structured datasets (medical, financial, scientific). Deep nets dominate when massive labelled data is available (vision, language).
+
+% =====================================================================
+\section{Exam-mode answers}
+
+\begin{exambox}[{\examflag{}(MCQ Past paper Q2(6)): A major advantage of kernel methods is that they can handle: (a) high-dim data, (b) non-linear relationships, (c) neither, (d) both.}]
+\textit{\textbf{Correct: (d) Both.} Kernel methods enable both simultaneously. (a) Kernels operate in implicit feature spaces that may be high-dimensional or even infinite-dimensional (RBF) without ever explicitly forming the features. (b) The non-linear feature map $\phi$ (or equivalently the non-linear kernel function) produces non-linear decision boundaries in the original input space. (2 marks)}
+\end{exambox}
+
+\begin{exambox}[{Concept: State the formal definition of a kernel.}]
+\textit{$k : \mathcal{X}\times\mathcal{X}\to\mathbb{R}$ is a \textbf{kernel} if there exists a Hilbert space $\mathcal{H}$ (the feature space) and a function $\phi : \mathcal{X}\to\mathcal{H}$ (the feature map) such that for all $\mathbf{x}, \mathbf{x}' \in \mathcal{X}$:}
+\[
+k(\mathbf{x}, \mathbf{x}') = \langle\phi(\mathbf{x}), \phi(\mathbf{x}')\rangle_{\mathcal{H}}.
+\]
+\textit{$\mathcal{X}$ does not need to be a vector space — it can be any non-empty set (documents, graphs, strings).}
+\end{exambox}
+
+\begin{exambox}[{\doflag{}Concept: Show that the polynomial kernel $k(\mathbf{x}, \mathbf{x}') = (\langle\mathbf{x}, \mathbf{x}'\rangle + c)^m$ is a kernel.}]
+\textit{Apply the binomial theorem:}
+\[
+(\langle\mathbf{x}, \mathbf{x}'\rangle + c)^m = \sum_{i=0}^m \binom{m}{i} c^{m-i} \langle\mathbf{x}, \mathbf{x}'\rangle^i.
+\]
+\textit{The coefficient $\binom{m}{i}c^{m-i} \ge 0$ for $c \ge 0$. The factor $\langle\mathbf{x}, \mathbf{x}'\rangle^i$ is a product of $i$ copies of the linear kernel and is therefore a kernel (product of kernels rule). The whole expression is a conic sum of kernels with positive coefficients, hence a kernel.}
+\end{exambox}
+
+\begin{exambox}[{\doflag{}Concept: Show that the Gaussian kernel is a kernel.}]
+\textit{$k_{\text{Gauss}}(\mathbf{x}, \mathbf{x}') = \exp(-\|\mathbf{x}-\mathbf{x}'\|^2/2\sigma^2)$. Use $\|\mathbf{x}-\mathbf{x}'\|^2 = \|\mathbf{x}\|^2 + \|\mathbf{x}'\|^2 - 2\langle\mathbf{x}, \mathbf{x}'\rangle$:}
+\[
+k_{\text{Gauss}}(\mathbf{x}, \mathbf{x}') = \underbrace{\exp(-\|\mathbf{x}\|^2/2\sigma^2)}_{f(\mathbf{x})}\cdot \underbrace{\exp(\langle\mathbf{x}, \mathbf{x}'\rangle/\sigma^2)}_{\text{exponential kernel}}\cdot \underbrace{\exp(-\|\mathbf{x}'\|^2/2\sigma^2)}_{f(\mathbf{x}')}.
+\]
+\textit{The middle factor is the exponential kernel (a kernel by Taylor expansion of $e^z$ as a conic sum of polynomial kernels). The outer factors are the same function $f$ evaluated at $\mathbf{x}$ and $\mathbf{x}'$. By the mapping-wrap rule ($f(\mathbf{x})k(\mathbf{x},\mathbf{x}')f(\mathbf{x}')$ is a kernel), the whole expression is a kernel.}
+\end{exambox}
+
+\begin{exambox}[{\doflag{}Concept: Is $\cos(x + x')$ a kernel? Justify.}]
+\textit{\textbf{No.} Set $x = x' = \pi/3$: $\cos(x + x') = \cos(2\pi/3) = -0.5 < 0$. If $\cos(x + x')$ were a kernel, $\cos(x + x)\big|_{x = x'} = \langle\phi(x), \phi(x)\rangle = \|\phi(x)\|^2 \ge 0$. But $-0.5 < 0$, contradicting positive-definiteness of the inner product. Hence $\cos(x + x')$ is not a kernel.}
+\end{exambox}
+
+\begin{exambox}[{\doflag{}Concept: Show that $\cos(x - x')$ \emph{is} a kernel and provide an explicit feature map.}]
+\textit{Use $\cos(x - x') = \cos x \cos x' + \sin x \sin x'$. Setting $\phi(x) = (\cos x, \sin x)$ in $\mathcal{H} = \mathbb{R}^2$:}
+\[
+\langle\phi(x), \phi(x')\rangle = \cos x\cos x' + \sin x\sin x' = \cos(x - x').
+\]
+\textit{So $\cos(x - x')$ is a kernel with feature map $\phi(x) = (\cos x, \sin x)$.}
+\end{exambox}
+
+\begin{exambox}[{Concept: What construction rules can you use to combine kernels?}]
+\textit{\textbf{(1)} Positive scalar multiple: $\alpha k$ for $\alpha > 0$.}\\
+\textit{\textbf{(2)} Conic sum: $\sum_j \alpha_j k_j$ for $\alpha_j > 0$.}\\
+\textit{\textbf{(3)} Product: $k_1 \cdot k_2$.}\\
+\textit{\textbf{(4)} Mapping wrap: $f(\mathbf{x})\,k(\mathbf{x}, \mathbf{x}')\,f(\mathbf{x}')$ for any function $f : \mathcal{X}\to\mathbb{R}$.}\\[0.3em]
+\textit{\textbf{Difference is NOT generally a kernel.} Counter-example by the $\mathbf{x} = \mathbf{x}'$ trick: $k_1(\mathbf{x}, \mathbf{x}) - k_2(\mathbf{x}, \mathbf{x})$ can be negative, contradicting $\langle\phi(\mathbf{x}), \phi(\mathbf{x})\rangle \ge 0$.}
+\end{exambox}
+
+\begin{exambox}[{Concept: Compare kernel SVMs and deep neural networks on feature representation.}]
+\textit{\textbf{Kernel SVM.} Feature map $\phi$ is fixed in advance — chosen by the user (polynomial degree, RBF bandwidth, etc.). The model learns a linear separator in this fixed feature space. The optimisation is convex.}\\[0.3em]
+\textit{\textbf{Deep neural network.} The feature representation is \emph{learned} end-to-end as part of training. Each layer produces a new feature space; the final layer separates linearly in the topmost representation. The optimisation is non-convex.}\\[0.3em]
+\textit{Trade-off: kernels are sample-efficient but rely on a good fixed kernel choice; deep nets need more data but can learn problem-specific representations. Kernels dominated ML from the early 90s to the mid-2010s; deep learning since.}
+\end{exambox}
+
+% =====================================================================
+\section*{Key equations cheat sheet}
+\addcontentsline{toc}{section}{Key equations cheat sheet}
+
+\begin{tabularx}{\linewidth}{@{}lX@{}}
+\toprule
+\thead{Object} & \thead{Formula / fact} \\
+\midrule
+Kernel definition         & $k(\mathbf{x}, \mathbf{x}') = \langle\phi(\mathbf{x}), \phi(\mathbf{x}')\rangle_{\mathcal{H}}$ for some $\phi, \mathcal{H}$ \\
+Linear kernel             & $k(\mathbf{x}, \mathbf{x}') = \langle\mathbf{x}, \mathbf{x}'\rangle$ \\
+Polynomial kernel         & $k(\mathbf{x}, \mathbf{x}') = (\langle\mathbf{x}, \mathbf{x}'\rangle + c)^m$, $c \ge 0$, $m \ge 1$ \\
+Cosine kernel             & $k(x, x') = \cos(x - x')$, $\phi(x) = (\cos x, \sin x)$ \\
+NOT a kernel              & $\cos(x + x')$ — counter-example at $x = \pi/3$ \\
+Exponential kernel        & $k(\mathbf{x}, \mathbf{x}') = \exp(\langle\mathbf{x}, \mathbf{x}'\rangle)$ \\
+Gaussian / RBF kernel     & $k(\mathbf{x}, \mathbf{x}') = \exp(-\|\mathbf{x}-\mathbf{x}'\|^2 / 2\sigma^2)$ \\
+Positive scalar           & $\alpha k$ kernel for $\alpha > 0$ \\
+Conic sum                 & $\sum_j \alpha_j k_j$ kernel for $\alpha_j > 0$ \\
+Product                   & $k_1\cdot k_2$ kernel \\
+Mapping wrap              & $f(\mathbf{x})k(\mathbf{x}, \mathbf{x}')f(\mathbf{x}')$ kernel \\
+Difference                & $k_1 - k_2$ \emph{not generally} a kernel \\
+Disproof technique        & set $\mathbf{x} = \mathbf{x}'$ and check $k(\mathbf{x}, \mathbf{x}) \ge 0$ \\
+\bottomrule
+\end{tabularx}
+
+% =====================================================================
+\section*{Pitfalls and traps consolidated}
+\addcontentsline{toc}{section}{Pitfalls and traps consolidated}
+
+\begin{itemize}
+  \item \textbf{$\mathcal{X}$ is not necessarily a vector space.} Kernels work on documents, graphs, strings, time series. Don't assume Euclidean.
+  \item \textbf{Feature maps are non-unique.} Two different $\phi$ can give the same kernel. ``Provide a feature map'' has multiple valid answers.
+  \item \textbf{Negative scalar multiples are not kernels.} The proof requires $\sqrt{\alpha}$, which is real only for $\alpha \ge 0$.
+  \item \textbf{Difference is not a kernel.} The $\mathbf{x} = \mathbf{x}'$ trick disposes of this quickly.
+  \item \trapflag{}\textbf{$\cos(x + x')$ vs $\cos(x - x')$.} The first is not a kernel (sign flip at $x = \pi/3$); the second is (cosine subtraction formula). Easy to get backwards.
+  \item \textbf{Gaussian kernel's feature space is infinite-dimensional.} You cannot compute $\phi(\mathbf{x})$ explicitly — only the kernel function. This is the magic.
+  \item \textbf{Bandwidth $\sigma$ is a hyperparameter.} Must be tuned. Too small $\Rightarrow$ overfit; too large $\Rightarrow$ underfit. Cross-validate.
+  \item \textbf{Past paper Q2(6): both (a) and (b).} Don't be tempted to pick only one.
+  \item \textbf{Construction rules require the right sign.} Conic sum: $\alpha_j > 0$. Mapping wrap: $f$ can be any function (signs don't matter because $f(\mathbf{x})f(\mathbf{x}')$ pairs up symmetrically).
+  \item \textbf{Prove a candidate is a kernel} by either constructing $\phi$ explicitly or building from known kernels via construction rules. The latter is usually cleaner.
+\end{itemize}
+
+% =====================================================================
+\section*{Self-check questions}
+\addcontentsline{toc}{section}{Self-check questions}
+
+\begin{enumerate}
+  \item State the formal definition of a kernel. What conditions must $\mathcal{H}$ satisfy?
+  \item Give an example of a non-vector-space $\mathcal{X}$ on which kernels make sense.
+  \item Provide two distinct valid feature maps for the linear kernel $k(x, x') = \langle x, x'\rangle$.
+  \item State and prove the positive-scalar-multiple rule for kernels.
+  \item State and prove the conic-sum rule for kernels.
+  \item State the mapping-wrap rule (function $\times$ kernel $\times$ function) and prove it.
+  \item Show that the difference $k_1 - k_2$ is not generally a kernel. Use the $\mathbf{x} = \mathbf{x}'$ trick.
+  \item Prove that the polynomial kernel $k(\mathbf{x}, \mathbf{x}') = (\langle\mathbf{x}, \mathbf{x}'\rangle + c)^m$ is a kernel using the binomial theorem.
+  \item Prove that $\cos(x - x')$ is a kernel and provide an explicit feature map.
+  \item Prove that $\cos(x + x')$ is \emph{not} a kernel by constructing a counter-example.
+  \item Prove that the exponential kernel $\exp(\langle\mathbf{x}, \mathbf{x}'\rangle)$ is a kernel using the Taylor series of $e^z$.
+  \item Prove that the Gaussian / RBF kernel is a kernel using the decomposition $\|\mathbf{x}-\mathbf{x}'\|^2 = \|\mathbf{x}\|^2 + \|\mathbf{x}'\|^2 - 2\langle\mathbf{x}, \mathbf{x}'\rangle$ and the mapping-wrap rule.
+  \item Past paper Q2(6): kernel methods can handle (a) high-dim data, (b) non-linear relationships. Which is correct? Justify.
+  \item Compare kernel SVMs to deep neural networks on (a) feature representation source, (b) optimisation type, (c) sample efficiency.
+  \item Why is the Gaussian kernel's bandwidth $\sigma$ a hyperparameter requiring tuning? What are the consequences of $\sigma$ too small or too large?
+\end{enumerate}
+
+\end{document}

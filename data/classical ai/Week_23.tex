@@ -1,0 +1,721 @@
+\documentclass[11pt, a4paper]{article}
+
+\usepackage{fontspec}
+\setmainfont{Helvetica Neue}
+\setmonofont{Menlo}
+\usepackage{unicode-math}
+\setmathfont{STIX Two Math}
+
+\usepackage[margin=2cm, top=2cm, bottom=2.5cm]{geometry}
+\usepackage{microtype}
+\usepackage{parskip}
+\setlength{\parskip}{0.6em}
+\setlength{\parindent}{0pt}
+
+\usepackage[colorlinks=true, linkcolor=NavyBlue, urlcolor=NavyBlue, citecolor=NavyBlue]{hyperref}
+\usepackage{xcolor}
+\usepackage[dvipsnames]{xcolor}
+
+\usepackage{amsmath}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{tabularx}
+\newcommand{\thead}[1]{\textbf{#1}}
+
+% --- Graphics ---
+\usepackage{graphicx}
+\graphicspath{{figures/week23/}}
+
+\usepackage{enumitem}
+\setlist[itemize]{leftmargin=1.5em, itemsep=0.2em, topsep=0.3em}
+\setlist[enumerate]{leftmargin=1.5em, itemsep=0.2em, topsep=0.3em}
+
+\usepackage[most]{tcolorbox}
+\tcbuselibrary{breakable, skins, theorems}
+
+\definecolor{defBg}{HTML}{EAF2FB}
+\definecolor{defBd}{HTML}{1F4E79}
+\definecolor{exBg}{HTML}{F4F4F4}
+\definecolor{exBd}{HTML}{555555}
+\definecolor{tipBg}{HTML}{E8F5E9}
+\definecolor{tipBd}{HTML}{2E7D32}
+\definecolor{trapBg}{HTML}{FCE4EC}
+\definecolor{trapBd}{HTML}{AD1457}
+\definecolor{pitBg}{HTML}{FFF8E1}
+\definecolor{pitBd}{HTML}{B27600}
+\definecolor{noteBg}{HTML}{F3E5F5}
+\definecolor{noteBd}{HTML}{6A1B9A}
+\definecolor{tldrBg}{HTML}{E1F5FE}
+\definecolor{tldrBd}{HTML}{0277BD}
+
+\newtcolorbox{defbox}[1][]{enhanced, breakable, colback=defBg, colframe=defBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={Definition: #1}}
+\newtcolorbox{exbox}[1][]{enhanced, breakable, colback=exBg, colframe=exBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={Worked example: #1}}
+\newtcolorbox{exambox}[1][]{enhanced, breakable, colback=tipBg, colframe=tipBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={Exam-mode answer #1}}
+\newtcolorbox{trapbox}[1][]{enhanced, breakable, colback=trapBg, colframe=trapBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={MCQ trap #1}}
+\newtcolorbox{pitfallbox}[1][]{enhanced, breakable, colback=pitBg, colframe=pitBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={Pitfall #1}}
+\newtcolorbox{notebox}[1][]{enhanced, breakable, colback=noteBg, colframe=noteBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={Lecturer aside #1}}
+\newtcolorbox{tldrbox}[1][]{enhanced, breakable, colback=tldrBg, colframe=tldrBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={TL;DR #1}}
+
+\usepackage{titlesec}
+\titleformat{\section}[block]{\Large\bfseries\color{defBd}}{\thesection.}{0.6em}{}
+\titleformat{\subsection}[block]{\large\bfseries\color{defBd!80!black}}{\thesubsection}{0.5em}{}
+\titleformat{\subsubsection}[block]{\normalsize\bfseries}{}{0pt}{}
+\titlespacing*{\section}{0pt}{1.6em}{0.6em}
+\titlespacing*{\subsection}{0pt}{1.2em}{0.4em}
+
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small CM52078 — Week 5}
+\fancyhead[R]{\small Adversarial Search}
+\fancyfoot[C]{\small\thepage}
+\renewcommand{\headrulewidth}{0.3pt}
+
+\newcommand{\examflag}{\textcolor{tipBd}{\textbf{[EXAM]}}\,}
+\newcommand{\trapflag}{\textcolor{trapBd}{\textbf{[TRAP]}}\,}
+\newcommand{\doflag}{\textcolor{defBd}{\textbf{[DO]}}\,}
+
+\title{\vspace{-1cm}{\Huge\bfseries Week 5 — Adversarial Search} \\[0.4em]{\large Game trees, minimax, alpha-beta pruning, evaluation functions}}
+\author{\large CM52078 Classical Artificial Intelligence \\[0.2em]\normalsize University of Bath \,$\cdot$\, Dr Nadejda Roubtsova}
+\date{Revision notes}
+
+\begin{document}
+
+\maketitle
+\thispagestyle{empty}
+
+\vspace{1em}
+
+\begin{tldrbox}
+\begin{itemize}[leftmargin=*]
+  \item \textbf{Adversarial search} adds a hostile, optimal opponent. Two players (\textbf{MAX}, \textbf{MIN}), turn-taking, fully observable, zero-sum.
+  \item \textbf{Game tree:} MAX nodes (triangle up) and MIN nodes (triangle down) alternate. Leaves are \textbf{terminal states} with a known \textbf{utility} for MAX. Internal-node values come from propagating up.
+  \item \textbf{Minimax algorithm}: depth-first traversal that computes a \textbf{minimax value} for every node — MAX nodes take the max of children, MIN nodes take the min. Tells MAX both \emph{the best score achievable under optimal play} and \emph{the action to take}.
+  \item Minimax is \textbf{complete} (in finite trees) and \textbf{optimal} (assuming both players play optimally), but has \textbf{exponential time complexity} $O(b^m)$ — intractable for chess.
+  \item \textbf{Alpha-beta pruning} prunes branches whose minimax value cannot affect the root choice. Maintains two evolving bounds: $\alpha$ (``at least'' for MAX) and $\beta$ (``at most'' for MIN). Same answer as minimax, fewer nodes. With perfect move ordering, time complexity drops to $O(b^{m/2})$ — effective doubling of look-ahead depth.
+  \item \textbf{Heuristic minimax} replaces deep traversal with a \textbf{shallow tree} cut off early; leaves are scored by an \textbf{evaluation function} based on game-state features. Trades optimality for tractability.
+  \item \textbf{Look-up tables} use known openings and endgames (chess: tables for $\le 7$ pieces) to skip search at the start and end.
+  \item \textbf{Deep Blue (1997)} beat Kasparov by combining heuristic minimax (6--16 ply, up to 40 in special cases), alpha-beta pruning, an 8000-feature evaluation function, and endgame databases.
+\end{itemize}
+\end{tldrbox}
+
+% =====================================================================
+\section{Why adversarial search is different}
+
+Up to now, every search problem you've seen has had \textbf{exactly one decision maker — you.} Path-finding, 8-queens, airport placement, Sudoku: the agent's choices fully determine the trajectory through the state space. Initialisation might be random, but after that, only your actions matter.
+
+Games change this fundamentally. The state evolves under \emph{both} your actions \emph{and} those of an opponent who is \textbf{actively trying to defeat you}. The algorithms we've seen so far don't account for this.
+
+\begin{center}
+
+\footnotesize\textit{The two games used as running examples this week — noughts and crosses (tiny, fully solvable) and chess (astronomically large). What makes both \emph{adversarial} is the three bullet points: there are multiple players, the state is co-determined by the opponent, and that opponent deliberately chooses moves that improve their own position at every step. This last point is the crux: the opponent is modelled as a rational adversary, not as a fixed stochastic process — that distinction separates adversarial search from decision-making under uncertainty.}
+\end{center}
+
+\begin{defbox}[Adversarial search]
+A search problem in which state transitions are co-determined by an external agent (the \emph{opponent}) who is consciously playing against the agent we identify with. The goal is to find a strategy that performs well \emph{assuming the opponent plays optimally}.
+\end{defbox}
+
+\textbf{Key modelling assumption:} the opponent is rational and optimal, not random or stochastic. If your opponent is a non-deterministic environment (e.g.\ weather affecting state transitions but not strategising against you), that's a different topic — \emph{decision-making under uncertainty}, not adversarial search. The mathematics of MDPs handles random environments; adversarial search assumes adversarial ones.
+
+\subsection{Examples and contrast}
+
+\begin{itemize}
+  \item \textbf{Noughts and crosses} (tic-tac-toe): tiny state space ($\le 9!$ board sequences), fully solvable. With perfect play from both sides, every game ends in a draw.
+  \item \textbf{Connect Four}: state space $\sim 4 \times 10^{12}$. Solved (first player wins with perfect play) but only via heavy computation.
+  \item \textbf{Chess}: branching factor $b \approx 35$, average game length $m \approx 80$ ply. The game tree has more states than atoms in the observable universe.
+  \item \textbf{Go}: branching factor $b \approx 250$, even larger tree. Was beyond classical AI until AlphaGo (2016) used neural networks.
+\end{itemize}
+
+\begin{notebox}[: ply]
+A \textbf{ply} is one move by one player. A 2-ply game has one MAX move plus one MIN move. ``80 ply'' in chess = 40 moves per player (a typical full chess game). Don't confuse ply with rounds.
+\end{notebox}
+
+% =====================================================================
+\section{Formalising adversarial search}
+
+\subsection{The setup}
+
+\begin{defbox}[Two-player, zero-sum game]
+\begin{itemize}[leftmargin=*]
+  \item Two players: \textbf{MAX} and \textbf{MIN} (named for what they each try to do to the score).
+  \item Turn-taking: players alternate exercising one legal transition each.
+  \item Fully observable: both players see the entire state at all times. (No hidden cards, no fog of war.)
+  \item Zero-sum: gains for one player exactly balance losses for the other. (Strictly: the sum of utilities is constant — for chess, $1$ across the board, with $\frac{1}{2}/\frac{1}{2}$ for a draw and $1/0$ for a decisive result.)
+\end{itemize}
+\end{defbox}
+
+\textbf{Why these restrictions?} Each one keeps the math tractable:
+
+\begin{itemize}
+  \item Two players: minimax is symmetric. Multi-player extensions exist (max$^n$) but get messy.
+  \item Turn-taking: simultaneous-move games (rock-paper-scissors) need game-theoretic equilibria, not minimax.
+  \item Fully observable: hidden information requires belief states and partial-information games (poker).
+  \item Zero-sum: cooperative or mixed-motive games (negotiation) need different frameworks.
+\end{itemize}
+
+This week's algorithms work for the restricted case. Beyond it, AI gets more complex fast.
+
+\subsection{Components of the formalisation}
+
+\begin{itemize}
+  \item \textbf{Initial state} $s_0$ — where play begins (e.g.\ empty board).
+  \item \textbf{Terminal states} $S_T$ — the set of game-end states (win for X, win for O, draw, etc.). The terminal test tells you whether a given state is in $S_T$.
+  \item \textbf{Game tree} — a tree rooted at $s_0$ in which each node is a state, each edge an action, and leaves are terminal states.
+  \item \textbf{Utility function} $U(s_T, p)$ — a real number giving the final score of player $p$ at terminal state $s_T$. Encodes our knowledge of the game's rules.
+\end{itemize}
+
+\subsection{Utility for noughts and crosses}
+
+The lecturer's reference utility for player X (cross):
+
+\begin{exbox}[Utility values for terminal states]
+\begin{tabular}{@{}p{6cm}c@{}}
+\toprule
+\thead{Terminal state} & \thead{$U(s_T, X)$} \\
+\midrule
+X has won (three crosses in a line)        & $+1$ \\
+X has lost (three noughts in a line)       & $-1$ \\
+Draw                                       & $\phantom{+}0$ \\
+\bottomrule
+\end{tabular}\\[0.3em]
+For player O, flip the signs (this is the zero-sum property).
+\end{exbox}
+
+\begin{center}
+
+\footnotesize\textit{The three possible terminal outcomes of noughts and crosses, each scored from X's viewpoint (X is MAX here). Left: a line of three crosses, so X has won --- utility $+1$. Centre: a line of three noughts, so X has lost --- utility $-1$. Right: a full board with no line, a tie --- utility $0$. Note the utility is always defined \emph{for a named player}: flipping to O's viewpoint would negate every value, which is exactly the zero-sum property in action.}
+\end{center}
+
+The choice of $\{-1, 0, +1\}$ is conventional. Any utility scale works as long as bigger = better for MAX and smaller = better for MIN.
+
+\subsection{Game tree convention}
+
+We pick one player's perspective — by convention, \textbf{MAX} — and describe the tree from that viewpoint:
+
+\begin{itemize}
+  \item \textbf{Triangle pointing up ($\bigtriangleup$)} = MAX node (MAX picks the action).
+  \item \textbf{Triangle pointing down ($\bigtriangledown$)} = MIN node.
+  \item \textbf{Leaves (squares or terminal triangles)} = terminal states with known utilities.
+  \item Numbers next to nodes are \textbf{minimax values} — utility at terminals, ``predicted utility under optimal play'' at internal nodes.
+\end{itemize}
+
+\begin{center}
+
+\footnotesize\textit{The canonical game tree, drawn entirely from MAX's viewpoint. An \emph{upward} triangle is a MAX node (MAX chooses the action there); a \emph{downward} triangle is a MIN node. The root $A$ is a MAX node with three available actions $a_1, a_2, a_3$ leading to MIN nodes $B, C, D$; each MIN node in turn has three children. Edges are labelled with actions, the number beside each node is its minimax value, and the green box plus bold arrow flag MAX's eventual best move ($a_1$). Levels strictly alternate MAX/MIN because the players take turns. Image credit: Russell \& Norvig, AIMA (Global Edition).}
+\end{center}
+
+\textbf{Solving the game} for MAX means computing the minimax value of the root and identifying which action MAX should take to achieve it.
+
+% =====================================================================
+\section{The minimax algorithm}
+
+\subsection{The rules of optimal play}
+
+\begin{defbox}[Minimax decision rule]
+At a MAX node, MAX moves to the child with the \textbf{maximum} minimax value. At a MIN node, MIN moves to the child with the \textbf{minimum} minimax value. The minimax value of a leaf is its utility; of an internal node, the (max or min, depending on whose turn) of its children's minimax values.
+\end{defbox}
+
+\begin{center}
+
+\footnotesize\textit{The same tree, now showing where the numbers come from. The bottom row are terminal states, so their numbers are genuine utilities $U(s_T,\mathrm{MAX})$ --- the only values known up front. Every internal number is a \emph{minimax value}: the utility MAX can expect from that state \emph{assuming both sides play optimally thereafter}, obtained by propagating values upward from the leaves. The two highlighted rows make the rule visible --- the MIN row takes the minimum of each node's children ($B=3, C=2, D=2$), then the MAX root takes the maximum ($3$). Image credit: Russell \& Norvig, AIMA (Global Edition).}
+\end{center}
+
+\subsection{The algorithm}
+
+\begin{defbox}[Minimax algorithm]
+A \textbf{recursive depth-first traversal} of the game tree:
+\begin{enumerate}
+  \item If the node is terminal, return its utility.
+  \item Else if it's a MAX node, return $\max$ over children's minimax values (computed recursively).
+  \item Else (MIN node), return $\min$ over children's minimax values (computed recursively).
+\end{enumerate}
+\end{defbox}
+
+\subsubsection*{Pseudocode}
+
+\begin{exbox}[Minimax in pseudocode]
+\begin{verbatim}
+function Minimax(state):
+    if Terminal-Test(state): return Utility(state, MAX)
+    if Player(state) == MAX:
+        v <- -infinity
+        for each action in Actions(state):
+            v <- max(v, Minimax(Result(state, action)))
+        return v
+    else:  # MIN node
+        v <- +infinity
+        for each action in Actions(state):
+            v <- min(v, Minimax(Result(state, action)))
+        return v
+
+function Minimax-Decision(state):
+    return argmax_{a in Actions(state)} Minimax(Result(state, a))
+\end{verbatim}
+\end{exbox}
+
+The recursion bottoms out at terminal states. The base case is the utility lookup; everything else is just propagating min and max upward.
+
+\subsection{Worked trace: the canonical 3-children, 2-ply tree}
+
+The standard textbook example (Russell \& Norvig). MAX has three actions $a_1, a_2, a_3$ leading to MIN nodes $B$, $C$, $D$. Each MIN node has three terminal children. Utilities (left-to-right):
+\[
+B: \{3, 12, 8\}, \quad C: \{2, 4, 6\}, \quad D: \{14, 5, 2\}.
+\]
+
+\begin{exbox}[Computing minimax values bottom-up]
+\textbf{Leaves} have known utilities (above).\\[0.3em]
+\textbf{MIN nodes} take the minimum of their children:
+\[
+B = \min(3, 12, 8) = 3, \quad C = \min(2, 4, 6) = 2, \quad D = \min(14, 5, 2) = 2.
+\]
+\textbf{MAX node} (the root) takes the max:
+\[
+A = \max(B, C, D) = \max(3, 2, 2) = 3.
+\]
+\textbf{Conclusion:} the minimax value of the root is 3, so MAX should play $a_1$ (the action leading to $B$, which has minimax value 3). MAX is guaranteed at least 3 against optimal MIN play.
+\end{exbox}
+
+\begin{center}
+
+\footnotesize\textit{The minimax recursion mid-trace. Because it is depth-first, the algorithm dives to the leftmost terminal states first; the green box brackets the three children of MIN node $B$ that have just been read off. MIN node $B$ then receives value $3$ --- \emph{not} the largest child but the smallest, because MIN selects the worst outcome for MAX. The green squares mark nodes still awaiting a value. This is the key direction-of-optimisation step students most often get wrong: at a MIN node you take the minimum, even though it looks like you are throwing away a better score.}
+\end{center}
+
+\doflag{}\textbf{You should be able to do this trace from cold for any small game tree.} Past papers always include a minimax-tree question — typically 3 marks for ``what's the minimax value at the root.''
+
+\begin{center}
+
+\footnotesize\textit{The completed trace. All three MIN nodes now hold their minimax values ($B=3, C=2, D=2$), and the root MAX node takes the maximum, $\max(3,2,2)=3$, shown by the green box. The bold arrow marks the resulting decision: MAX plays $a_1$ towards $B$. Two facts to read off --- under optimal play by both sides the best MAX can guarantee is a score of $3$, and the action that secures it is $a_1$. Note $C$ and $D$ tie at $2$, but neither is chosen because $3$ dominates.}
+\end{center}
+
+\subsubsection*{Second worked example with negative values}
+
+\begin{exbox}[Minimax with mixed values]
+Tree: MAX root with two MIN children. Left MIN's children: $\{20, 0, -16, -4\}$. Right MIN's children: $\{-2, 18, 19, 5\}$.\\[0.3em]
+Left MIN: $\min(20, 0, -16, -4) = -16$.\\
+Right MIN: $\min(-2, 18, 19, 5) = -2$.\\
+Root MAX: $\max(-16, -2) = -2$.\\[0.3em]
+\textbf{Trap:} thinking the left MIN takes 20 (the maximum). Wrong direction at a MIN node. Always take the minimum at a MIN node, regardless of sign.
+\end{exbox}
+
+\subsection{Evaluation of minimax}
+
+\begin{center}
+\renewcommand{\arraystretch}{1.25}
+\begin{tabular}{@{}p{4cm}p{10cm}@{}}
+\toprule
+\thead{Property} & \thead{Minimax} \\
+\midrule
+Complete?         & \textbf{Yes}, in finite game trees \\
+Optimal?          & \textbf{Yes}, if both players play optimally \\
+Time complexity   & $O(b^m)$ where $b$ = branching factor, $m$ = ply depth \\
+Space complexity  & $O(b m)$ (depth-first; or $O(m)$ with backtracking DFS) \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\textbf{The fatal flaw:} time complexity. For a 2-ply game with $b = 3$, the bottom layer has $3^2 = 9$ leaves — fine. For chess with $b = 35$, $m = 80$, you have $\approx 35^{80}$ states. Astronomical. Pure minimax is therefore a \emph{conceptual} algorithm, not a usable one for non-trivial games.
+
+\textbf{What does ``optimality'' mean here?} It means: if your opponent plays optimally too, the minimax-value-of-the-root is the utility you can guarantee. If the opponent plays sub-optimally, you might do \emph{better} than this — minimax is a lower bound under the optimal-opponent assumption.
+
+\begin{trapbox}[: minimax optimality assumption]
+``Minimax always finds the optimal strategy.'' \textbf{Only if both players play optimally.} If the opponent is sub-optimal or random, minimax may still get a good outcome, but it's not designed for that — the assumption is baked in. (Decision-making against a stochastic opponent is a different framework.)
+\end{trapbox}
+
+% =====================================================================
+\section{Alpha-beta pruning}
+
+\subsection{The core idea}
+
+\begin{defbox}[Alpha-beta pruning]
+An optimisation of minimax that \emph{produces the same answer} but explores fewer nodes. It maintains, for each node being evaluated, a pair of bounds:
+\begin{itemize}[itemsep=0pt, topsep=0pt]
+  \item $\alpha$ — the best score MAX has been guaranteed so far (``at least'').
+  \item $\beta$ — the best score MIN has been guaranteed so far (``at most'').
+\end{itemize}
+A subtree is \textbf{pruned} (skipped entirely) when its minimax value cannot affect the choice at any ancestor — specifically, when $\alpha \ge \beta$ at any point during evaluation.
+\end{defbox}
+
+\subsection{Bounds, intuitively}
+
+Each node's minimax value lives in some range $[\alpha, \beta]$. As you explore more children, the range narrows:
+
+\begin{itemize}
+  \item For a MIN node: each new child's value gives a candidate \emph{upper bound} (MIN will take the min). $\beta$ tightens downward as smaller children are seen.
+  \item For a MAX node: each new child's value gives a candidate \emph{lower bound} (MAX will take the max). $\alpha$ tightens upward as larger children are seen.
+\end{itemize}
+
+\textbf{The pruning rule.} If during exploration of a MIN node, you find a child with value $\le$ the parent MAX's current $\alpha$ (best already guaranteed), the parent will never pick this MIN node — \emph{prune the rest of its children}. Symmetrically for MAX nodes inside MIN parents.
+
+\subsubsection*{Pseudocode}
+
+\begin{exbox}[Alpha-beta pruning algorithm]
+\begin{verbatim}
+function MaxValue(state, alpha, beta):
+    if Terminal-Test(state): return Utility(state, MAX)
+    v <- -infinity
+    for each action in Actions(state):
+        v <- max(v, MinValue(Result(state, action), alpha, beta))
+        if v >= beta: return v          # beta cutoff
+        alpha <- max(alpha, v)
+    return v
+
+function MinValue(state, alpha, beta):
+    if Terminal-Test(state): return Utility(state, MAX)
+    v <- +infinity
+    for each action in Actions(state):
+        v <- min(v, MaxValue(Result(state, action), alpha, beta))
+        if v <= alpha: return v         # alpha cutoff
+        beta <- min(beta, v)
+    return v
+
+function AlphaBeta-Search(state):
+    return argmax MaxValue(state, -infinity, +infinity)
+\end{verbatim}
+\end{exbox}
+
+\subsection{Worked trace: same tree, with alpha-beta pruning}
+
+Same tree as before: root MAX with three MIN children $B, C, D$. Process left-to-right.
+
+\begin{exbox}[Alpha-beta pruning trace]
+\textbf{Initialise} root $A$ as $[-\infty, +\infty]$.\\[0.3em]
+\textbf{Step (a).} Descend to $B$ (MIN). Range starts $[-\infty, +\infty]$. First child = 3. MIN sets $\beta_B = 3$. Range: $[-\infty, 3]$.\\[0.3em]
+\textbf{Step (b).} Continue at $B$. Child = 12. MIN wants min, so $\beta_B$ stays 3 (12 > 3, irrelevant for MIN).\\[0.3em]
+\textbf{Step (c).} Continue at $B$. Child = 8. Same, $\beta_B$ stays 3. All children seen. So $B = 3$. Now $A$ knows MAX can guarantee at least 3, so $\alpha_A = 3$. Range at $A$: $[3, +\infty]$.\\[0.3em]
+\textbf{Step (d).} Descend to $C$ (MIN). First child = 2. MIN sets $\beta_C = 2$. Range: $[-\infty, 2]$. \\[0.3em]
+\textbf{PRUNE:} $\beta_C = 2 \le \alpha_A = 3$. So whatever else $C$ has, MAX will never pick it (because MAX already has a guarantee of 3 from $B$). \textbf{Prune the remaining children of $C$.} (Saves exploring values 4 and 6.)\\[0.3em]
+\textbf{Step (e).} Descend to $D$ (MIN). First child = 14. Range $[-\infty, 14]$. Since $14 > \alpha_A = 3$, must keep exploring (MIN may bring it down).\\[0.3em]
+Second child of $D$ = 5. $\beta_D$ tightens to 5. Still $5 > 3$, keep exploring.\\[0.3em]
+Third child of $D$ = 2. $\beta_D$ tightens to 2. \emph{Now} $\beta_D \le \alpha_A$ — but this was the last child anyway; nothing left to prune. $D = 2$.\\[0.3em]
+\textbf{Step (f).} Back at root $A$: $\max(B, C, D) = \max(3, 2, 2) = 3$. \textbf{Same answer as plain minimax.} Action: $a_1$.\\[0.3em]
+\textbf{Pruning saved:} 2 leaves under $C$. (Leaves under $D$ all had to be visited because of unfortunate ordering.)
+\end{exbox}
+
+\begin{center}
+
+\footnotesize\textit{Alpha-beta pruning, panel by panel, on the same tree. Each node carries an evolving interval $[\alpha,\beta]$ --- a lower and upper bound on its true minimax value. Panels (a)--(c): exploring $B$'s children $3,12,8$ collapses its range to the exact value $3$, which lifts the root's lower bound to $\alpha=3$. Panel (d): $C$'s first child is $2$, giving $C$ the range $[-\infty,2]$ --- since $C$ can be at most $2$ and MAX already has $3$ guaranteed from $B$, $C$'s remaining children are irrelevant. Panels (e)--(f): $D$ is explored but its children happen to arrive worst-last, so no cutoff fires until the end. The take-away: a branch is pruned the instant its bound shows it cannot beat what MAX has already secured elsewhere. Image credit: Russell \& Norvig, AIMA 4e.}
+\end{center}
+
+\doflag{}\textbf{Past papers love alpha-beta pruning questions} — typically 6 marks. The pattern: ``which terminal nodes will be pruned?'' Trace the algorithm carefully; the answer depends on left-to-right ordering of the children. Practice this on every tree you can find.
+
+\subsubsection*{A second worked example showing different pruning behaviour}
+
+\begin{exbox}[Alpha-beta with reversed order: more pruning]
+Same tree but explore children of $D$ in reverse: 2, 5, 14 (instead of 14, 5, 2).\\[0.3em]
+After $B$ done, $\alpha_A = 3$. Move to $D$:
+\begin{itemize}[itemsep=0pt, topsep=0pt]
+  \item First child of $D$ = 2. $\beta_D = 2$. \textbf{Already $\le \alpha_A = 3$ — prune the rest of $D$ (5 and 14)!}
+\end{itemize}
+\textbf{Pruning saved:} 2 leaves under $C$ + 2 leaves under $D$ = 4 leaves. The order of children matters dramatically for pruning effectiveness.\\[0.3em]
+\textbf{Lesson.} If you can order children so that the best are seen first (highest at MAX nodes, lowest at MIN nodes), pruning maximises. This is the basis of \emph{move ordering heuristics} in real chess engines.
+\end{exbox}
+
+\begin{center}
+
+\footnotesize\textit{The same six panels, now with the pruned subtree marked by a red cross. In panel (d) the remaining children of $C$ are crossed out: once $C$'s upper bound ($2$) drops to or below the root's lower bound $\alpha=3$, exploring them cannot change MAX's choice, so they are skipped. Panels (e)--(f) then explore $D$ in full --- because its children arrive in the order $14, 5, 2$ its bound never falls to or below $3$ until the last leaf, so no cutoff fires and nothing under $D$ is pruned. The pruned leaves (the two under $C$) are never evaluated at all --- this is the entire saving. Crucially the root's value is still exactly $3$: alpha-beta returns the identical answer to plain minimax, it just visits fewer nodes. Image credit: Russell \& Norvig, AIMA 4e.}
+\end{center}
+
+\subsection{What pruning does and doesn't do}
+
+\begin{itemize}
+  \item \textbf{Does:} produce the exact same minimax value and best-action choice as plain minimax.
+  \item \textbf{Doesn't:} reduce the worst-case time complexity. Pruning is order-sensitive; with adversarially-bad ordering, pruning saves nothing. With perfect ordering (best moves first), the time complexity drops to $O(b^{m/2})$ — a square-root speedup, equivalent to doubling your effective lookahead.
+  \item \textbf{Does not} compromise optimality. A common trap on past papers.
+\end{itemize}
+
+\textbf{Why $b^{m/2}$ for perfect ordering?} Roughly: with perfect ordering, every other level of the tree is fully expanded but the alternate levels collapse to a single child each (because MAX/MIN's first choice is always the right one). So we explore $b^{m/2}$ paths, and each path has length $m$, but the cumulative work is $O(b^{m/2})$. \emph{Doubling effective look-ahead.}
+
+\begin{trapbox}[: alpha-beta optimality]
+``Alpha-beta pruning sacrifices optimality for speed.'' \textbf{False.} Pruning is sound — it only skips branches whose minimax values can't affect the root choice. The result is identical to full minimax. (In contrast, \emph{evaluation functions} and \emph{look-up tables} \textbf{do} sacrifice optimality.)
+\end{trapbox}
+
+\subsection{\texorpdfstring{When does pruning kick in? The $\alpha \ge \beta$ rule}{When does pruning kick in? The alpha-ge-beta rule}}
+
+The general pruning condition: at any point during traversal, if the current bounds satisfy $\alpha \ge \beta$, prune.
+
+\begin{itemize}
+  \item At a MIN node, you stop exploring once $v \le \alpha$ (alpha cutoff): MAX won't pick this branch because MAX can already guarantee $\ge \alpha$.
+  \item At a MAX node, you stop exploring once $v \ge \beta$ (beta cutoff): MIN won't pick this branch because MIN can already guarantee $\le \beta$.
+\end{itemize}
+
+% =====================================================================
+\section{Heuristic minimax: speed via evaluation functions}
+
+Even with alpha-beta, exact minimax on chess remains intractable. The next idea: \textbf{don't traverse to terminal states. Cut the tree off early and score the leaves with an evaluation function.}
+
+\subsection{Evaluation functions}
+
+\begin{defbox}[Evaluation function $\mathit{Eval}(s, p)$]
+A real-valued function that estimates the expected utility of state $s$ for player $p$, \textbf{without traversing all the way to terminal states}. Used to assess intermediate game states. Two requirements:
+\begin{enumerate}[itemsep=0pt, topsep=0pt]
+  \item \textbf{Match utility at terminals:} $\mathit{Eval}(s_T, p) = U(s_T, p)$ for all terminal $s_T$.
+  \item \textbf{Bounded by win/loss:} $U(s_{T,\text{Loss}}, p) \le \mathit{Eval}(s, p) \le U(s_{T,\text{WIN}}, p)$ for all $s$.
+\end{enumerate}
+\end{defbox}
+
+The first requirement says: at a terminal state, the evaluation function had better agree with the actual utility (otherwise it's just lying). The second says: estimates should fall within the range of possible utilities — no estimating $-3$ when the worst possible outcome is $-1$.
+
+\subsubsection*{Example: noughts and crosses}
+
+The lecturer's evaluation function: \emph{number of won-or-threatened positions for X, normalised}. Two intermediate states:
+
+\begin{exbox}[Two evaluation function values]
+\textbf{State $s_1$:} X with two pieces in a row, looking like an imminent win. $\mathit{Eval}(s_1, X) = \frac{2}{2} = 1$. Matches the utility of a win.\\[0.3em]
+\textbf{State $s_2$:} X with no winning lines available. $\mathit{Eval}(s_2, X) = \frac{0}{2} = 0$. Matches the utility of a draw.
+\end{exbox}
+
+\begin{center}
+
+\footnotesize\textit{Two \emph{non-terminal} noughts-and-crosses positions scored by a simple evaluation function --- here, the normalised count of winning lines still open to X. Position $s_1$ scores $\tfrac{2}{2}=1$ because X has a strong, near-winning configuration; position $s_2$ scores $\tfrac{0}{2}=0$ because X has no line left to complete. Neither board is terminal, yet each gets a value without running minimax to the end of the game --- this is the whole point of an evaluation function. Note both scores lie within the legal utility range $[-1,+1]$, satisfying the second requirement of a valid $\mathit{Eval}$.}
+\end{center}
+
+\subsection{The heuristic minimax procedure}
+
+\begin{defbox}[Heuristic minimax]
+\begin{enumerate}
+  \item From the current game state, sprout a search tree of fixed depth (a few ply ahead) — \emph{not} all the way to terminals.
+  \item Score the leaves of this truncated tree with the evaluation function.
+  \item Treat them as if they were terminals; run minimax (with alpha-beta) up the tree to choose an action.
+  \item Make the chosen move; the opponent moves; sprout a new tree from the new state.
+\end{enumerate}
+\textbf{Result:} \textit{local} minimax decisions, navigable in real time, at the cost of optimality.
+\end{defbox}
+
+\subsection{Designing an evaluation function}
+
+A good evaluation function combines \textbf{features} of the state weighted by their importance.
+
+\subsubsection*{Chess example}
+
+A classic chess evaluation function:
+\[
+\mathit{Eval}(s) = w_1 \cdot \text{material}(s) + w_2 \cdot \text{mobility}(s) + w_3 \cdot \text{king\_safety}(s) + \dots
+\]
+
+\textbf{Material} (the dominant feature):
+\begin{itemize}[itemsep=0pt, topsep=0pt]
+  \item Pawn $= 1$
+  \item Knight $= 3$
+  \item Bishop $= 3$
+  \item Rook $= 5$
+  \item Queen $= 9$
+  \item King $= \infty$ (or just very large, since losing the king ends the game).
+\end{itemize}
+
+\textbf{Mobility}: number of legal moves available. More options $=$ better position.
+
+\textbf{King safety}: penalty for exposed king, bonus for castled king with intact pawn shield.
+
+\textbf{Pawn structure}: penalties for doubled pawns, isolated pawns; bonuses for passed pawns.
+
+\textbf{Centre control}: bonuses for pieces controlling central squares.
+
+A real engine has dozens to hundreds of such features. Deep Blue had 8000.
+
+\subsubsection*{How to set the weights}
+
+\begin{itemize}
+  \item \textbf{By hand from prior experience}: chess-master heuristics, well-known weights.
+  \item \textbf{By analysing many games}: see which features correlate with winning.
+  \item \textbf{By machine learning}: tune the weights via temporal-difference learning or self-play. AlphaZero learned its evaluation entirely from self-play.
+\end{itemize}
+
+\textbf{Speed matters}: you'll evaluate millions of states per move in a competitive engine. The evaluation function must be fast.
+
+\begin{pitfallbox}[: heuristic minimax loses optimality]
+Plain minimax is provably optimal under the optimal-play assumption. \emph{Heuristic} minimax \textbf{is not}, because the evaluation function is approximate. The trade-off is necessary: without heuristics, chess and similar games are intractable.
+\end{pitfallbox}
+
+\subsection{The horizon effect}
+
+\textbf{A subtle problem with heuristic minimax.} A search depth limit creates a \emph{horizon}, beyond which the algorithm doesn't see. Bad consequences can be hidden just past the horizon.
+
+\textbf{Classic example.} In chess, the agent might delay an unavoidable loss by making meaningless checks. Each check pushes the loss one ply deeper, until it falls past the horizon. The algorithm, not seeing the loss, thinks the position is fine — when actually the position is lost.
+
+\textbf{Mitigation: quiescence search.} Don't truncate at a fixed depth blindly. If the position is ``unstable'' (captures pending, checks, etc.), search a few more plies until the position quiets down. Then evaluate.
+
+% =====================================================================
+\section{Look-up tables: openings and endgames}
+
+The other big speedup. Instead of computing the same opening or endgame strategy each time, store known good play in a database.
+
+\subsection{Opening books}
+
+Chess grandmasters memorise sequences of opening moves with known good outcomes (Sicilian Defence, Queen's Gambit, etc.). For an AI, a look-up table of opening sequences ranked by win-rate (from databases of historical games or expert analysis) replaces minimax for the first several moves.
+
+\textbf{Why?} The opening tree of chess has been analysed exhaustively for decades. Brute-force minimax in the opening is wasted compute — a master-level move sequence is already documented for almost every plausible position.
+
+\subsection{Endgame databases}
+
+For positions with few pieces remaining, exhaustive backward computation gives provably optimal play. As of the time of Deep Blue, complete endgame tables existed for $\le 5$ chess pieces (with $\le 6$ in selected cases). Modern systems have gone further — Lomonosov tables solved 7-piece endgames, and the work continues.
+
+\textbf{Construction.} Endgame tables are computed by retrograde analysis: enumerate all terminal positions (checkmates, stalemates), then work backward. For each position one move from a known position, mark it with the appropriate value. Iterate until all reachable positions are tagged.
+
+\subsection{The hybrid play strategy}
+
+A complete competition AI for chess looks like:
+
+\begin{enumerate}
+  \item \textbf{Opening:} look up moves from the opening book.
+  \item \textbf{Middle game:} heuristic minimax with alpha-beta pruning, depth-limited (typically 6--16 ply).
+  \item \textbf{Endgame:} look up moves from the endgame database once piece count drops to the precomputed range.
+\end{enumerate}
+
+% =====================================================================
+\section{Case study: Deep Blue vs Kasparov (1997)}
+
+The first AI to defeat a reigning world chess champion (Garry Kasparov). It was a \textbf{classical AI system} — no neural networks, just well-engineered minimax. Its anatomy:
+
+\begin{itemize}
+  \item \textbf{Heuristic minimax}, typically 6--16 ply deep, up to 40 ply for highly specific cases (forced checkmate sequences).
+  \item \textbf{Alpha-beta pruning} throughout, with sophisticated move ordering.
+  \item \textbf{Evaluation function with $> 8000$ features}, hand-engineered by chess experts.
+  \item \textbf{Endgame databases} for positions with $\le 5$ pieces (and $\le 6$ in selected cases including a pair of blocked pawns).
+  \item \textbf{Special-purpose hardware}: 30 nodes, each with multiple custom chess chips, evaluating up to 200 million positions per second.
+\end{itemize}
+
+\begin{notebox}[: classical AI vs neural AI on chess]
+The lecturer's framing: Deep Blue's victory was a victory for \emph{symbolic AI} — combined human knowledge, encoded as heuristics and databases, beat one human. Modern chess engines (e.g.\ AlphaZero, 2017) take a fundamentally different approach: learn to play by self-play with reinforcement learning, with no human-supplied heuristics. Both reach superhuman performance, but the trade-off is \textbf{transparency}: classical AI's heuristics are inspectable; neural AI's strategy is opaque. The bigger question — can we extract interpretable knowledge from a neural agent? — is unsolved. (This thread continues in week 31's neuro-symbolic essay papers.)
+\end{notebox}
+
+% =====================================================================
+\section{Exam-mode answers}
+
+\begin{exambox}[(MCQ, 3 marks): For the minimax tree below, what is the value of the game (the minimax value of the root)?]
+\textit{Tree: MAX root with two MIN children $B, C$. $B$'s leaves: $\{20, 0, -16, -4\}$. $C$'s leaves: $\{-2, 18, 19, 5\}$.}\\[0.3em]
+\textit{$B = \min(20, 0, -16, -4) = -16$.}\\
+\textit{$C = \min(-2, 18, 19, 5) = -2$.}\\
+\textit{Root = $\max(B, C) = \max(-16, -2) = \boldsymbol{-2}$.}\\[0.3em]
+\textit{Trap: thinking $B = 20$ (the max) — that's the wrong direction at a MIN node.}
+\end{exambox}
+
+\begin{exambox}[(MCQ, 6 marks): For the same tree, with alpha-beta pruning exploring leaves left-to-right, which terminal nodes will be pruned?]
+\textit{Trace:}
+\begin{itemize}[leftmargin=*, itemsep=0pt, topsep=0pt]
+  \item Explore $B$'s leaves: 20, 0, -16, -4. After 20: $\beta_B = 20$. After 0: $\beta_B = 0$. After -16: $\beta_B = -16$. After -4: stays -16. $B = -16$. Root $\alpha = -16$.
+  \item Explore $C$. First leaf $-2$. $\beta_C = -2$. Compare to $\alpha = -16$: $-2 > -16$, no prune yet.
+  \item Continue $C$'s leaves: 18 (doesn't change $\beta_C = -2$), 19, 5 — all higher, $\beta_C$ stays $-2$.
+\end{itemize}
+\textit{No pruning happens because each candidate at $C$ stays bigger than the running $\alpha$ from $B$. \textbf{Answer: no nodes are pruned}, OR it depends on whether the question asks at moments where $\beta_C \le \alpha$ — work through carefully.}\\[0.3em]
+\textit{General rule: prune when $\beta_{\text{current MIN}} \le \alpha_{\text{ancestor MAX}}$. Trace through, write the bounds at every step.}
+\end{exambox}
+
+\begin{exambox}[(MCQ): Which of the following statements about adversarial search are true? Mark all that apply.]
+\textit{TRUE:}
+\begin{itemize}[leftmargin=*, itemsep=0pt, topsep=0pt]
+  \item ``The minimax algorithm is complete if the game tree is finite.''
+  \item ``Using alpha-beta pruning can reduce the time taken to compute a minimax search'' (and \emph{does not} sacrifice optimality).
+  \item ``Using evaluation functions can reduce the time taken \emph{but} sacrifices optimality.''
+  \item ``Using look-up tables can reduce the time taken but sacrifices optimality (in the middle of the game).''
+\end{itemize}
+\textit{FALSE: ``The minimax algorithm can only be used in games where there is no possibility of a draw'' (no — draws are fine, just another terminal utility).}
+\end{exambox}
+
+\begin{exambox}[(MCQ): What does the alpha value represent in alpha-beta pruning?]
+\textit{Correct: \textbf{The best (highest) value that MAX has been guaranteed so far along the current path.} Used to prune branches whose value MIN will keep below.}\\[0.3em]
+\textit{Trap: ``the highest value at any leaf'' (false — alpha tracks MAX's running guarantee, not a global max). ``the upper bound on the minimax value of the current node'' (that's $\beta$).}
+\end{exambox}
+
+\begin{exambox}[(MCQ): Which of the following is a requirement for an evaluation function $\mathit{Eval}(s, p)$ in heuristic minimax?]
+\textit{Correct: \textbf{Eval must equal the utility at terminal states}, AND \textbf{Eval at any state must lie between the loss-utility and win-utility for that player}.}\\[0.3em]
+\textit{Trap: ``Eval must be admissible'' (admissibility was for A* heuristics in informed search, not adversarial). ``Eval must be differentiable'' (no — it's a discrete-state function).}
+\end{exambox}
+
+% =====================================================================
+\section*{Key equations / algorithms cheat sheet}
+
+\textbf{Minimax algorithm (recursive):}
+\[
+\mathrm{Minimax}(s) =
+\begin{cases}
+U(s, \text{MAX}) & \text{if } s \text{ is terminal} \\
+\max_{a} \mathrm{Minimax}(\mathrm{Result}(s, a)) & \text{if MAX's turn at } s \\
+\min_{a} \mathrm{Minimax}(\mathrm{Result}(s, a)) & \text{if MIN's turn at } s
+\end{cases}
+\]
+
+\textbf{Minimax complexity:}
+\begin{itemize}[itemsep=0pt, topsep=0pt]
+  \item Time: $O(b^m)$
+  \item Space: $O(b m)$ (or $O(m)$ with backtracking)
+\end{itemize}
+$b$ = branching factor, $m$ = ply depth.
+
+\textbf{Alpha-beta pruning:}
+\begin{itemize}[itemsep=0pt, topsep=0pt]
+  \item $\alpha$ = ``at least'' for MAX (running lower bound)
+  \item $\beta$ = ``at most'' for MIN (running upper bound)
+  \item Prune when $\alpha \ge \beta$ at the current node.
+  \item Same answer as minimax. Worst-case time still $O(b^m)$. Best-case (perfect ordering): $O(b^{m/2})$ — doubles effective look-ahead.
+\end{itemize}
+
+\textbf{Evaluation function constraints:}
+\[
+\mathit{Eval}(s_T, p) = U(s_T, p), \qquad U(s_{T,\text{Loss}}, p) \le \mathit{Eval}(s, p) \le U(s_{T,\text{Win}}, p).
+\]
+
+\textbf{Heuristic minimax recipe:} sprout shallow tree from current state $\to$ score leaves with $\mathit{Eval}$ $\to$ run minimax (+pruning) $\to$ choose action $\to$ repeat next turn.
+
+\textbf{Hybrid game agent:} opening book $\to$ heuristic minimax $\to$ endgame database.
+
+\textbf{Standard chess piece values:} Pawn 1, Knight 3, Bishop 3, Rook 5, Queen 9, King infinite.
+
+% =====================================================================
+\section*{Pitfalls and MCQ traps consolidated}
+
+\begin{trapbox}[summary]
+\begin{tabular}{@{}p{6.5cm}p{8cm}@{}}
+\toprule
+\thead{Trap} & \thead{Right answer} \\
+\midrule
+``Minimax is optimal regardless of opponent.''     & \textbf{Optimal under the optimal-play assumption only.} \\
+``Alpha-beta pruning sacrifices optimality.''       & \textbf{No} — same answer as minimax, fewer nodes. \\
+``Evaluation functions sacrifice optimality.''      & \textbf{Yes} — they're approximations. \\
+``Look-up tables sacrifice optimality.''            & \textbf{Yes} (in the middle of the game; at openings/endgames they can be exact). \\
+At a MIN node, MIN picks\dots                       & The \textbf{minimum} child value. \\
+At a MAX node, MAX picks\dots                       & The \textbf{maximum} child value. \\
+``Alpha is the upper bound on the minimax value.'' & \textbf{No}, $\beta$ is. $\alpha$ is the lower bound. \\
+``Pruning depends on tree structure only.''         & \textbf{No} — depends on order of child exploration. \\
+``Eval = utility at all states.''                   & \textbf{Only at terminals.} Eval approximates predicted utility at non-terminals. \\
+``Alpha-beta worst case is $O(b^{m/2})$.''         & \textbf{No}, that's the best case (perfect ordering). Worst case is still $O(b^m)$. \\
+\bottomrule
+\end{tabular}
+\end{trapbox}
+
+\textbf{Other confusions to flag:}
+
+\begin{itemize}
+  \item \textbf{Game tree $\ne$ search tree from earlier weeks.} The game tree alternates between MAX and MIN nodes; search trees in path-finding had only one decision-maker.
+  \item \textbf{Adversarial search assumes the opponent is rational and optimal.} Random/stochastic opponents are a different problem (decision making under uncertainty).
+  \item \textbf{Zero-sum games have constant total utility, not necessarily zero.} Chess uses $1$ total (with $\frac{1}{2}, \frac{1}{2}$ for a draw); noughts-and-crosses uses $0$ total. The structure works for any constant.
+  \item \textbf{Alpha-beta pruning's effectiveness depends on move ordering.} With perfect ordering (best moves first), you get the $O(b^{m/2})$ best case. With bad ordering, you may save nothing.
+  \item \textbf{Heuristic minimax is the practical algorithm}; pure minimax is the conceptual algorithm. Don't confuse the two.
+  \item \textbf{The horizon effect} is a fundamental limitation of fixed-depth heuristic minimax. Quiescence search mitigates but does not eliminate it.
+  \item \textbf{Move ordering heuristics} are crucial in real chess engines: try captures first, checks first, etc. Maximises pruning.
+\end{itemize}
+
+% =====================================================================
+\section*{Self-check questions}
+
+\begin{enumerate}
+  \item \textbf{Define} adversarial search and explain how it differs from systematic search and local search.
+  \item \textbf{Distinguish} a zero-sum game from a non-zero-sum game with concrete examples.
+  \item \textbf{Define} ply, utility function, terminal state, and game tree.
+  \item \textbf{Trace} the minimax algorithm on a 2-ply game tree with branching factor 3, with leaves of your choosing. Identify the minimax value at every internal node.
+  \item \textbf{Apply} alpha-beta pruning to the same tree (left-to-right). Identify which nodes get pruned.
+  \item \textbf{Apply} alpha-beta pruning to the same tree but with right-to-left ordering. How do the pruned nodes differ?
+  \item \textbf{Compute} the time and space complexity of pure minimax. Why is it intractable for chess?
+  \item \textbf{Explain} the worst-case and best-case time complexity of alpha-beta pruning. What property of the tree achieves the best case?
+  \item \textbf{Describe} an evaluation function for noughts and crosses. What constraints must it satisfy?
+  \item \textbf{Design} an evaluation function for chess incorporating material, mobility, and king safety. Pick weights and justify them.
+  \item \textbf{Explain} why heuristic minimax is not optimal, and why it's used anyway.
+  \item \textbf{Describe} the horizon effect and explain how quiescence search mitigates it.
+  \item \textbf{Describe} how look-up tables are used in chess engines. Why does this work for openings and endgames but not middle games?
+  \item \textbf{Outline} the architecture of Deep Blue. List four techniques it combined.
+  \item \textbf{Compare and contrast} Deep Blue (1997) and modern chess engines (AlphaZero). What's the trade-off in approach?
+  \item \textbf{Construct} a 2-ply tree where alpha-beta pruning prunes \emph{nothing}, and another where it prunes \emph{half} the leaves. Explain the difference.
+  \item \textbf{Explain} the role of the $\alpha$ and $\beta$ bounds in alpha-beta pruning. What does $\alpha \ge \beta$ mean intuitively?
+  \item \textbf{Describe} move ordering heuristics that maximise alpha-beta pruning.
+\end{enumerate}
+
+\end{document}

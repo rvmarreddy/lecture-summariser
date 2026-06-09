@@ -1,0 +1,466 @@
+\documentclass[11pt, a4paper]{article}
+\usepackage{fontspec}\setmainfont{Helvetica Neue}\setmonofont{Menlo}
+\usepackage{unicode-math}\setmathfont{STIX Two Math}
+\usepackage[margin=2cm, top=2cm, bottom=2.5cm]{geometry}
+\usepackage{microtype}\usepackage{parskip}
+\setlength{\parskip}{0.6em}\setlength{\parindent}{0pt}
+\usepackage[colorlinks=true, linkcolor=NavyBlue, urlcolor=NavyBlue, citecolor=NavyBlue]{hyperref}
+\usepackage{xcolor}\usepackage[dvipsnames]{xcolor}
+\usepackage{amsmath}\usepackage{booktabs}\usepackage{array}\usepackage{tabularx}
+\usepackage{graphicx}
+\graphicspath{{figures/week21/}}
+\newcommand{\thead}[1]{\textbf{#1}}
+\usepackage{enumitem}
+\setlist[itemize]{leftmargin=1.5em, itemsep=0.2em, topsep=0.3em}
+\setlist[enumerate]{leftmargin=1.5em, itemsep=0.2em, topsep=0.3em}
+\usepackage[most]{tcolorbox}\tcbuselibrary{breakable, skins, theorems}
+\definecolor{defBg}{HTML}{EAF2FB}\definecolor{defBd}{HTML}{1F4E79}
+\definecolor{exBg}{HTML}{F4F4F4}\definecolor{exBd}{HTML}{555555}
+\definecolor{tipBg}{HTML}{E8F5E9}\definecolor{tipBd}{HTML}{2E7D32}
+\definecolor{trapBg}{HTML}{FCE4EC}\definecolor{trapBd}{HTML}{AD1457}
+\definecolor{pitBg}{HTML}{FFF8E1}\definecolor{pitBd}{HTML}{B27600}
+\definecolor{noteBg}{HTML}{F3E5F5}\definecolor{noteBd}{HTML}{6A1B9A}
+\definecolor{tldrBg}{HTML}{E1F5FE}\definecolor{tldrBd}{HTML}{0277BD}
+\newtcolorbox{defbox}[1][]{enhanced, breakable, colback=defBg, colframe=defBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={Definition: #1}}
+\newtcolorbox{exbox}[1][]{enhanced, breakable, colback=exBg, colframe=exBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={Worked example: #1}}
+\newtcolorbox{exambox}[1][]{enhanced, breakable, colback=tipBg, colframe=tipBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={Exam-mode answer #1}}
+\newtcolorbox{trapbox}[1][]{enhanced, breakable, colback=trapBg, colframe=trapBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={MCQ trap #1}}
+\newtcolorbox{pitfallbox}[1][]{enhanced, breakable, colback=pitBg, colframe=pitBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={Pitfall #1}}
+\newtcolorbox{notebox}[1][]{enhanced, breakable, colback=noteBg, colframe=noteBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={Lecturer aside #1}}
+\newtcolorbox{tldrbox}[1][]{enhanced, breakable, colback=tldrBg, colframe=tldrBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={TL;DR #1}}
+\usepackage{titlesec}
+\titleformat{\section}[block]{\Large\bfseries\color{defBd}}{\thesection.}{0.6em}{}
+\titleformat{\subsection}[block]{\large\bfseries\color{defBd!80!black}}{\thesubsection}{0.5em}{}
+\titleformat{\subsubsection}[block]{\normalsize\bfseries}{}{0pt}{}
+\titlespacing*{\section}{0pt}{1.6em}{0.6em}\titlespacing*{\subsection}{0pt}{1.2em}{0.4em}
+\usepackage{fancyhdr}\pagestyle{fancy}\fancyhf{}
+\fancyhead[L]{\small CM52054 — Week 21}\fancyhead[R]{\small Regularisation}
+\fancyfoot[C]{\small\thepage}\renewcommand{\headrulewidth}{0.3pt}
+\newcommand{\examflag}{\textcolor{tipBd}{\textbf{[EXAM]}}\,}
+\newcommand{\trapflag}{\textcolor{trapBd}{\textbf{[TRAP]}}\,}
+\newcommand{\doflag}{\textcolor{defBd}{\textbf{[DO]}}\,}
+\title{\vspace{-1cm}{\Huge\bfseries Week 21 — Regularisation} \\[0.4em]{\large Why regularise; ridge / L2; lasso / L1; elastic net; $\lambda$ vs sample size; early stopping; train/val/test}}
+\author{\large CM52054 Foundational Machine Learning \\[0.2em]\normalsize University of Bath \,$\cdot$\, Dr Wenbin Li}
+\date{Revision notes}
+\begin{document}\maketitle\thispagestyle{empty}\vspace{1em}
+
+\begin{tldrbox}
+\begin{itemize}[leftmargin=*]
+  \item \textbf{Regularisation} adds ``extra information'' to a learning problem to prefer simpler models. Standard form: $L(\theta) = (\text{data fit}) + \lambda\,(\text{penalty on }\theta)$. Hyperparameter $\lambda$ controls the strength.
+  \item Wk10 introduced one path to regularisation (MAP with Gaussian prior $\Rightarrow$ $L_2$ penalty). Wk21 expands to non-probabilistic motivations and adds $L_1$ (lasso) and combined ($L_1+L_2$, elastic net) variants.
+  \item \textbf{Why regularise — four reasons.} (1) Avoid \textbf{overfitting} — fitting noise instead of signal. (2) \textbf{Ill-posed problem} — multiple equally good solutions; pick one. (3) \textbf{Human understanding} — push the model towards interpretable structure. (4) \textbf{Easier optimisation} — smooth the loss, fewer local minima. ``Often several at once.''
+  \item \textbf{Occam's razor.} Simpler explanations preferred. ``Plurality must never be posited without necessity.''
+  \item \textbf{Ridge regression / $L_2$} \doflag{}: $L(\theta) = \sum_i(y_i - f_\theta(\mathbf{x}_i))^2 + \lambda\|\theta\|^2$. Closed form $\mathbf{w}_* = (\mathbf{X}^\top\mathbf{X} + \lambda\mathbf{I})^{-1}\mathbf{X}^\top\mathbf{y}$ (recall Wk10's MAP-with-Gaussian-prior).
+  \item \textbf{Lasso / $L_1$} \doflag{}: $L(\theta) = \sum_i(y_i - f_\theta(\mathbf{x}_i))^2 + \lambda\|\theta\|_1 = \sum_i(\cdot)^2 + \lambda\sum_j|\theta_j|$. \textbf{Drives coefficients exactly to zero} — automatic feature selection.
+  \item \trapflag{}\textbf{Past paper Q1(4)}: ``Increasing $\lambda$ in lasso leads to sparser regression coefficients.'' \textbf{TRUE}.
+  \item \textbf{Elastic net}: $L(\theta) = \sum_i(\cdot)^2 + \lambda(\gamma\|\theta\|_1 + (1-\gamma)\|\theta\|_2^2)$. Two hyperparameters; combines $L_1$'s sparsity with $L_2$'s stability. $\gamma=0.5$ a sensible default.
+  \item \examflag{}\textbf{Past paper Q3(d)} — $\lambda$ vs sample size $N$. As $N$ increases, regularisation needed decreases (more data $\Rightarrow$ trust the data more $\Rightarrow$ smaller $\lambda$). The marker accepts both this answer and a computational-efficiency answer (per Wk30b walkthrough).
+  \item \textbf{Train / validation / test split}: train fits parameters; validation tunes hyperparameters (including $\lambda$); test reports final performance. Sweep $\lambda$ over a range; pick the value with best validation performance.
+  \item \textbf{Empirical takeaway}: on the diamond-price example, ridge / lasso / elastic net all gave similar RMSE; on more complex problems, $L_1$ tends to outperform $L_2$ when many features are irrelevant.
+\end{itemize}
+\end{tldrbox}
+
+% =====================================================================
+\section{Why regularise --- and what it is}
+
+\subsection{The intuition: the four-point regression}
+
+The lecture's opening example: 4 data points in 1D that lie almost exactly on a line. To a human, the line is the obvious model. But mathematically, an unconstrained model space includes:
+
+\begin{itemize}
+  \item the linear fit (passes through all 4 points exactly);
+  \item a sine curve that also passes through all 4 points;
+  \item a step function that also passes through all 4 points;
+  \item a wildly oscillating polynomial that also passes through all 4 points;
+  \item infinitely many others.
+\end{itemize}
+
+\textbf{All of them have identical training cost — zero.} Squared error doesn't distinguish them. The line ``feels obviously right,'' but the data alone doesn't say so.
+
+\begin{defbox}[Regularisation — informal]
+Extra information added to the learning problem that prefers simpler / smoother / sparser solutions when the data does not uniquely determine an answer. Encoded as an additive penalty term $\lambda \cdot R(\theta)$ on the model parameters.
+\end{defbox}
+
+\begin{center}
+
+\footnotesize\textit{The four-point 1D regression problem that motivates regularisation. The \textbf{green solid line} is the human-obvious linear fit; the \textbf{blue dashed curve} is a sine function that also passes through the same four training points (solid dots). Both achieve \emph{identical} squared-error cost of zero --- the loss alone cannot distinguish them. Regularisation breaks this tie by penalising the sine's larger, more oscillatory coefficients, leaving the simpler line as the preferred solution. This is Occam's razor in arithmetic form: equal data fit, but the simpler model wins.}
+\end{center}
+
+\textbf{Common sense as inductive bias.} Regularisation is how we encode the human intuition ``among models that fit the data equally well, prefer the simpler one'' into the optimisation. Different penalty terms encode different definitions of ``simpler.''
+
+\subsection{Occam's razor}
+
+\begin{defbox}[Occam's razor]
+The simplest explanation is usually the correct one. ``Plurality must never be posited without necessity.'' (William of Ockham, 13th century, paraphrasing Aristotle.)
+\end{defbox}
+
+In ML terms: \textbf{overfitting is an unjustifiably complex explanation.} Regularisation systematically discourages such explanations.
+
+\begin{center}
+
+\footnotesize\textit{The underfitting/overfitting problem visualised on a two-class scatter dataset. \textbf{Left}: the raw data --- red and blue dots intermixed with a curved, overlapping boundary, making the problem hard. \textbf{Right}: a ``balanced'' decision boundary (warm yellow $=$ predicted red region, dark purple $=$ predicted blue region) that follows the true class separation without tracing individual noise points. This is the target we aim for --- neither too simple (underfitting) nor too flexible (overfitting). Regularisation is the mechanism that keeps a high-capacity model close to this balanced regime.}
+\end{center}
+
+\subsection{The four reasons to regularise}
+
+\examflag{}You should be able to name and one-sentence-explain all four. They overlap; ``often several at once'' (lecture).
+
+\begin{enumerate}
+  \item \textbf{Overfitting.} Fitting noise as if it were signal. Without regularisation, a high-capacity model perfectly memorises training data and generalises poorly. The slide example: SVM with RBF kernel and $\gamma$ ranging from 0.01 to 10 — the boundary goes from a near-circle (good) to wildly wiggly tracking individual training points (overfit).
+  \item \textbf{Ill-posed problem.} Multiple equally good solutions exist. The 4-point regression: line, sine, step, all have identical cost. Without a tiebreaker, the optimiser can ``drift'' between solutions and never converge to a single answer. Regularisation forces a choice (even if the choice is somewhat arbitrary). The lecture's slide of yellow/teal segmentation drifting between equally plausible labellings illustrates this.
+  \item \textbf{Human understanding.} If the goal is for a person to interpret the model, ``simple'' becomes a hard requirement. Regularisation that pushes towards sparse, interpretable parameters (e.g.\ lasso) helps. The lecture's example: factoring $y = f_\theta(\mathbf{x})$ as $y = f_\theta(\mathbf{z})$ with $\mathbf{z} = f_\eta(\mathbf{x})$ where $\mathbf{z}$ is human-readable attributes (``has a tail, four legs'').
+  \item \textbf{Easier optimisation.} Adding a smooth convex penalty like $\lambda\|\theta\|^2$ removes flat regions and stationary points from the loss, yielding fewer local minima and faster gradient-based convergence. The lecture's slide of a non-convex 1D loss being smoothed by $L_1$ regularisation illustrates this.
+\end{enumerate}
+
+\begin{center}
+
+\footnotesize\textit{Three decision boundaries on the same two-class dataset, illustrating the full underfitting--overfitting spectrum. \textbf{Left (underfitting)}: logistic regression draws a single linear diagonal boundary --- too rigid, misclassifying many orange points. \textbf{Centre (balanced)}: a random forest tuned with \texttt{min\_impurity\_decrease=0.008} produces a smooth, curved boundary that closely follows the true class separation. \textbf{Right (overfitting)}: the same random forest with default parameters traces every noisy training point, producing a jagged boundary that will generalise poorly to new data. Regularisation moves a model from right to centre.}
+\end{center}
+
+\begin{center}
+
+\footnotesize\textit{Reason 1 --- \emph{overfitting} --- illustrated with an SVM using an RBF kernel, swept over four values of the bandwidth parameter $\gamma$. At $\gamma = 0.01$ the boundary is a near-circle (underfitting, too simple). At $\gamma = 0.1$ the boundary fits the data well (``about right''). As $\gamma$ increases to 1.0 and then 10.0, the boundary becomes progressively more jagged, wrapping tightly around individual training points. The $C$ parameter is held fixed; only $\gamma$ (which controls how ``localised'' the kernel is) varies. This is the same phenomenon as the right-hand panel above, now with a continuous parameter to tune.}
+\end{center}
+
+\begin{center}
+
+\footnotesize\textit{Reason 2 --- \emph{ill-posedness} --- illustrated with an image segmentation problem. The four panels (connected by arrows) show the same image being segmented four times by the \emph{same} objective, producing four equally valid but entirely different yellow/teal labellings. Without regularisation the optimiser ``drifts'' between these equivalent solutions across iterations, never converging. Regularisation picks one (even if arbitrarily), stabilising the training process. As the slide caption notes: ``drifting $=$ never converges, all solutions bad.''}
+\end{center}
+
+\begin{center}
+
+\footnotesize\textit{Reason 4 --- \emph{easier optimisation} --- illustrated with a 1D loss function sweep. The \textbf{red curve} is the original non-convex loss with multiple local minima; starting from the black vertical line (around $x = 3$), a gradient-based optimiser (BFGS) gets stuck at the local minimum at $x \approx 3$ instead of reaching the global minimum at $x = 1$. The \textbf{blue curve} shows the same loss with an $L_1$ regularisation term added (pushing the solution towards $x = 0$). The penalty tilts and smooths the loss landscape, eliminating the spurious local minimum at $x = 3$ and allowing the optimiser to find the global optimum. This is why regularisation can simultaneously improve generalisation \emph{and} make training more reliable.}
+\end{center}
+
+\subsection{The general form}
+
+\begin{defbox}[Regularised loss]
+\[
+L(\theta) \;=\; \underbrace{L_{\text{data}}(\theta)}_{\text{data fit}} \;+\; \lambda\cdot \underbrace{R(\theta)}_{\text{penalty on parameters}}
+\]
+$L_{\text{data}}$ measures how well $\theta$ fits the training data (e.g.\ squared error, log-loss). $R(\theta)$ is the \textbf{regulariser}, a penalty designed to be small for ``simple'' $\theta$. $\lambda \ge 0$ is the \textbf{regularisation strength} hyperparameter.
+\end{defbox}
+
+\textbf{Hyperparameter, not parameter.} $\theta$ is found by optimisation; $\lambda$ is fixed during the optimisation but tuned externally (e.g.\ on a validation set). $\lambda = 0$ recovers unregularised optimisation; $\lambda \to \infty$ collapses $\theta$ to whatever the regulariser most prefers (often $\mathbf{0}$).
+
+% =====================================================================
+\section{Ridge regression --- $L_2$ regularisation}
+
+\subsection{Definition}
+
+\begin{defbox}[Ridge regression / $L_2$ regularisation / Tikhonov regression]
+For a linear model $f_\theta(\mathbf{x}) = \mathbf{w}^\top\mathbf{x}$ with parameters $\theta = \mathbf{w}$:
+\[
+L(\theta) \;=\; \sum_{i=1}^N (y_i - \mathbf{w}^\top\mathbf{x}_i)^2 \;+\; \lambda\|\mathbf{w}\|^2 \;=\; \|\mathbf{X}\mathbf{w} - \mathbf{y}\|^2 + \lambda\|\mathbf{w}\|^2.
+\]
+The penalty $\|\mathbf{w}\|^2 = \sum_j w_j^2$ is the squared $L_2$ norm of the weights.
+\end{defbox}
+
+\textbf{Closed-form solution} (recall Wk10 §4.4):
+\[
+\mathbf{w}_*^{\text{ridge}} \;=\; (\mathbf{X}^\top\mathbf{X} + \lambda\mathbf{I})^{-1}\mathbf{X}^\top\mathbf{y}.
+\]
+Same form as the unregularised normal equation but with $\lambda\mathbf{I}$ added to the Gram matrix.
+
+\subsection{Why $L_2$ helps}
+
+\begin{itemize}
+  \item \textbf{Numerical stability.} $\mathbf{X}^\top\mathbf{X}$ may be singular (rank-deficient $\mathbf{X}$); $\mathbf{X}^\top\mathbf{X} + \lambda\mathbf{I}$ is always invertible for $\lambda > 0$. Adding $\lambda\mathbf{I}$ bumps every eigenvalue up by $\lambda$.
+  \item \textbf{Reduces overfitting.} Penalising large $\|\mathbf{w}\|$ means the model can't memorise idiosyncrasies that require large coefficients. The fit is smoother.
+  \item \textbf{Shrinks but doesn't zero out.} Each $w_j$ moves towards zero but never reaches zero (unless $\mathbf{X}^\top\mathbf{y}$'s component in that direction is zero). $L_2$ does not produce sparse models.
+\end{itemize}
+
+\subsection{Probabilistic interpretation (recall Wk10)}
+
+Ridge regression is exactly MAP estimation under a zero-mean isotropic Gaussian prior $\mathbf{w}\sim\mathcal{N}(\mathbf{0}, \mathbf{I}/\lambda)$. The penalty $\lambda\|\mathbf{w}\|^2$ comes from the negative log-prior. Wk10 derived this; here we use the same formula.
+
+\subsection{Empirical example: diamond pricing}
+
+The lecture trains a linear model to predict diamond price from 9 features. Without regularisation: train RMSE $1420$, test RMSE $1831$ — clear overfit (test much worse than train).
+
+Sweeping $\lambda$ from $0$ to $30$ on the validation set (now repurposed as ``test'' for tuning):
+\begin{itemize}
+  \item Best $\lambda$ found (around $\lambda \approx 5$).
+  \item Best train RMSE $\approx 1443$; validation RMSE $\approx 1442$.
+\end{itemize}
+The train and validation curves are nearly identical at the optimum — the model is no longer overfitting. The slight \emph{increase} in train RMSE is the price of regularisation; the dramatic improvement in validation RMSE is the prize.
+
+\begin{center}
+
+\footnotesize\textit{Ridge regression hyperparameter sweep on the diamond-pricing dataset. The horizontal axis is $\lambda$ (regularisation strength, $0$ to $30$); the vertical axis is RMSE. The \textbf{blue curve} is validation RMSE and the \textbf{red curve} is training RMSE. At $\lambda = 0$ the unregularised model overfits: validation RMSE is near 1800 while training RMSE is lower. As $\lambda$ increases, validation error drops sharply; training error rises slightly. The two curves converge and the validation minimum (marked by the black vertical line, around $\lambda \approx 5$) is the optimal operating point --- train RMSE $\approx 1443$, validation RMSE $\approx 1442$. Beyond this point, over-regularisation causes both to rise (underfitting). This U-shaped validation curve is the standard diagnostic for choosing $\lambda$.}
+\end{center}
+
+% =====================================================================
+\section{Lasso regression --- $L_1$ regularisation}
+
+\subsection{Definition}
+
+\begin{defbox}[Lasso regression / $L_1$ regularisation]
+\[
+L(\theta) \;=\; \|\mathbf{X}\mathbf{w} - \mathbf{y}\|^2 \;+\; \lambda\|\mathbf{w}\|_1 \;=\; \|\mathbf{X}\mathbf{w} - \mathbf{y}\|^2 + \lambda\sum_{j=1}^M |w_j|.
+\]
+The penalty is the $L_1$ norm of the weights — sum of absolute values.
+\end{defbox}
+
+\textbf{No closed form.} The $L_1$ norm is non-differentiable at zero, so setting $\nabla L = \mathbf{0}$ doesn't work cleanly. Solved iteratively (coordinate descent, proximal gradient, LARS).
+
+\subsection{Why $L_1$ produces sparsity}
+
+\examflag{}Past paper Q1(4): ``Increasing $\lambda$ in lasso leads to sparser regression coefficients.'' \textbf{TRUE}.
+
+\textbf{The geometric intuition.} The lasso optimum is found at the intersection of an elliptical level-set of the data-fit term with a diamond-shaped level-set of $\|\mathbf{w}\|_1$. The diamond has corners exactly on the coordinate axes — points where one or more $w_j = 0$. As $\lambda$ increases, the diamond shrinks and the optimum tends to land on a corner. \textbf{The optimum is exactly zero in some coordinates.}
+
+Compare to $L_2$: the $L_2$ ball is a circle, with no corners; the optimum slides along the smooth boundary as $\lambda$ increases but doesn't snap to coordinate axes.
+
+\textbf{The algebraic intuition.} The $L_1$ penalty has a constant slope $\lambda$ at every point (not zero, like $L_2$ does at the origin). This constant slope can ``cancel'' a small data-fit gradient and leave a coordinate stuck at zero.
+
+\textbf{Consequence: feature selection.} Lasso simultaneously fits and selects features. Features whose coefficients are driven to zero can be dropped from the model entirely.
+
+\subsection{When to choose $L_1$ over $L_2$}
+
+\begin{itemize}
+  \item \textbf{Many features, few relevant.} $L_1$ is great at zeroing out the irrelevant ones. ``$L_1$ better at ignoring irrelevant features.''
+  \item \textbf{Interpretability.} A sparse model is easier to read.
+  \item \textbf{Need exact zeros.} Some downstream applications (deployment, hardware) need parameters to actually be zero, not just small.
+\end{itemize}
+
+\textbf{When to prefer $L_2$:} all features matter; numerical stability is the priority; closed-form solution wanted.
+
+\begin{center}
+
+\footnotesize\textit{Lasso regression hyperparameter sweep on the same diamond-pricing dataset. The horizontal axis is $\lambda$ (here ranging up to $\sim 16{,}000$ --- lasso needs a much larger $\lambda$ to achieve the same shrinkage because it penalises $|w_j|$ rather than $w_j^2$); the vertical axis is RMSE. The \textbf{blue curve} is validation RMSE; the \textbf{red curve} is training RMSE. The validation curve again falls from a high-error overfitting regime to a minimum (marked by the black line, around $\lambda \approx 11{,}000$) and then rises again as over-regularisation forces too many coefficients to zero. Best performance: train RMSE $\approx 1440$, validation RMSE $\approx 1433$ --- marginally better than ridge on this dataset. Note that increasing $\lambda$ beyond the optimum not only degrades accuracy but also increases sparsity (more $w_j = 0$).}
+\end{center}
+
+% =====================================================================
+\section{Elastic net --- $L_1$ + $L_2$}
+
+\begin{defbox}[Elastic net]
+A weighted combination of $L_1$ and $L_2$ penalties:
+\[
+L(\theta) \;=\; \|\mathbf{X}\mathbf{w} - \mathbf{y}\|^2 \;+\; \lambda\big(\gamma\|\mathbf{w}\|_1 + (1-\gamma)\|\mathbf{w}\|_2^2\big),
+\]
+with two hyperparameters: $\lambda \ge 0$ (overall regularisation strength) and $\gamma \in [0,1]$ (mixing ratio).
+\end{defbox}
+
+\textbf{Endpoints.}
+\begin{itemize}
+  \item $\gamma = 0$: pure ridge.
+  \item $\gamma = 1$: pure lasso.
+  \item $\gamma \in (0, 1)$: blend.
+\end{itemize}
+
+\textbf{Why blend?} Lasso has a quirk: when several features are correlated, lasso typically picks one and zeros the others (arbitrarily). Adding a small $L_2$ term encourages \emph{groups} of correlated features to have similar coefficients (rather than one of them being zero). Elastic net thus combines lasso's sparsity-on-irrelevant-features with ridge's stability-on-correlated-features.
+
+\textbf{Default.} If you don't want to sweep $\gamma$, set $\gamma = 0.5$. ``Good default if not sweeping'' (lecture).
+
+\subsection{Robustness comparison (lecture's diamond example)}
+
+\begin{tabularx}{\linewidth}{@{}lXX@{}}
+\toprule
+\thead{Model} & \thead{Test RMSE} & \thead{Comment} \\
+\midrule
+Linear (no regularisation) & 1831 & Overfits — large train/test gap \\
+Ridge ($L_2$)       & 1442 & Smooth shrinkage \\
+Lasso ($L_1$)       & 1433 & Sparse coefficients, marginally best here \\
+Elastic net         & 1442 & Blend; often the safest single choice \\
+\bottomrule
+\end{tabularx}
+
+\textbf{Practical takeaway from the lecture:} ``Little difference'' on this dataset. On more complex problems with many irrelevant features, $L_1$ tends to outperform $L_2$. \textbf{Elastic net lets the hyperparameter optimisation decide.}
+
+% =====================================================================
+\section{\texorpdfstring{The $\lambda$ vs sample size trade-off --- past paper Q3d}{The lambda vs sample size trade-off --- past paper Q3d}}
+
+\examflag{}\textbf{Question.} If the sample size $N$ increases, will we need to adjust $\lambda$? In which direction?
+
+\textbf{The intuition.} Regularisation provides ``extra information'' that compensates for lack of data. As you collect more data:
+\begin{itemize}
+  \item The data itself becomes more informative.
+  \item Less artificial bias is needed to keep the fit reasonable.
+  \item The right $\lambda$ should decrease.
+\end{itemize}
+
+\textbf{Quantitatively.} Consider the per-sample average regularised loss:
+\[
+\frac{1}{N}\sum_{i=1}^N (y_i - \mathbf{w}^\top\mathbf{x}_i)^2 + \frac{\lambda}{N}\|\mathbf{w}\|^2.
+\]
+The data fit term is averaged over $N$ samples; the regulariser is fixed. To keep the \emph{relative weights} of fit and penalty constant as $N$ grows, $\lambda$ should scale with $N$ if the loss is summed (or be constant if the loss is averaged). The slides have it as a sum, so the regularisation \emph{relative to the per-sample loss} effectively shrinks as $N$ grows, which matches intuition.
+
+\textbf{The exam-acceptable answers (per Wk30b walkthrough).} Two valid framings:
+\begin{enumerate}
+  \item \textbf{Statistical / fitting framing.} As $N$ increases, decrease $\lambda$. Reason: more data $\Rightarrow$ less need for inductive bias $\Rightarrow$ smaller penalty. Ben: ``If you decrease $\lambda$ we'll mitigate the underfitting.''
+  \item \textbf{Computational framing.} If you change $N$, you may need to change $\lambda$ to maintain the same fitting / efficiency trade-off. Ben: ``Computational efficiency is also right.''
+\end{enumerate}
+The marker accepts either as long as the reasoning is coherent.
+
+\examflag{}\textbf{The safe answer to write down.} ``Yes, $\lambda$ should decrease as $N$ increases. With more data, the model has less need for the prior bias enforced by regularisation; the data alone is enough to identify a good $\mathbf{w}$. Equivalently, in the regularised loss $\sum(y_i - \mathbf{w}^\top\mathbf{x}_i)^2 + \lambda\|\mathbf{w}\|^2$, a fixed $\lambda$ becomes proportionally less influential as $N$ grows, which matches the desired behaviour of decreased regularisation.''
+
+% =====================================================================
+\section{Train / validation / test split}
+
+\textbf{Three roles, three sets.}
+\begin{itemize}
+  \item \textbf{Training set.} Used to fit $\theta$ given a fixed $\lambda$. Largest of the three.
+  \item \textbf{Validation set.} Used to choose $\lambda$ (and any other hyperparameters). The model is trained for several values of $\lambda$ on the training set; the best-performing on the validation set is selected.
+  \item \textbf{Test set.} Used \emph{once}, at the very end, to report final performance. Touching the test set during model selection makes it a validation set in disguise — and inflates reported performance.
+\end{itemize}
+
+\begin{center}
+
+\footnotesize\textit{The train/validate/test split shown as proportional bars within the available data pool. The \textbf{blue (train)} bar is largest --- parameters are learnt on this portion. The \textbf{orange (validate)} bar is used for hyperparameter tuning: for each candidate $\lambda$, the model is trained on blue and evaluated on orange; the $\lambda$ with the best orange-set score is selected. The \textbf{green (test)} bar is held out until the very end and touched once to report the final generalisation number. A larger orange bar means more reliable $\lambda$ selection; a larger green bar means a more precise final estimate --- but all three must be large enough to serve their respective roles.}
+\end{center}
+
+\textbf{Sweep.} Plot RMSE (or other metric) on training (red) and validation (blue) curves vs.\ $\lambda$. The validation curve typically has a U shape — too small $\lambda$ overfits (high validation error), too large $\lambda$ underfits (also high validation error). Pick the bottom of the U.
+
+\textbf{Larger sets buy what?}
+\begin{itemize}
+  \item Large training set $\Rightarrow$ algorithm performs well.
+  \item Large validation set $\Rightarrow$ hyperparameter tuning works well.
+  \item Large test set $\Rightarrow$ accurate performance estimate (to a limit).
+\end{itemize}
+
+% =====================================================================
+\section{Asides — early stopping and model limits}
+
+\subsection{Early stopping}
+
+A non-explicit form of regularisation: train iteratively, but stop early before training error reaches its minimum. The model's complexity is implicitly bounded by how long you trained.
+
+\textbf{Common in deep learning} where explicit regularisation is hard to design. Early stopping is the ``last resort'' regulariser when other forms are too weak.
+
+\textbf{Lecture's view.} Early stopping is a ``bad hack'' — if you need it, your other regularisation is too weak and should be strengthened. But ``may still be the least terrible solution.''
+
+\subsection{Model limits as regularisation}
+
+A naturally restricted model class is itself a form of regularisation. Logistic regression \emph{can only} produce linear decision boundaries (Wk11); fitting it to data with non-linear structure is automatically biased towards a simple solution.
+
+\textbf{Limitation.} The amount of regularisation is fixed by the model class — no $\lambda$ to tune. ``Rarely the right amount.''
+
+\subsection{Quantity of data}
+
+The lecture has two ``Quantity'' asides on data:
+\begin{itemize}
+  \item \textbf{More data $\Rightarrow$ less regularisation required.} Infinite data $\Rightarrow$ no regularisation (you could just look up the answer).
+  \item \textbf{The right $\lambda$ depends on $N$.} Re-tune when the dataset changes size. (See past paper Q3(d) above.)
+  \item \textbf{Sweet spot.} Models often have a ``goldilocks'' data range — too little fails, too much stops improving (the model has saturated).
+\end{itemize}
+
+% =====================================================================
+\section{Probabilistic vs non-probabilistic regularisation}
+
+The lecture frames regularisation through two lenses:
+
+\begin{tabularx}{\linewidth}{@{}lXX@{}}
+\toprule
+& \thead{Non-probabilistic} & \thead{Probabilistic} \\
+\midrule
+What you minimise   & $L_{\text{data}}(\theta) + \lambda R(\theta)$ — arbitrary loss & $-\log p(\mathbf{y}|\mathbf{X},\theta) - \log p(\theta)$ — log-posterior \\
+Where $\lambda$ comes from & free hyperparameter, tune by validation & strength of the prior \\
+ML estimation       & no regularisation                              & no regularisation (uniform prior) \\
+MAP estimation      & not directly comparable                         & regularised by the prior \\
+Bayesian            & not used                                        & full posterior, no point estimate \\
+\bottomrule
+\end{tabularx}
+
+\textbf{Same formula, different interpretation.} The $\lambda\|\mathbf{w}\|^2$ term in ridge regression \emph{is} a Gaussian log-prior on $\mathbf{w}$ (Wk10 §4.4). The $\lambda\|\mathbf{w}\|_1$ term in lasso \emph{is} a Laplace log-prior on $\mathbf{w}$. The non-probabilistic view treats $\lambda$ as a knob; the probabilistic view treats it as a prior parameter.
+
+% =====================================================================
+\section{Exam-mode answers}
+
+\begin{exambox}[{(True/False): Increasing the regularisation parameter $\lambda$ in lasso regression leads to sparser regression coefficients.}]
+\textit{\textbf{TRUE}. Lasso's $L_1$ penalty produces a diamond-shaped constraint region whose corners lie on the coordinate axes; as $\lambda$ increases, the diamond shrinks and the optimum tends to land on a corner — meaning some $w_j$ is exactly zero. More $\lambda$ $\Rightarrow$ tighter diamond $\Rightarrow$ more coordinates pinned to zero. (1 mark) (Past paper Q1(4))}
+\end{exambox}
+
+\begin{exambox}[{(Concept): Why regularise? Give four reasons.}]
+\textit{(1) \textbf{Avoid overfitting}: high-capacity models fit noise; regularisation pushes towards smoother fits that generalise. (2) \textbf{Resolve ill-posedness}: when multiple parameter values fit the data equally well, regularisation provides a tiebreaker. (3) \textbf{Human understanding}: pushing towards sparse / interpretable parameters makes the model easier to read and explain. (4) \textbf{Easier optimisation}: smooth convex penalties remove flat regions and stationary points, accelerating gradient-based convergence. ``Often several at once.'' (Wenbin)}
+\end{exambox}
+
+\begin{exambox}[{\doflag{}(Compute): Write the regularised loss for ridge regression and derive the closed-form solution.}]
+\textit{\textbf{Loss.} $L(\mathbf{w}) = \|\mathbf{X}\mathbf{w}-\mathbf{y}\|^2 + \lambda\|\mathbf{w}\|^2$. (1 mark)}\\[0.3em]
+\textit{\textbf{Gradient.} Differentiate term by term: $\nabla_\mathbf{w}\|\mathbf{X}\mathbf{w}-\mathbf{y}\|^2 = 2\mathbf{X}^\top\mathbf{X}\mathbf{w} - 2\mathbf{X}^\top\mathbf{y}$ (Wk8); $\nabla_\mathbf{w}\|\mathbf{w}\|^2 = 2\mathbf{w}$. So $\nabla L = 2\mathbf{X}^\top\mathbf{X}\mathbf{w} - 2\mathbf{X}^\top\mathbf{y} + 2\lambda\mathbf{w}$. (2 marks)}\\[0.3em]
+\textit{\textbf{First-order condition.} Set $\nabla L = \mathbf{0}$: $(\mathbf{X}^\top\mathbf{X} + \lambda\mathbf{I})\mathbf{w}_* = \mathbf{X}^\top\mathbf{y}$.}\\[0.3em]
+\textit{\textbf{Closed form.} $\mathbf{w}_*^{\text{ridge}} = (\mathbf{X}^\top\mathbf{X} + \lambda\mathbf{I})^{-1}\mathbf{X}^\top\mathbf{y}$. Always invertible for $\lambda > 0$. (1 mark)}
+\end{exambox}
+
+\begin{exambox}[{(Concept): Compare ridge and lasso regression on (a) penalty form, (b) closed-form availability, (c) sparsity, (d) probabilistic interpretation.}]
+\textit{\textbf{(a) Penalty.} Ridge: $\lambda\|\mathbf{w}\|^2$ ($L_2$, sum of squares). Lasso: $\lambda\|\mathbf{w}\|_1$ ($L_1$, sum of absolute values).}\\[0.2em]
+\textit{\textbf{(b) Closed form.} Ridge: $\mathbf{w}_* = (\mathbf{X}^\top\mathbf{X}+\lambda\mathbf{I})^{-1}\mathbf{X}^\top\mathbf{y}$. Lasso: no closed form (penalty non-differentiable at zero); solved iteratively.}\\[0.2em]
+\textit{\textbf{(c) Sparsity.} Ridge shrinks coefficients smoothly toward zero but rarely produces exact zeros. Lasso drives many coefficients exactly to zero (feature selection).}\\[0.2em]
+\textit{\textbf{(d) Probabilistic.} Ridge $=$ MAP with Gaussian prior on $\mathbf{w}$. Lasso $=$ MAP with Laplace prior on $\mathbf{w}$. Both produce point estimates, not full posteriors.}
+\end{exambox}
+
+\begin{exambox}[{\doflag{}(Past paper Q3(d)): As sample size $N$ increases, in which direction should $\lambda$ change?}]
+\textit{\textbf{$\lambda$ should decrease as $N$ increases.} The data fit term is a sum over $N$ samples while the regulariser is fixed; as $N$ grows, the data-fit term dominates more strongly, so a smaller $\lambda$ achieves the same balance between data fit and prior bias. Equivalently, with more data, the model has less need for the inductive bias the regulariser provides — the data alone is informative enough to identify a good $\mathbf{w}$. (4 marks)}\\[0.3em]
+\textit{\textbf{Alternative answer accepted by the marker (per Wk30b walkthrough).} A computational-efficiency framing: as $N$ grows, the $\mathbf{X}^\top\mathbf{X}$ matrix becomes more stable and less reliant on the $\lambda\mathbf{I}$ regularisation for invertibility, so $\lambda$ can be reduced. Either framing earns full marks if reasoning is coherent.}
+\end{exambox}
+
+\begin{exambox}[{(Concept): Train/validation/test split — what is each used for?}]
+\textit{\textbf{Train.} Used to fit model parameters $\theta$ given a fixed hyperparameter $\lambda$. Largest of the three.}\\[0.2em]
+\textit{\textbf{Validation.} Used to select $\lambda$ (and any other hyperparameters). Train the model for several $\lambda$ values; pick the one with best validation performance.}\\[0.2em]
+\textit{\textbf{Test.} Used \emph{once}, at the very end, to report final performance. Touching it during model selection inflates reported numbers.}
+\end{exambox}
+
+\begin{exambox}[{(Concept): What is elastic net and when is it preferable to plain lasso or ridge?}]
+\textit{Elastic net combines $L_1$ and $L_2$ penalties: $L = \|\mathbf{X}\mathbf{w}-\mathbf{y}\|^2 + \lambda(\gamma\|\mathbf{w}\|_1 + (1-\gamma)\|\mathbf{w}\|_2^2)$. Two hyperparameters: $\lambda$ for total strength, $\gamma$ for mixing.}\\[0.3em]
+\textit{Preferable when: (i) features are correlated and pure lasso arbitrarily zeros all but one — elastic net's $L_2$ component encourages correlated features to have similar coefficients; (ii) you want some sparsity but not as aggressively as pure lasso; (iii) you can't decide between $L_1$ and $L_2$ — let the hyperparameter sweep decide.}
+\end{exambox}
+
+% =====================================================================
+\section*{Key equations cheat sheet}
+\addcontentsline{toc}{section}{Key equations cheat sheet}
+
+\begin{tabularx}{\linewidth}{@{}lX@{}}
+\toprule
+\thead{Object} & \thead{Formula} \\
+\midrule
+Generic regularised loss   & $L(\theta) = L_{\text{data}}(\theta) + \lambda R(\theta)$ \\
+Ridge / $L_2$ loss         & $\|\mathbf{X}\mathbf{w}-\mathbf{y}\|^2 + \lambda\|\mathbf{w}\|^2$ \\
+Ridge closed form          & $\mathbf{w}_* = (\mathbf{X}^\top\mathbf{X} + \lambda\mathbf{I})^{-1}\mathbf{X}^\top\mathbf{y}$ \\
+Lasso / $L_1$ loss         & $\|\mathbf{X}\mathbf{w}-\mathbf{y}\|^2 + \lambda\|\mathbf{w}\|_1$ \\
+Elastic net                & $\|\mathbf{X}\mathbf{w}-\mathbf{y}\|^2 + \lambda(\gamma\|\mathbf{w}\|_1 + (1-\gamma)\|\mathbf{w}\|^2)$ \\
+$\lambda$ vs $N$           & $N \uparrow \Rightarrow \lambda \downarrow$ \\
+Probabilistic ridge        & MAP with $\mathbf{w}\sim\mathcal{N}(\mathbf{0}, \mathbf{I}/\lambda)$ (Wk10) \\
+Probabilistic lasso        & MAP with $\mathbf{w}\sim\text{Laplace}(\mathbf{0},1/\lambda)$ \\
+Four reasons to regularise & overfitting, ill-posed, human understanding, easier optimisation \\
+\bottomrule
+\end{tabularx}
+
+% =====================================================================
+\section*{Pitfalls and traps consolidated}
+\addcontentsline{toc}{section}{Pitfalls and traps consolidated}
+
+\begin{itemize}
+  \item \trapflag{}\textbf{``Increasing $\lambda$ in lasso $\Rightarrow$ sparser coefficients.''} \textbf{TRUE} (past paper Q1(4)). The geometric reason: $L_1$ ball corners on axes mean optima land at exact zeros.
+  \item \textbf{Ridge does \emph{not} zero out coefficients.} It shrinks them smoothly. If you need sparsity, use lasso (or elastic net).
+  \item \textbf{Lasso has no closed form.} Don't write down a Normal-Equation-style formula for it. Solved iteratively.
+  \item \textbf{$\lambda$ is tuned on a \emph{validation} set, not the test set.} Touching the test set during tuning inflates reported numbers.
+  \item \textbf{Regularising the bias term.} Conventionally, the bias / intercept $w_0$ is \emph{not} regularised — penalising it shrinks the average prediction towards zero, which is rarely desired. Most software handles this automatically.
+  \item \textbf{Ridge regression's $\lambda\mathbf{I}$ trick guarantees invertibility} but doesn't suddenly make a singular problem well-posed in any deeper sense — you've added information ``out of thin air.'' The information is the prior; whether it's appropriate for your data is a modelling question.
+  \item \textbf{Don't confuse $\lambda$ (regularisation strength) with $\gamma$ (elastic-net mixing).} Two distinct hyperparameters.
+  \item \textbf{Early stopping is regularisation in disguise.} If you find yourself using it, your explicit regularisation is too weak — but it ``may still be the least terrible solution'' for deep nets.
+  \item \textbf{$\lambda$ depends on the dataset.} Re-tune when the data changes (Wk30b: ``$N$ increases $\Rightarrow$ $\lambda$ decreases'' is the safe answer).
+\end{itemize}
+
+% =====================================================================
+\section*{Self-check questions}
+\addcontentsline{toc}{section}{Self-check questions}
+
+\begin{enumerate}
+  \item Define regularisation. Write the general regularised loss in terms of $L_{\text{data}}$, $R$, and $\lambda$.
+  \item Name the four reasons to regularise from the lecture. Give a one-sentence example for each.
+  \item State Occam's razor in plain English and explain its connection to regularisation.
+  \item Write the ridge regression loss and derive the closed-form solution from scratch.
+  \item Write the lasso loss. Why is there no closed-form solution?
+  \item Geometrically, why does lasso produce sparse solutions while ridge does not? Sketch the $L_1$ and $L_2$ unit balls.
+  \item Define elastic net. Identify its two hyperparameters and explain the role of each.
+  \item True or false: increasing $\lambda$ in lasso produces sparser coefficients. Justify.
+  \item Past paper Q3(d): in which direction should $\lambda$ change as $N$ increases? Justify both the statistical and computational framings.
+  \item Describe the train/validation/test split and the purpose of each set. Why must the test set be held out until the end?
+  \item Explain how a hyperparameter sweep over $\lambda$ produces a U-shaped validation curve.
+  \item Define early stopping and explain why it is considered a form of regularisation.
+  \item Connect ridge regression to MAP estimation with a Gaussian prior (Wk10). What prior corresponds to lasso?
+  \item Explain why the bias / intercept term is conventionally excluded from the regulariser.
+  \item Forward link: SVMs (Wk25) have a regularisation parameter $C$. Explain qualitatively how it plays a similar role to $\lambda$.
+\end{enumerate}
+
+\end{document}

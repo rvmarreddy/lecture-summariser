@@ -1,0 +1,754 @@
+\documentclass[11pt, a4paper]{article}
+
+\usepackage{fontspec}
+\setmainfont{Helvetica Neue}
+\setmonofont{Menlo}
+\usepackage{unicode-math}
+\setmathfont{STIX Two Math}
+
+\usepackage[margin=2cm, top=2cm, bottom=2.5cm]{geometry}
+\usepackage{microtype}
+\usepackage{parskip}
+\setlength{\parskip}{0.6em}
+\setlength{\parindent}{0pt}
+
+\usepackage[colorlinks=true, linkcolor=NavyBlue, urlcolor=NavyBlue, citecolor=NavyBlue]{hyperref}
+\usepackage{xcolor}
+\usepackage[dvipsnames]{xcolor}
+
+\usepackage{amsmath}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{tabularx}
+\newcommand{\thead}[1]{\textbf{#1}}
+
+% --- Graphics ---
+\usepackage{graphicx}
+\graphicspath{{figures/week22/}}
+
+\usepackage{enumitem}
+\setlist[itemize]{leftmargin=1.5em, itemsep=0.2em, topsep=0.3em}
+\setlist[enumerate]{leftmargin=1.5em, itemsep=0.2em, topsep=0.3em}
+
+\usepackage[most]{tcolorbox}
+\tcbuselibrary{breakable, skins, theorems}
+
+\definecolor{defBg}{HTML}{EAF2FB}
+\definecolor{defBd}{HTML}{1F4E79}
+\definecolor{exBg}{HTML}{F4F4F4}
+\definecolor{exBd}{HTML}{555555}
+\definecolor{tipBg}{HTML}{E8F5E9}
+\definecolor{tipBd}{HTML}{2E7D32}
+\definecolor{trapBg}{HTML}{FCE4EC}
+\definecolor{trapBd}{HTML}{AD1457}
+\definecolor{pitBg}{HTML}{FFF8E1}
+\definecolor{pitBd}{HTML}{B27600}
+\definecolor{noteBg}{HTML}{F3E5F5}
+\definecolor{noteBd}{HTML}{6A1B9A}
+\definecolor{tldrBg}{HTML}{E1F5FE}
+\definecolor{tldrBd}{HTML}{0277BD}
+
+\newtcolorbox{defbox}[1][]{enhanced, breakable, colback=defBg, colframe=defBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={Definition: #1}}
+\newtcolorbox{exbox}[1][]{enhanced, breakable, colback=exBg, colframe=exBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={Worked example: #1}}
+\newtcolorbox{exambox}[1][]{enhanced, breakable, colback=tipBg, colframe=tipBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={Exam-mode answer #1}}
+\newtcolorbox{trapbox}[1][]{enhanced, breakable, colback=trapBg, colframe=trapBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={MCQ trap #1}}
+\newtcolorbox{pitfallbox}[1][]{enhanced, breakable, colback=pitBg, colframe=pitBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={Pitfall #1}}
+\newtcolorbox{notebox}[1][]{enhanced, breakable, colback=noteBg, colframe=noteBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={Lecturer aside #1}}
+\newtcolorbox{tldrbox}[1][]{enhanced, breakable, colback=tldrBg, colframe=tldrBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={TL;DR #1}}
+
+\usepackage{titlesec}
+\titleformat{\section}[block]{\Large\bfseries\color{defBd}}{\thesection.}{0.6em}{}
+\titleformat{\subsection}[block]{\large\bfseries\color{defBd!80!black}}{\thesubsection}{0.5em}{}
+\titleformat{\subsubsection}[block]{\normalsize\bfseries}{}{0pt}{}
+\titlespacing*{\section}{0pt}{1.6em}{0.6em}
+\titlespacing*{\subsection}{0pt}{1.2em}{0.4em}
+
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small CM52078 — Week 4}
+\fancyhead[R]{\small Constraint Satisfaction Problems}
+\fancyfoot[C]{\small\thepage}
+\renewcommand{\headrulewidth}{0.3pt}
+
+\newcommand{\examflag}{\textcolor{tipBd}{\textbf{[EXAM]}}\,}
+\newcommand{\trapflag}{\textcolor{trapBd}{\textbf{[TRAP]}}\,}
+\newcommand{\doflag}{\textcolor{defBd}{\textbf{[DO]}}\,}
+
+\title{\vspace{-1cm}{\Huge\bfseries Week 4 — Constraint Satisfaction Problems} \\[0.4em]{\large CSP formulation, constraint propagation, local consistency, backtracking search}}
+\author{\large CM52078 Classical Artificial Intelligence \\[0.2em]\normalsize University of Bath \,$\cdot$\, Dr Nadejda Roubtsova}
+\date{Revision notes}
+
+\begin{document}
+
+\maketitle
+\thispagestyle{empty}
+
+\vspace{1em}
+
+\begin{tldrbox}
+\begin{itemize}[leftmargin=*]
+  \item A \textbf{constraint satisfaction problem (CSP)} factors the state into a set of variables $X = \{X_1, \dots, X_n\}$, each with a domain $D_i$, and a set of constraints $C$. A \textbf{solution} is a complete and consistent value assignment.
+  \item Two solving mechanisms: \textbf{search} (try value combinations, building a tree) and \textbf{inference} (constraint propagation: shrink domains by enforcing local consistency). They're typically combined.
+  \item \textbf{Constraint graph}: nodes = variables, edges = binary constraints. Used to visualise local-consistency types.
+  \item \textbf{Local-consistency types:} \emph{node} (unary, on single variables), \emph{arc} (binary, on pairs), \emph{path} (triplets), and more generally \emph{$k$-consistency}. Stronger consistency catches problems earlier but costs more.
+  \item \textbf{Backtracking search for CSPs}: depth-first tree building with single-state representation; backtrack on dead ends; uses recursion. Three design choices: variable ordering, value ordering, inference type.
+  \item Domain-independent heuristics: \textbf{MRV} (minimum remaining values $\to$ most-constrained variable first, ``fail-first''), \textbf{LCV} (least constraining value $\to$ value that prunes others' domains the least, ``succeed-first''), \textbf{forward checking} (enforce arc consistency on connected variables only).
+  \item \textbf{Commutativity}: the order of variable assignments doesn't affect whether a solution is found. So we don't enumerate variable orderings — that cuts the tree size from $n! \cdot d^n$ to $d^n$.
+  \item \textbf{Min-conflicts hill climbing} is a useful local-search alternative to backtracking when solutions are densely distributed (like 8-queens or flight rescheduling).
+\end{itemize}
+\end{tldrbox}
+
+% =====================================================================
+\section{From atomic states to factored states}
+
+Up to now, the state in our search problems has been \textbf{atomic} — an indivisible snapshot, with no internal structure visible to the algorithm. Cities, board configurations, airport coordinates: the algorithm only ever asks ``is this state the goal?''
+
+Atomic representation hides the structure that real-world problems have. A chess position isn't really a single ``state'' — it's a configuration of pieces. A timetable isn't a single state — it's a collection of session-to-slot assignments. A sudoku isn't a single state — it's 81 cell-to-digit assignments. Treating these atomically loses the very structure that makes them solvable efficiently.
+
+\subsection{The 8-queens problem and why atomic representation hurts}
+
+The 8-queens puzzle: place 8 queens on a chessboard so no two attack each other (queens attack horizontally, vertically, and diagonally).
+
+Treated atomically, the state is a whole board configuration. Moving any one queen produces a different ``atomic'' state, but you can't say \emph{how} the new state differs from the old except ``it's a different snapshot.'' The state space is $\binom{64}{8} \approx 4.4$ billion arrangements; brute-force search is hopeless.
+
+\begin{center}
+
+\footnotesize\textit{The atomic view of an 8-queens state. The whole board --- the joint placement of all eight queens --- is treated as one indivisible ``snapshot.'' The algorithm can only ask ``is this the goal?''; it cannot see that the state is built from eight separable queen positions, so moving a single queen counts as an unquantifiable jump to a wholly different state. This is exactly the structure CSP factoring will expose. Image credit: Russell \& Norvig, AIMA 4e.}
+\end{center}
+
+\textbf{The factoring insight:} naturally, queens shouldn't share columns. So put one queen per column; the state becomes 8 \emph{column-position} variables, each taking a value in $\{1, \dots, 8\}$:
+\[
+X = (X_1, X_2, \dots, X_8), \qquad D_i = \{1, 2, \dots, 8\} \text{ for each } i.
+\]
+
+\textbf{Immediate gains from factoring:}
+\begin{itemize}
+  \item Search space is now $8^8 \approx 16.7$ million — already 250$\times$ smaller.
+  \item By construction, no two queens can share a column (a whole class of invalid states is eliminated).
+  \item ``Moving one queen'' is a \textbf{local change to one variable}, not a wholesale state replacement — the algorithm can reason about it.
+\end{itemize}
+
+\subsection{Min-conflicts hill climbing on 8-queens}
+
+A hill-climbing variant tailored to factored states.
+
+\begin{defbox}[Min-conflicts hill climbing]
+\begin{enumerate}
+  \item Initialise all queens to random positions in their columns.
+  \item Pick a \textbf{conflicted} queen (any queen currently attacking another) at random.
+  \item Generate the successors by considering only that queen's possible moves within its column. Move it to the position that minimises the total number of conflicts. Break ties randomly.
+  \item Repeat until no queen is in conflict.
+\end{enumerate}
+\end{defbox}
+
+\begin{center}
+
+\footnotesize\textit{One min-conflicts move on 8-queens. \textbf{Left:} the current state --- the number in each square of the selected queen's column is the conflict count that would result from moving that queen there (how many other queens it would then attack). \textbf{Middle:} the queen is moved to the square with the fewest conflicts (the boxed cell, value 0 here), with ties broken at random. \textbf{Right:} the resulting board. Only one column is ever touched per step, yet the conflict count steadily falls. Image credit: Russell \& Norvig, AIMA 4e.}
+\end{center}
+
+This is a strange-looking algorithm: it only ever tweaks one queen at a time, ignoring the rest of the board. Why does it work?
+
+\begin{notebox}[: dense solution distribution]
+8-queens has \emph{many} solutions (92, ignoring symmetry), so they are densely distributed in the state space. From a random start you're typically not far from \emph{some} solution, and local tweaking finds one fast. The same property makes min-conflicts good for problems like \textbf{flight rescheduling} after a disruption: you don't want a complete redo, you want the smallest set of changes that re-satisfies the constraints.
+\end{notebox}
+
+In practice, min-conflicts solves 8-queens in around 50 steps on average, and even the 1-million-queen problem in seconds — far beyond what any systematic search could touch.
+
+But there's a more general framework here. The 8-queens with factored representation \emph{is} a CSP. That's the rest of this lecture.
+
+% =====================================================================
+\section{CSP formalism}
+
+\subsection{The three components}
+
+\begin{defbox}[Constraint satisfaction problem (CSP)]
+A CSP is a triple $(X, D, C)$ where:
+\begin{itemize}[leftmargin=*]
+  \item $X = \{X_1, X_2, \dots, X_n\}$ is a set of \textbf{variables}.
+  \item $D = \{D_1, D_2, \dots, D_n\}$ is a set of \textbf{domains}, one per variable, specifying the values that variable can take.
+  \item $C$ is a set of \textbf{constraints}: rules that apply to subsets of variables and restrict the value combinations they can jointly take.
+\end{itemize}
+\end{defbox}
+
+\textbf{Constraints can vary in arity:}
+\begin{itemize}
+  \item \emph{Unary} constraints involve one variable (e.g., ``$X_1$ must be red'').
+  \item \emph{Binary} constraints involve two (e.g., ``$X_1 \neq X_2$''). Most CSPs are binary or can be reformulated as binary.
+  \item \emph{Higher-arity} constraints involve more (e.g., ``$X_1 + X_2 + X_3 = 10$'').
+\end{itemize}
+
+For 4-queens (a smaller version of 8-queens, easier to draw):
+
+\begin{exbox}[4-queens as a CSP]
+\textbf{Variables:} $X_1, X_2, X_3, X_4$ — the row of each queen in column 1, 2, 3, 4 respectively.\\
+\textbf{Domains:} $D_i = \{1, 2, 3, 4\}$ for all $i$ initially.\\
+\textbf{Constraints:} for every pair $i \neq j$,
+\begin{itemize}[itemsep=0pt, topsep=0pt]
+  \item $X_i \neq X_j$ (no shared row),
+  \item $|X_i - X_j| \neq |i - j|$ (no shared diagonal).
+\end{itemize}
+A solution: $\{X_1 = 2, X_2 = 4, X_3 = 1, X_4 = 3\}$.
+\end{exbox}
+
+\begin{center}
+
+\footnotesize\textit{The 4-queens CSP made concrete on this solution. Each \textbf{variable} $X_1,\dots,X_4$ is one column (the blue arrows label them along the bottom); the \textbf{value} of a variable is the row $1$--$4$ its queen occupies, so here $X_1{=}2,\ X_2{=}4,\ X_3{=}1,\ X_4{=}3$. The one-queen-per-column factoring is built in: columns can never clash, so the only constraints left to enforce are the row ($X_i\neq X_j$) and diagonal ($|X_i-X_j|\neq|i-j|$) ones.}
+\end{center}
+
+\subsection{Sudoku as a CSP}
+
+The unit's coursework (Sudoku) is a CSP. Worth working out explicitly:
+
+\begin{exbox}[Sudoku formalised as a CSP]
+\textbf{Variables:} 81 cells, $X_{i,j}$ for $i, j \in \{1, \dots, 9\}$.\\
+\textbf{Domains:} $D_{i,j} = \{1, 2, \dots, 9\}$ initially. Pre-filled cells have a singleton domain (e.g., $D_{1,1} = \{8\}$ if the cell starts with an 8).\\
+\textbf{Constraints:} all-different on each:
+\begin{itemize}[itemsep=0pt, topsep=0pt]
+  \item Row: $X_{i,1}, X_{i,2}, \dots, X_{i,9}$ all different (for each $i$).
+  \item Column: $X_{1,j}, X_{2,j}, \dots, X_{9,j}$ all different (for each $j$).
+  \item Block: each 3$\times$3 sub-grid all different (9 blocks).
+\end{itemize}
+That's 27 all-different constraints, each over 9 variables — these are higher-arity but can be decomposed into pairwise $\neq$ constraints (binary).
+\end{exbox}
+
+\subsection{Map colouring as a CSP}
+
+Australia's seven districts:
+
+\begin{exbox}[Map colouring formalised as a CSP]
+\textbf{Variables:} $V = \{$WA, NT, SA, Q, NSW, V, T$\}$ (7 districts).\\
+\textbf{Domains:} $D_S = \{$Red, Green, Blue$\}$ for each $S$.\\
+\textbf{Constraints:} ``no two neighbouring districts share a colour'' translates to a binary $\neq$ between every adjacent pair: WA $\neq$ NT, WA $\neq$ SA, NT $\neq$ SA, NT $\neq$ Q, SA $\neq$ Q, SA $\neq$ NSW, SA $\neq$ V, Q $\neq$ NSW, NSW $\neq$ V. T (Tasmania) has no neighbours so no constraints involve it.
+\end{exbox}
+
+\subsection{Assignments: complete, consistent, solution}
+
+\begin{defbox}[Assignment]
+A mapping from each variable to a value in its domain. \\[0.2em]
+\textbf{Complete} — every variable is assigned. \\
+\textbf{Consistent} — all constraints are satisfied. \\
+\textbf{Solution} — both complete and consistent.
+\end{defbox}
+
+\textbf{Crucial difference from the search problems we've seen.} Earlier paradigms only let you check whether the \emph{final} state is a goal. CSPs let you check whether a \emph{partial} assignment is consistent — an intermediate checkpoint. \textbf{That partial-assignment check is the lever that makes everything else possible:} it's what lets us prune dead-end branches early, propagate constraints, and use heuristics that ``feel'' the problem's structure.
+
+\begin{trapbox}[: complete vs consistent]
+A common MCQ pattern: ``which of the following describes a CSP solution?'' Distractors usually flip definitions:
+\begin{itemize}[leftmargin=*, itemsep=0pt, topsep=0pt]
+  \item ``A complete assignment'' — wrong; complete alone allows constraint violations.
+  \item ``A consistent assignment'' — wrong; partial assignments can be consistent but unsolved.
+  \item ``A complete \emph{and} consistent assignment'' — \textbf{correct.}
+\end{itemize}
+\end{trapbox}
+
+% =====================================================================
+\section{Solving CSPs: search and inference}
+
+There are two complementary mechanisms in CSP solving:
+
+\begin{enumerate}
+  \item \textbf{Search}: build a tree of value assignments, exploring combinations. Depth-first, one variable per level.
+  \item \textbf{Inference}: shrink domains using constraints, by enforcing \emph{local consistency}. Doesn't try values; it deduces which values are no longer possible given other values already in play.
+\end{enumerate}
+
+You can use either alone, but typical CSP solvers \textbf{interleave} them. Pure search is slow (the tree explodes); pure inference often can't reduce domains enough to leave a single value per variable.
+
+\subsection{Constraint propagation: a 4-queens walkthrough}
+
+\begin{exbox}[Solving 4-queens by interleaved search and inference]
+Start with $D_1 = D_2 = D_3 = D_4 = \{1, 2, 3, 4\}$ (all positions allowed).\\[0.3em]
+\textbf{Step 1: Assign $X_1 = 2$.} Constraint propagation:
+\begin{itemize}[leftmargin=*, itemsep=0pt, topsep=0pt]
+  \item $X_2 \neq 2$ (same row); $|X_2 - 2| \neq |2 - 1|$ so $X_2 \neq 1, 3$ (diagonals from $X_1$). $D_2 = \{4\}$.
+  \item $X_3 \neq 2$ (row); $|X_3 - 2| \neq |3 - 1| = 2$ so $X_3 \neq 4$ (diagonal). $D_3 = \{1, 3\}$.
+  \item $X_4 \neq 2$ (row); $|X_4 - 2| \neq 3$ so all values still possible. $D_4 = \{1, 3, 4\}$.
+\end{itemize}
+\textbf{Step 2: $D_2$ has only 1 option, so assign $X_2 = 4$.} Propagate again:
+\begin{itemize}[leftmargin=*, itemsep=0pt, topsep=0pt]
+  \item $X_3 \neq 4$ (already excluded); $|X_3 - 4| \neq 1$ so $X_3 \neq 3, 5$. So $X_3 \neq 3$. Now $D_3 = \{1\}$.
+  \item $X_4 \neq 4$; $|X_4 - 4| \neq 2$ so $X_4 \neq 2, 6$. $D_4 = \{1, 3\}$ (still).
+\end{itemize}
+\textbf{Step 3: $D_3$ has only 1 option, so assign $X_3 = 1$.} Propagate:
+\begin{itemize}[leftmargin=*, itemsep=0pt, topsep=0pt]
+  \item $X_4 \neq 1$ (row); $|X_4 - 1| \neq 1$ so $X_4 \neq 2$ (already excluded). $D_4 = \{3\}$.
+\end{itemize}
+\textbf{Step 4: Assign $X_4 = 3$.} \textbf{Solution found:} $\{X_1 = 2, X_2 = 4, X_3 = 1, X_4 = 3\}$, no backtracking needed.
+\end{exbox}
+
+\begin{center}
+
+\footnotesize\textit{The same 4-queens walkthrough as a picture --- read the four boards left to right. At each step the just-placed queen (black crown) is committed, and a \textbf{red cross} marks every square then ruled out of the still-unassigned columns by a row or diagonal constraint. The surviving domains $D_2,D_3,D_4$ are written above each board: they shrink monotonically ($D_2{=}\{4\}$, then $D_3{=}\{1\}$, then $D_4{=}\{3\}$). Notice each new variable has exactly one square left by the time it is reached --- propagation, not search, did the work, so no branch is ever undone.}
+\end{center}
+
+\textbf{The point.} Aggressive constraint propagation cut the domains so much that no real search was needed. Each variable had a unique forced value by the time we reached it. \emph{The first assignment did almost all the work; the rest was bookkeeping.}
+
+\begin{pitfallbox}[: what kind of propagation was this?]
+The trace above only propagates from the \emph{just-assigned} variable to its neighbours: $X_1 \to \{X_2, X_3, X_4\}$, then $X_2 \to \{X_3, X_4\}$, etc. That is \textbf{forward checking} (defined later in this chapter) — a shallow, incremental form of arc consistency that runs once after each assignment. The deeper algorithm \textbf{AC-3} (also defined later) is a \emph{global fixed point}: it keeps re-checking arcs until no domain can shrink further, and would have caught some of the reductions \emph{before} we even chose $X_2$. Forward checking and AC-3 are easy to confuse — keep the distinction sharp: forward checking is one outward sweep per assignment; AC-3 is full propagation to convergence.
+\end{pitfallbox}
+
+\subsection{When to do inference}
+
+\begin{itemize}
+  \item \textbf{Before search.} Run inference once on the unassigned domains to remove any values that are inherently impossible. May reduce some domains to a single value (so no search is needed for those variables).
+  \item \textbf{During search.} After every assignment, propagate constraints to shrink the remaining domains. The 4-queens walkthrough above is this kind. Risk: you might shrink some domain to $\emptyset$ — a \textbf{dead end} — and need to backtrack.
+\end{itemize}
+
+You can mix both: inference once a priori, then again interleaved with search.
+
+% =====================================================================
+\section{The constraint graph}
+
+CSPs admit a useful visual representation that makes local-consistency types intuitive.
+
+\begin{defbox}[Constraint graph]
+A graph in which each variable is a node, and each \textbf{binary} constraint is an edge connecting the two variables it relates. Constraints involving more variables can be visualised by hyperedges or by adding auxiliary nodes.
+\end{defbox}
+
+\subsection{Running example: Australia map colouring}
+
+Districts of Australia (WA, NT, SA, Q, NSW, V, T) are variables. Domain for each: $\{red, green, blue\}$. Constraint: no two neighbouring districts share a colour. The constraint graph has an edge between every pair of geographically neighbouring districts.
+
+\begin{center}
+
+\footnotesize\textit{From map to constraint graph. \textbf{(a)} The seven districts of Australia; two districts are adjacent if they share a border. \textbf{(b)} The constraint graph: one node per district (variable), one edge per pair of \emph{neighbouring} districts (a binary $\neq$ constraint). The graph keeps only \emph{which} constraints exist --- not any colour assignment. Note Tasmania (T) sits as an isolated node: no land border, hence no edges and no constraints. Image credit: Russell \& Norvig, AIMA 4e.}
+\end{center}
+
+(Tasmania is an island with no neighbours, so its node is isolated. Its domain is unconstrained.)
+
+The graph captures \emph{which constraints exist}. Particular variable assignments (a partial solution) are not part of the graph — they're a separate piece of state.
+
+% =====================================================================
+\section{Local consistency types}
+
+Inference is \emph{always} a form of enforcing some \textbf{local consistency}. The notion has degrees, indexed by how many variables you check at once.
+
+\subsection{Node consistency (1-consistency)}
+
+\begin{defbox}[Node consistency]
+A variable $X_i$ is \textbf{node-consistent} if every value in its domain $D_i$ satisfies all the unary constraints on $X_i$. Enforced by removing any inherently-incompatible values from the domain.
+\end{defbox}
+
+\textbf{Use case:} a unary constraint, e.g., ``the people of Western Australia dislike green.'' Enforcing node consistency removes \emph{green} from $D_{\text{WA}}$ a priori. Cheap and always worth doing first.
+
+\textbf{When it applies:} the problem has constraints inherent to single variables. \textbf{Doesn't apply to 4-queens} — there are no per-queen unary constraints, only pairwise (binary) ones.
+
+\subsection{Arc consistency (2-consistency)}
+
+\begin{defbox}[Arc consistency]
+A pair of variables $X_i, X_j$ joined by a binary constraint is \textbf{arc-consistent} if for \emph{every} value $a \in D_i$, there is at least one compatible value $b \in D_j$ (and vice versa). Values without a compatible partner are removed from $D_i$.
+\end{defbox}
+
+Enforced for all edges in the constraint graph. The classical algorithm is \textbf{AC-3}.
+
+\subsubsection*{AC-3 sketch}
+
+\begin{exbox}[AC-3 algorithm]
+\begin{verbatim}
+function AC-3(csp):
+    queue <- all arcs in csp
+    while queue is not empty:
+        (X_i, X_j) <- queue.pop()
+        if revise(X_i, X_j):  # removes inconsistent values from D_i
+            if D_i is empty: return failure
+            for each X_k in neighbours(X_i) except X_j:
+                queue.push((X_k, X_i))  # re-check this arc
+    return success
+
+function revise(X_i, X_j):
+    revised <- False
+    for each x in D_i:
+        if no value y in D_j satisfies the constraint (X_i = x, X_j = y):
+            remove x from D_i
+            revised <- True
+    return revised
+\end{verbatim}
+\textbf{Complexity:} $O(c \cdot d^3)$ where $c$ is the number of arcs and $d$ is the maximum domain size.
+\end{exbox}
+
+\textbf{Important subtlety} (lecturer's worked example): for the Australia map with three colours, arc consistency \emph{a priori} reveals nothing. For the WA--SA pair: WA can be red, with SA green or blue; WA can be green, with SA red or blue; WA can be blue, with SA red or green. Every value of WA has a compatible SA value, so no domain reduction is forced.
+
+\textbf{Arc consistency really earns its keep \emph{during} search.} After committing to $X_1 = \text{red}$, the binary constraint forces $\text{red}$ out of $D_{X_2}$ for any $X_2$ adjacent to $X_1$. \textit{Don't conflate ``inference during search'' with ``a priori inference.''}
+
+\begin{trapbox}[: arc consistency might still need search]
+``Arc consistency reduces the CSP to a set of single-value domains.'' \textbf{False in general.} Sometimes it does (when the problem is over-constrained), but for problems like map colouring with enough colours, arc consistency leaves multiple values per domain and search is still needed.
+\end{trapbox}
+
+\begin{exbox}[AC-3 vs forward checking on 4-queens after $X_1=2$]
+After committing to $X_1 = 2$ and \emph{before any other assignment}, compare what each algorithm prunes. Initial domains: $D_2 = D_3 = D_4 = \{1, 2, 3, 4\}$.\\[0.3em]
+\textbf{Forward checking} sweeps once outward from $X_1$ and stops:
+\begin{itemize}[leftmargin=*, itemsep=0pt, topsep=0pt]
+  \item Arc $(X_2, X_1)$: $X_2 \neq 2$ (row), $X_2 \neq 1, 3$ (diagonal one column away). $D_2 \to \{4\}$.
+  \item Arc $(X_3, X_1)$: $X_3 \neq 2$ (row), $X_3 \neq 4$ (diagonal two columns away). $D_3 \to \{1, 3\}$.
+  \item Arc $(X_4, X_1)$: $X_4 \neq 2$ (row), no diagonal hit. $D_4 \to \{1, 3, 4\}$.
+\end{itemize}
+Forward checking now \textbf{stops} — it doesn't re-check arcs that don't touch $X_1$.\\[0.3em]
+\textbf{AC-3} keeps going. Because $D_2$ shrank, every arc \emph{into} $X_2$ goes back on the queue:
+\begin{itemize}[leftmargin=*, itemsep=0pt, topsep=0pt]
+  \item Arc $(X_3, X_2)$: with $D_2 = \{4\}$, can $X_3 = 1$ coexist with $X_2 = 4$? Row OK; diagonal $|1 - 4| = 3 \neq |3 - 2| = 1$, OK. Can $X_3 = 3$? Diagonal $|3 - 4| = 1 = |3 - 2|$ — \emph{conflict}. Remove 3 from $D_3$. $D_3 \to \{1\}$.
+  \item Arc $(X_4, X_2)$: with $D_2 = \{4\}$, $X_4 \in \{1, 3, 4\}$. Drop 4 (row); $|3-4| = 1 \neq |4-2| = 2$, keep 3; $|1-4| = 3 \neq 2$, keep 1. $D_4 \to \{1, 3\}$.
+  \item $D_3$ shrank, so re-check $(X_4, X_3)$: with $D_3 = \{1\}$, $X_4 = 1$ blocked (row), $X_4 = 3$ has diagonal $|3 - 1| = 2 \neq |4 - 3| = 1$ — keep. $D_4 \to \{3\}$.
+\end{itemize}
+\textbf{After AC-3, before any further assignment:} $D_2 = \{4\}$, $D_3 = \{1\}$, $D_4 = \{3\}$ — the rest of the solution is fixed without search. Forward checking would have needed two more assignments before producing the same conclusion. AC-3 paid more upfront and got there in one sweep-to-convergence.
+\end{exbox}
+
+\textbf{Reading this back:} AC-3 didn't \emph{find} new constraints — every reduction is implied by the existing ones. What AC-3 does is keep applying inference until nothing changes; forward checking only does one round. The work is identical \emph{per arc revision}; the difference is how many revisions you do.
+
+\subsection{Path consistency (3-consistency)}
+
+\begin{defbox}[Path consistency]
+A triplet of variables $X_i, X_j, X_k$ is \textbf{path-consistent} if for every consistent assignment of $(X_i, X_j)$, there is at least one value of $X_k$ that's consistent with both. Path consistency considers triples; arc consistency considers pairs.
+\end{defbox}
+
+Path consistency catches problems that arc consistency misses. Lecturer's example: \emph{the Australia map cannot be coloured with only two colours.}
+
+\begin{exbox}[Two-colour Australia: path consistency vs arc consistency]
+Suppose colours are restricted to $\{red, green\}$. Consider the triple WA--SA--NT, all mutually adjacent.\\[0.3em]
+\textbf{Pairwise (arc):} WA--SA can be (red, green) or (green, red). WA--NT same. NT--SA same. \textbf{Each pair is fine.}\\[0.3em]
+\textbf{Triplet (path):} For WA $=$ red, SA must be green; then NT must differ from both — impossible with only two colours. So no consistent extension exists for this triple. \textbf{Path consistency detects the failure}; arc consistency, looking only at pairs, does not.
+\end{exbox}
+
+\begin{center}
+
+\footnotesize\textit{The three local-consistency levels side by side. \textbf{Node} (1-consistency): a unary constraint, e.g.\ ``WA dislikes green'', prunes a single domain. \textbf{Arc} (2-consistency): checks variable pairs along graph edges --- for $\{SA,WA\}$ every colour of one still has a legal partner, so nothing is pruned a priori. \textbf{Path} (3-consistency): the small WA--NT--SA triangle (bottom right) is the key object --- those three mutually-adjacent districts cannot all differ with only two colours, so the triple has no consistent assignment. Arc consistency, blind to triples, misses this; path consistency catches it. Image credit: Russell \& Norvig, AIMA 4e.}
+\end{center}
+
+\subsection{$k$-consistency}
+
+\begin{defbox}[$k$-consistency]
+A CSP is $k$-consistent if for any consistent assignment of $k-1$ variables, there exists a value for any $k$th variable that maintains consistency. \textbf{Higher $k$ catches more, but costs more to enforce.}
+\end{defbox}
+
+So node = 1-consistency, arc = 2-consistency, path = 3-consistency, and so on. \textbf{Strong $k$-consistency} requires $j$-consistency for all $j \le k$. Strong $n$-consistency in an $n$-variable CSP solves the problem outright (no search needed) but establishing it takes time exponential in $n$ in the worst case — defeating the point.
+
+\subsection{Choosing a consistency level}
+
+A trade-off:
+
+\begin{center}
+\renewcommand{\arraystretch}{1.25}
+\begin{tabular}{@{}p{3.5cm}p{4.5cm}p{6cm}@{}}
+\toprule
+\thead{Level} & \thead{What it catches} & \thead{Cost} \\
+\midrule
+Node     & Inherent value mismatches (unary) & Trivial \\
+Arc      & Pair-level mismatches             & $O(c d^3)$, the standard go-to \\
+Path     & Triplet-level mismatches          & Expensive; only when needed \\
+$k$-cons. & $k$-tuple-level mismatches       & Very expensive; rare in practice \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\textbf{Practical guideline.} Arc consistency is the default. Stronger forms are worth the cost only when you can prove arc consistency leaves too much search ahead.
+
+% =====================================================================
+\section{Backtracking search for CSPs}
+
+The standard systematic CSP solver. Combines search and inference.
+
+\subsection{The algorithm in spirit}
+
+\begin{defbox}[Backtracking search for CSPs]
+A depth-first search that builds a tree level-by-level, with each level corresponding to assigning one variable. After each assignment, propagate constraints. If propagation produces an empty domain (a \textbf{dead end}), undo the most recent assignment and try a different value. Recursive.
+\end{defbox}
+
+Key features:
+
+\begin{itemize}
+  \item \textbf{Single-state representation.} The algorithm maintains one current partial assignment and modifies it in place — no need to copy the whole state per node. Memory cost is linear in the number of variables.
+  \item \textbf{Recursive backtracking.} On dead end, the recursion automatically undoes the most recent assignment and tries the next value. Implementation in textbook (Russell \& Norvig, ch.~5, fig.~5.5).
+  \item \textbf{DFS shape.} You go deep into one branch (one variable's value, then the next, etc.), and only backtrack when forced.
+\end{itemize}
+
+\begin{center}
+
+\footnotesize\textit{A dead end during backtracking on 4-queens. After several queens are placed, propagation has crossed out (red) every square of the column boxed in red --- its domain is now empty, so no value can extend the current partial assignment. This is the trigger for backtracking: the recursion undoes the most recent assignment and tries that variable's next value. A dead end is not failure of the whole problem, only of this branch.}
+\end{center}
+
+\subsection{Pseudocode}
+
+\begin{exbox}[Backtracking search pseudocode]
+\begin{verbatim}
+function Backtrack(assignment, csp):
+    if assignment is complete: return assignment
+    var <- SelectUnassignedVariable(csp, assignment)
+    for each value in OrderDomainValues(csp, var, assignment):
+        if value is consistent with assignment:
+            add {var = value} to assignment
+            inferences <- Inference(csp, var, value)
+            if inferences != failure:
+                add inferences to assignment
+                result <- Backtrack(assignment, csp)
+                if result != failure: return result
+            remove {var = value} and inferences from assignment
+    return failure
+\end{verbatim}
+\textbf{Where the design choices live:} \texttt{SelectUnassignedVariable}, \texttt{OrderDomainValues}, and \texttt{Inference}.
+\end{exbox}
+
+\subsection{The three design choices}
+
+The algorithm \emph{works} regardless of these choices, but their quality drives the runtime by orders of magnitude.
+
+\begin{enumerate}
+  \item \textbf{Order of variable assignment} — which variable is assigned next?
+  \item \textbf{Order of value selection} — within the chosen variable's domain, which value do you try first?
+  \item \textbf{Inference approach} — what level of consistency do you enforce, and where?
+\end{enumerate}
+
+The lecture introduces \textbf{domain-independent heuristics} for all three.
+
+\subsection{Variable ordering: Minimum Remaining Values (MRV)}
+
+\begin{defbox}[Minimum Remaining Values heuristic (MRV)]
+At each step, pick the variable whose current domain has the \textbf{fewest legal values remaining}. The most-constrained variable goes first.
+\end{defbox}
+
+\textbf{Why it works.} Two intuitions:
+\begin{itemize}
+  \item Fewer options means a higher chance you'll get the assignment right (statistically), and a lower chance of compounding errors.
+  \item If you defer a heavily-constrained variable, propagation from later assignments will likely empty its domain — causing expensive backtracking.
+\end{itemize}
+
+MRV is also called the ``fail-first'' heuristic: detect dead-end branches as early as possible. \emph{If a variable is going to fail, fail it now, before you've made many other commitments that you'll waste by undoing.}
+
+\subsubsection*{Tie-breaker: degree heuristic}
+
+When MRV produces a tie (multiple variables with the same minimum domain size), the \textbf{degree heuristic} breaks it: pick the variable involved in the most constraints with other unassigned variables. This produces the most propagation, which speeds up later steps.
+
+\subsection{Value ordering: Least Constraining Value (LCV)}
+
+\begin{defbox}[Least Constraining Value heuristic (LCV)]
+Within the chosen variable's domain, try the value that \textbf{rules out the fewest values from the domains of neighbouring (still-unassigned) variables}.
+\end{defbox}
+
+\textbf{Why it works.} Counterintuitive at first — you'd expect a greedy approach to grab the value that constrains the most. But the opposite is right: by leaving more flexibility for the rest of the tree, you reduce the risk of needing to backtrack later.
+
+MRV says ``fail fast.'' LCV says ``succeed fast.'' Together they're a strong pair.
+
+\begin{trapbox}[: MRV vs LCV]
+A familiar exam mix-up: ``the variable with the most options first'' (false — that's the opposite of MRV); ``the value that rules out the most other values first'' (false — that's the opposite of LCV). Memorise the directions: \textbf{most constrained variable, least constraining value}.
+\end{trapbox}
+
+\subsection{Inference: forward checking}
+
+\begin{defbox}[Forward checking]
+After assigning a value to variable $X_i$, enforce \textbf{arc consistency} on every \emph{directly-connected} unassigned variable. Remove any value from those domains that conflicts with $X_i$'s new value.
+\end{defbox}
+
+Forward checking is \emph{shallow} arc consistency: it only checks the arcs directly attached to the just-assigned variable. It doesn't propagate the consequences of those domain reductions to further-away variables.
+
+\textbf{Why ``shallow'' is on purpose.} Deeper inference (full arc-consistency-3 / AC-3, path consistency) is expensive when run after every assignment. Forward checking gives most of the value for a fraction of the cost.
+
+\textbf{When forward checking misses things.} Forward checking misses inconsistencies that propagate through chains of constraints. AC-3 catches these, at higher cost.
+
+\subsection{Recap: how the pieces fit}
+
+\begin{exbox}[Backtracking search with MRV $+$ LCV $+$ forward checking]
+\begin{enumerate}
+  \item Pick the variable with the \emph{smallest current domain} (MRV).
+  \item Within that variable's domain, try the value that \emph{eliminates the fewest options for neighbours} (LCV).
+  \item Apply forward checking: prune neighbours' domains using arc consistency on the connected arcs.
+  \item If any neighbour's domain becomes empty $\to$ dead end; undo and try the next value (or backtrack to the previous level if no more values remain).
+  \item If complete and consistent, return the assignment.
+\end{enumerate}
+\end{exbox}
+
+% =====================================================================
+\section{Commutativity: variable order doesn't affect completeness}
+
+A subtle but powerful property of CSPs that lets us cut tree size dramatically.
+
+\begin{defbox}[Commutativity of CSP solving]
+The order in which variables are assigned does not affect \emph{whether} a solution is found. Different orders may take different times, but they all reach the same set of solutions.
+\end{defbox}
+
+\textbf{Why?} Because in a CSP, the constraints are stated symmetrically (``$X_1 \neq X_2$'' is the same as ``$X_2 \neq X_1$''). Swapping the order in which you assign $X_1$ and $X_2$ doesn't change which combinations are legal.
+
+\subsection{Why this matters for tree size}
+
+A naive search tree would consider every permutation of variable orderings: at level 1, you'd try assigning each of the $n$ variables, each with $d$ values ($n \cdot d$ branches); then at level 2, $(n-1) \cdot d$ branches; etc. The number of leaves:
+\[
+n \cdot d \times (n-1) \cdot d \times \dots \times 1 \cdot d \;=\; n! \cdot d^n.
+\]
+
+Commutativity says: \emph{just pick one variable order and stick with it}. Then the tree branches only on values, not on variables, giving:
+\[
+d^n \text{ leaves}
+\]
+— a saving of a factor of $n!$ ($\approx$ astronomical even for small $n$).
+
+\begin{center}
+
+\footnotesize\textit{The backtracking search tree for map colouring, exploiting commutativity. The root assigns the first district; each level down assigns the \emph{next} fixed district, and the branching is over the $d{=}3$ colours only --- the tree never branches over \emph{which} variable to take next, because order does not affect completeness. Each node is the partial assignment so far (coloured districts), and the figure already shows domains pruned to enforce local consistency, so some colour branches are absent. Fixing the variable order is what collapses the leaf count from $n!\cdot d^n$ to $d^n$.}
+\end{center}
+
+\subsection{Worked numbers (map colouring)}
+
+For Australia: $n = 7$ variables, $d = 3$ colours.
+
+\begin{itemize}
+  \item Naive (with variable orderings considered): $7! \cdot 3^7 = 5040 \cdot 2187 = 11{,}022{,}480$ leaves.
+  \item Commutativity-aware: $3^7 = 2187$ leaves.
+\end{itemize}
+
+A factor-5040 speedup before any heuristics or inference.
+
+For 8-queens with the column factoring: $n = 8$, $d = 8$. Naive: $8! \cdot 8^8 \approx 6.8 \times 10^{11}$. Commutativity-aware: $8^8 \approx 1.7 \times 10^7$. \textbf{40,320$\times$ smaller.}
+
+\textbf{Pick the order wisely}, but pick \emph{one}. Commutativity gives you completeness for free — MRV gives you fast completeness.
+
+% =====================================================================
+\section{Min-conflicts vs backtracking: when to choose which?}
+
+We've now seen two paradigms for CSPs: \textbf{local search via min-conflicts} (week 3 territory) and \textbf{systematic backtracking} (this week). Which to use?
+
+\begin{center}
+\renewcommand{\arraystretch}{1.25}
+\begin{tabular}{@{}p{4.5cm}p{4.5cm}p{5cm}@{}}
+\toprule
+\thead{Aspect} & \thead{Backtracking} & \thead{Min-conflicts hill climbing} \\
+\midrule
+Approach          & Systematic, builds a tree                  & Local, tweaks one variable at a time \\
+Complete?         & Yes (will find solution if one exists)     & No \\
+Memory            & DFS-shape, single-state, manageable        & Constant — only current state \\
+Best when\dots    & Fewer / sparse solutions; need guarantees  & Dense solutions; quick re-fix scenarios (e.g.\ rescheduling) \\
+Coursework hint   & Sudoku — backtracking with MRV/LCV/forward checking is the canonical approach & Generally not enough for Sudoku, but useful as a comparison \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\begin{notebox}[: the lecturer's coursework preview]
+The unit's coursework is to write a Sudoku solver. Sudoku \emph{is} a CSP — variables are cells, domains are $\{1..9\}$, constraints are row/column/3$\times$3-block uniqueness. Backtracking search with arc consistency / forward checking and MRV is the canonical approach; min-conflicts won't reliably get you all the way for hard puzzles.
+\end{notebox}
+
+% =====================================================================
+\section{Exam-mode answers}
+
+\begin{exambox}[(MCQ): Which of the following is a correct CSP formulation of the problem ``colour the 50 US states with 4 colours such that no two bordering states share a colour''? Select exactly one.]
+\textit{Correct:}
+\begin{quote}
+\textbf{Variables:} $V = \{S \mid S \text{ is a US state}\}$.\\
+\textbf{Domains:} $D_S = \{\text{Red, Blue, Green, Yellow}\}$ for each state $S$.\\
+\textbf{Constraints:} ``No two states sharing a border have the same colour.''
+\end{quote}
+\textit{Trap distractors usually mis-pair what's a variable, what's a domain, and what's a constraint:}
+\begin{itemize}[leftmargin=*, itemsep=0pt, topsep=0pt]
+  \item ``Variables = colours'' — wrong; variables are the things to assign.
+  \item ``Domain = adjacent states'' — wrong; the domain is the set of values a variable may take.
+  \item ``Constraint = each state coloured red, blue, green or yellow'' — wrong; that's the domain restated, not a constraint between variables.
+\end{itemize}
+\end{exambox}
+
+\begin{exambox}[(MCQ): Which of the following statements about constraint propagation are true?]
+\textit{TRUE: ``constraint propagation enforces local consistency,'' ``constraint propagation can shrink variable domains,'' ``constraint propagation can be applied before search and during search.''}\\[0.3em]
+\textit{FALSE: ``constraint propagation always reduces a CSP to a single-value-per-variable assignment'' (no — depends on problem); ``constraint propagation requires backtracking'' (no — they're separable).}
+\end{exambox}
+
+\begin{exambox}[(MCQ): What does the Minimum Remaining Values (MRV) heuristic do?]
+\textit{Correct: \textbf{Selects the unassigned variable with the smallest current domain to assign next} (``most constrained first'').}\\[0.3em]
+\textit{Trap: ``selects the variable with the largest domain'' — opposite. ``selects the value with the fewest options'' — confuses variable selection with value selection.}
+\end{exambox}
+
+\begin{exambox}[(MCQ): Which of the following statements about forward checking are true?]
+\textit{TRUE: ``Forward checking enforces arc consistency on the variables directly connected by constraints to the just-assigned variable.'' ``Forward checking can detect dead ends (empty domains) early.'' ``Forward checking is generally cheaper than full path consistency.''}\\[0.3em]
+\textit{FALSE: ``Forward checking propagates implications transitively to all variables'' (that's a stronger inference like AC-3); ``Forward checking is a form of search'' (no — it's inference).}
+\end{exambox}
+
+\begin{exambox}[(MCQ): For a CSP with $n$ variables and $d$ values per domain, exploiting commutativity reduces the number of leaves in the search tree from \dots\ to \dots.]
+\textit{Correct: \textbf{from $n! \cdot d^n$ to $d^n$.} The factorial factor disappears because we don't enumerate variable orderings.}
+\end{exambox}
+
+% =====================================================================
+\section*{Key equations / algorithms cheat sheet}
+
+\textbf{CSP triple:}
+\[
+(X, D, C) \quad \text{with} \quad X = \{X_1, \dots, X_n\}, \quad D = \{D_1, \dots, D_n\}, \quad C = \text{constraints}.
+\]
+
+\textbf{Solution} = complete (all variables assigned) AND consistent (all constraints satisfied).
+
+\textbf{Local consistency hierarchy:}
+\[
+\text{Node (1)} \;\subset\; \text{Arc (2)} \;\subset\; \text{Path (3)} \;\subset\; \dots \;\subset\; k\text{-consistency}.
+\]
+
+\textbf{AC-3 complexity:} $O(c d^3)$ where $c$ is the number of arcs and $d$ is the maximum domain size.
+
+\textbf{Backtracking-search recipe:}
+\begin{enumerate}[itemsep=0pt, topsep=0pt]
+  \item Choose unassigned variable (MRV).
+  \item Choose value (LCV).
+  \item Forward checking on connected unassigned variables.
+  \item If empty domain $\to$ undo and try next value; backtrack if exhausted.
+  \item Else recurse.
+\end{enumerate}
+
+\textbf{Tree-size saving from commutativity:}
+\[
+n! \cdot d^n \;\to\; d^n.
+\]
+
+\textbf{Min-conflicts hill climbing (8-queens style):}
+\begin{enumerate}[itemsep=0pt, topsep=0pt]
+  \item Random initial assignment.
+  \item Pick conflicted variable.
+  \item Move it to value that minimises conflicts.
+  \item Repeat until no conflicts.
+\end{enumerate}
+
+% =====================================================================
+\section*{Pitfalls and MCQ traps consolidated}
+
+\begin{trapbox}[summary]
+\begin{tabular}{@{}p{6.5cm}p{8cm}@{}}
+\toprule
+\thead{Trap} & \thead{Right answer} \\
+\midrule
+``Solution = complete''                   & \textbf{Complete AND consistent}. \\
+``Variables = values''                    & Variables are placeholders; values come from domains. \\
+``Constraints = domains''                 & Domains restrict each variable individually; constraints relate variables. \\
+``Arc consistency $\Rightarrow$ no search needed'' & \textbf{Not in general.} Often leaves multiple values per domain. \\
+``Path consistency catches things arc misses''     & \textbf{True} — e.g., 2-colouring infeasibility. \\
+``MRV: variable with most options''       & \textbf{Fewest options} (most constrained first). \\
+``LCV: value that rules out the most''    & \textbf{Fewest} (preserves flexibility). \\
+``Forward checking propagates to all variables'' & \textbf{Only directly connected ones}. \\
+``Variable order changes whether a solution is found'' & \textbf{No} — commutativity. Only affects time. \\
+``Min-conflicts is complete''             & \textbf{No} — it's a local-search heuristic. \\
+\bottomrule
+\end{tabular}
+\end{trapbox}
+
+\textbf{Other confusions worth noting:}
+
+\begin{itemize}
+  \item \textbf{Constraint graph $\ne$ search tree.} The constraint graph visualises the problem. The search tree is built during backtracking and depends on variable ordering.
+  \item \textbf{Inference can happen before, during, or both.} Don't treat it as a single point in time.
+  \item \textbf{Backtracking search uses recursion to undo assignments.} A single state is mutated; nothing is duplicated. Don't confuse this with copying-state DFS.
+  \item \textbf{Commutativity is a property of CSPs, not just a search trick.} Because constraints are symmetric across the assignment order, you can pick any order and complete the search.
+  \item \textbf{Min-conflicts is great for ``fix-up'' problems.} Flight rescheduling, 8-queens with random init — anywhere a good initial state is plausible. It's not great when solutions are sparse (rare).
+  \item \textbf{Higher-arity constraints can be reformulated as binary.} Sudoku's all-different-on-row is really $\binom{9}{2} = 36$ pairwise $\neq$ constraints. The reformulation is mechanical.
+\end{itemize}
+
+% =====================================================================
+\section*{Self-check questions}
+
+\begin{enumerate}
+  \item \textbf{Define} the three components of a CSP. Give the formulation for: (a) Sudoku, (b) map colouring, (c) 8-queens.
+  \item \textbf{Distinguish} a complete assignment, a consistent assignment, and a solution. Give an example of each that is not the others.
+  \item \textbf{Explain} why partial-assignment consistency checks are powerful — what do they enable that atomic state representation does not?
+  \item \textbf{Trace} backtracking search with forward checking on the 4-queens problem. Show domain reductions after each assignment.
+  \item \textbf{Compare and contrast} node, arc, and path consistency. For each, give an example CSP where it does (and one where it does not) yield useful domain reductions a priori.
+  \item \textbf{Construct} a small CSP where arc consistency leaves all domains unchanged but path consistency detects an inconsistency.
+  \item \textbf{Explain} the MRV heuristic. Why is it sometimes called ``fail-first''?
+  \item \textbf{Explain} the LCV heuristic. Why is it sometimes called ``succeed-first''? Why isn't a greedy ``most constraining'' heuristic preferred?
+  \item \textbf{Describe} forward checking. What does it enforce, and where does it stop?
+  \item \textbf{Describe} the AC-3 algorithm and state its time complexity.
+  \item \textbf{Compute} the size of the naive search tree for a CSP with 5 variables and 4 values per domain (a) without exploiting commutativity, (b) with commutativity. Comment on the saving.
+  \item \textbf{Explain} the difference between min-conflicts hill climbing and backtracking search. For each of the following problems, say which approach you'd recommend and why: (a) 8-queens with random init, (b) Sudoku, (c) flight rescheduling after a disruption.
+  \item \textbf{Explain} why constraint propagation during backtracking search may produce a dead end, and how the algorithm recovers.
+  \item \textbf{Reformulate} the constraint ``$X_1, X_2, X_3$ all different'' as a set of binary constraints.
+\end{enumerate}
+
+\end{document}

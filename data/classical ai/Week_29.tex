@@ -1,0 +1,650 @@
+\documentclass[11pt, a4paper]{article}
+
+\usepackage{fontspec}
+\setmainfont{Helvetica Neue}
+\setmonofont{Menlo}
+\usepackage{unicode-math}
+\setmathfont{STIX Two Math}
+
+\usepackage[margin=2cm, top=2cm, bottom=2.5cm]{geometry}
+\usepackage{microtype}
+\usepackage{parskip}
+\setlength{\parskip}{0.6em}
+\setlength{\parindent}{0pt}
+
+\usepackage[colorlinks=true, linkcolor=NavyBlue, urlcolor=NavyBlue, citecolor=NavyBlue]{hyperref}
+\usepackage{xcolor}
+\usepackage[dvipsnames]{xcolor}
+
+\usepackage{amsmath}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{tabularx}
+\newcommand{\thead}[1]{\textbf{#1}}
+
+% --- Graphics ---
+\usepackage{graphicx}
+\graphicspath{{figures/week29/}}
+
+\usepackage{enumitem}
+\setlist[itemize]{leftmargin=1.5em, itemsep=0.2em, topsep=0.3em}
+\setlist[enumerate]{leftmargin=1.5em, itemsep=0.2em, topsep=0.3em}
+
+\usepackage[most]{tcolorbox}
+\tcbuselibrary{breakable, skins, theorems}
+
+\definecolor{defBg}{HTML}{EAF2FB}
+\definecolor{defBd}{HTML}{1F4E79}
+\definecolor{exBg}{HTML}{F4F4F4}
+\definecolor{exBd}{HTML}{555555}
+\definecolor{tipBg}{HTML}{E8F5E9}
+\definecolor{tipBd}{HTML}{2E7D32}
+\definecolor{trapBg}{HTML}{FCE4EC}
+\definecolor{trapBd}{HTML}{AD1457}
+\definecolor{pitBg}{HTML}{FFF8E1}
+\definecolor{pitBd}{HTML}{B27600}
+\definecolor{noteBg}{HTML}{F3E5F5}
+\definecolor{noteBd}{HTML}{6A1B9A}
+\definecolor{tldrBg}{HTML}{E1F5FE}
+\definecolor{tldrBd}{HTML}{0277BD}
+
+\newtcolorbox{defbox}[1][]{enhanced, breakable, colback=defBg, colframe=defBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={Definition: #1}}
+\newtcolorbox{exbox}[1][]{enhanced, breakable, colback=exBg, colframe=exBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={Worked example: #1}}
+\newtcolorbox{exambox}[1][]{enhanced, breakable, colback=tipBg, colframe=tipBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={Exam-mode answer #1}}
+\newtcolorbox{trapbox}[1][]{enhanced, breakable, colback=trapBg, colframe=trapBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={MCQ trap #1}}
+\newtcolorbox{pitfallbox}[1][]{enhanced, breakable, colback=pitBg, colframe=pitBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={Pitfall #1}}
+\newtcolorbox{notebox}[1][]{enhanced, breakable, colback=noteBg, colframe=noteBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={Lecturer aside #1}}
+\newtcolorbox{tldrbox}[1][]{enhanced, breakable, colback=tldrBg, colframe=tldrBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={TL;DR #1}}
+
+\usepackage{titlesec}
+\titleformat{\section}[block]{\Large\bfseries\color{defBd}}{\thesection.}{0.6em}{}
+\titleformat{\subsection}[block]{\large\bfseries\color{defBd!80!black}}{\thesubsection}{0.5em}{}
+\titleformat{\subsubsection}[block]{\normalsize\bfseries}{}{0pt}{}
+\titlespacing*{\section}{0pt}{1.6em}{0.6em}
+\titlespacing*{\subsection}{0pt}{1.2em}{0.4em}
+
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small CM52078 — Week 9}
+\fancyhead[R]{\small Dealing with Uncertainty}
+\fancyfoot[C]{\small\thepage}
+\renewcommand{\headrulewidth}{0.3pt}
+
+\newcommand{\examflag}{\textcolor{tipBd}{\textbf{[EXAM]}}\,}
+\newcommand{\trapflag}{\textcolor{trapBd}{\textbf{[TRAP]}}\,}
+\newcommand{\doflag}{\textcolor{defBd}{\textbf{[DO]}}\,}
+
+\title{\vspace{-1cm}{\Huge\bfseries Week 9 — Dealing with Uncertainty} \\[0.4em]{\large Probability foundations, conditional probability, Bayes theorem}}
+\author{\large CM52078 Classical Artificial Intelligence \\[0.2em]\normalsize University of Bath}
+\date{Revision notes}
+
+\begin{document}
+
+\maketitle
+\thispagestyle{empty}
+
+\vspace{1em}
+
+\begin{tldrbox}
+\begin{itemize}[leftmargin=*]
+  \item AI agents in the real world face \textbf{uncertainty} — genuine randomness or partial knowledge. \textbf{Probability theory} is the language used to reason in such settings.
+  \item \textbf{Sample space} $\Omega$ = set of outcomes; \textbf{event} = subset of $\Omega$; \textbf{probability} = a function on events into $[0,1]$. Outcomes are mutually exclusive and exhaustive: $\sum_\omega p(\omega) = 1$.
+  \item \textbf{Additive rule}: $P(A \cup B) = P(A) + P(B) - P(A \cap B)$. Subtract the overlap so it's not counted twice.
+  \item \textbf{Joint probability} $P(X, Y) = P(X \land Y)$ — both happen. With $n$ random variables the sample space has $n$ dimensions.
+  \item \textbf{Conditional probability}: $P(A \mid B) = \dfrac{P(A \cap B)}{P(B)}$. ``Probability of A, given B happened.''
+  \item \textbf{Product rule}: $P(A \cap B) = P(B) \, P(A \mid B) = P(A) \, P(B \mid A)$. Generalises to chains of $n$ events.
+  \item \textbf{Bayes theorem}: $P(A \mid B) = \dfrac{P(B \mid A) \, P(A)}{P(B)}$. Updates a \textbf{prior} $P(A)$ using \textbf{evidence} $B$ to give a \textbf{posterior} $P(A \mid B)$.
+  \item Humans systematically err on backward probabilities — confusing $P(\text{disease} \mid \text{positive})$ with $P(\text{positive} \mid \text{disease})$, and ignoring \textbf{base rates}. The medical-test example is the canonical case: a 99\%-accurate test for a 1-in-10{,}000 disease gives only $\approx 1\%$ chance of having the disease given a positive result.
+\end{itemize}
+\end{tldrbox}
+
+% =====================================================================
+\section{Why uncertainty matters}
+
+Real-world agents rarely have perfect information. ``When should I leave for the airport to catch a flight?'' is a probabilistic calculation: leave too early and waste time; too late and miss the plane. ``Did the speaker say \emph{can wreck a nice} or \emph{can recognise}?'' Same audio waveform; the speech-to-text agent picks the more probable phrase given context.
+
+Probability is the formal language we use to:
+\begin{itemize}
+  \item Model the world when outcomes are uncertain.
+  \item Combine evidence to refine beliefs.
+  \item Choose actions whose expected outcomes maximise utility.
+\end{itemize}
+
+\subsection{Two flavours of uncertainty}
+
+\begin{defbox}[True randomness vs.\ partial knowledge]
+\textbf{True randomness}: outcomes that are genuinely unpredictable in principle (e.g., quantum events).\\[0.3em]
+\textbf{Partial knowledge}: outcomes that are determined but unknown to the agent (e.g., the location of the prize behind a Monty Hall door, the genre of a song before you've heard it).
+\end{defbox}
+
+The mathematics of probability handles both the same way. The conceptual difference matters when modelling a problem (which information should the agent treat as evidence?), but the rules of the calculus are identical.
+
+\begin{notebox}[: ``randomness'' is often laziness]
+The lecturer's point: ``random'' usually labels something we could in principle compute but choose not to. A roulette wheel's outcome depends on physics; we just don't have the data. Treating it as random is a useful simplification, not a metaphysical claim.
+\end{notebox}
+
+% =====================================================================
+\section{Outcomes, events, sample spaces}
+
+\subsection{Core terminology}
+
+\begin{defbox}[Probability terminology]
+\begin{itemize}[leftmargin=*]
+  \item An \textbf{experiment} is a process that produces an \textbf{outcome}.
+  \item The \textbf{sample space} $\Omega$ is the set of \emph{all possible outcomes}.
+  \item An \textbf{event} is a \emph{subset} of the sample space — possibly several outcomes.
+  \item A \textbf{probability distribution} assigns probabilities to outcomes.
+  \item The \textbf{probability of an event} is the sum of the probabilities of the outcomes it contains.
+\end{itemize}
+\end{defbox}
+
+\textbf{Important distinction:} outcomes are atomic and mutually exclusive (only one happens per experiment). Events can contain many outcomes, and two events can both happen if their intersection contains an outcome.
+
+\begin{center}
+
+\footnotesize\textit{A probability distribution drawn as a bar chart. The $x$-axis lists the four possible outcomes; the height of each bar is that outcome's probability, read off the $y$-axis (which runs $0$ to $1$). The bars sum to $1$ ($0.25 + 0.5 + 0.05 + 0.2$) because outcomes are exhaustive. Notice the distribution carries everything: which outcomes exist, how likely each is, and how they rank against each other — outcome 2 is the mode at $0.5$, outcome 3 is near-impossible at $0.05$. ``Knowing the distribution'' means knowing all of this at once.}
+\end{center}
+
+\subsection{The basic laws of probability}
+
+For any sample space $\Omega$ and outcome $\omega$:
+\begin{enumerate}
+  \item \textbf{Bounded:} $0 \le p(\omega) \le 1$. Probability of 0 means certain not to happen; probability of 1 means certain.
+  \item \textbf{Mutually exclusive:} only one outcome per experiment.
+  \item \textbf{Exhaustive:} one outcome must happen, so
+  \[
+  \sum_{\omega \in \Omega} p(\omega) = 1.
+  \]
+\end{enumerate}
+
+These three are the \textbf{Kolmogorov axioms} (in informal form). Formal probability theory is built from them.
+
+\subsection{Two starter examples}
+
+\begin{exbox}[Coin toss: probability of two heads]
+Toss a fair coin twice. Sample space $\Omega = \{HH, HT, TH, TT\}$ — 4 outcomes, each with probability $\frac{1}{4}$.\\[0.3em]
+The event of interest: $\{HH\}$ (a singleton set).\\[0.3em]
+$P(HH) = \frac{1}{4}$.\\[0.3em]
+\textbf{Note:} ``HT'' and ``TH'' are different outcomes when order matters; if order doesn't matter (e.g., for scoring), the sample space might collapse to $\{HH, \text{one heads one tails}, TT\}$ with different probabilities. \emph{The right sample space depends on the question.}
+\end{exbox}
+
+\begin{exbox}[Dice roll: probability of an even number]
+Roll a fair six-sided die. $\Omega = \{1, 2, 3, 4, 5, 6\}$ with each outcome at probability $\frac{1}{6}$.\\[0.3em]
+The event ``even'' = $\{2, 4, 6\}$ — a 3-outcome event.\\[0.3em]
+$P(\text{even}) = p(2) + p(4) + p(6) = \frac{3}{6} = \frac{1}{2}$.
+\end{exbox}
+
+\subsection{Probability spaces (the formal triple)}
+
+\begin{defbox}[Probability space]
+A probability space is a triple $(\Omega, F, P)$:
+\begin{itemize}[itemsep=0pt, topsep=0pt]
+  \item $\Omega$ — the sample space (set of all outcomes).
+  \item $F$ — the event space (set of all events; for finite problems, just the power set of $\Omega$).
+  \item $P : F \to [0, 1]$ — the probability function mapping events to real numbers in $[0, 1]$, with $P(\Omega) = 1$.
+\end{itemize}
+\end{defbox}
+
+For finite problems you can mostly think of $P$ as a function on outcomes that you sum up to get event probabilities. The triple becomes important once you handle continuous outcomes (real-valued random variables) — but those are beyond this lecture.
+
+% =====================================================================
+\section{The arithmetic of probability}
+
+\subsection{The additive rule}
+
+\begin{defbox}[Additive rule]
+For any two events $A$ and $B$:
+\[
+P(A \cup B) = P(A) + P(B) - P(A \cap B).
+\]
+The intersection is subtracted to avoid double-counting outcomes that lie in both events.
+\end{defbox}
+
+\begin{center}
+
+\footnotesize\textit{Why the additive rule subtracts the overlap. The outer rectangle is the whole sample space; the blue disc is event $A$, the orange disc is event $B$. Their union $P(A \cup B)$ (lower arrow) is the total shaded area of both discs. If you simply add $P(A) + P(B)$ you count the brown lens $P(A \cap B)$ (upper arrow) — the region where both events hold — \emph{twice}, once inside each disc. Subtracting $P(A \cap B)$ removes that double-count. When the discs do not touch ($A \cap B = \emptyset$) the lens vanishes and the rule collapses to plain addition.}
+\end{center}
+
+\textbf{Special case (mutually exclusive events).} If $A \cap B = \emptyset$, the formula simplifies to $P(A \cup B) = P(A) + P(B)$.
+
+\textbf{General formula (more events).} Inclusion-exclusion:
+\[
+P(A \cup B \cup C) = P(A) + P(B) + P(C) - P(A \cap B) - P(A \cap C) - P(B \cap C) + P(A \cap B \cap C).
+\]
+The pattern: add singletons, subtract pairs, add triples, subtract quadruples, etc. Sign alternates by intersection size.
+
+\begin{exbox}[Additive rule on a die roll]
+Event $A$: rolling an even number = $\{2, 4, 6\}$. $P(A) = \frac{1}{2}$.\\
+Event $B$: rolling 3 or less = $\{1, 2, 3\}$. $P(B) = \frac{1}{2}$.\\
+$A \cap B = \{2\}$, $P(A \cap B) = \frac{1}{6}$.\\
+$P(A \cup B) = \frac{1}{2} + \frac{1}{2} - \frac{1}{6} = \frac{5}{6}$.\\[0.3em]
+Check: $A \cup B = \{1, 2, 3, 4, 6\}$ — five out of six outcomes, so $\frac{5}{6}$. \textbf{Match.}
+\end{exbox}
+
+\begin{trapbox}[: forgetting to subtract the intersection]
+``$P(A \cup B) = P(A) + P(B)$'' is \textbf{only correct when $A$ and $B$ are mutually exclusive.} Otherwise you overcount the overlap. A favourite past-paper trap: probabilities that ``naturally'' add to more than 1 because the intersection is non-empty.
+\end{trapbox}
+
+\subsection{Joint probability}
+
+\begin{defbox}[Joint probability]
+For two random variables $X$ and $Y$:
+\[
+P(X, Y) = P(X \land Y) \quad \text{— ``both $X$ and $Y$ happen.''}
+\]
+The sample space is now multi-dimensional. With $n$ variables, you have an $n$-dimensional space.
+\end{defbox}
+
+\textbf{Key intuition:} $P(X, Y)$ is not generally $P(X) \cdot P(Y)$ — the variables can interact. They might be correlated.
+
+\begin{exbox}[Weather: rain vs sunshine]
+$X = \{rain, no\,rain\}$, $Y = \{sun, cloudy\}$. Assume sun and cloudy are mutually exclusive.\\[0.3em]
+Sample space: $\{(rain, sun), (rain, cloudy), (no\,rain, sun), (no\,rain, cloudy)\}$.\\[0.3em]
+$P(X = rain, Y = cloudy)$ is high — rain usually goes with cloud.\\
+$P(X = rain, Y = sun)$ is low — rain in sun is rare (rainbows).\\[0.3em]
+\textbf{Joint probabilities encode dependencies between variables.} If $X$ and $Y$ were independent, $P(X = rain, Y = sun) = P(X = rain) \cdot P(Y = sun)$. They aren't, so it doesn't.
+\end{exbox}
+
+\subsubsection*{Marginal probability from a joint}
+
+Given the joint distribution, you can recover the individual (marginal) distributions by summing out the other variable:
+\[
+P(X = x) = \sum_y P(X = x, Y = y).
+\]
+
+This is called \textbf{marginalisation} and is the fundamental operation for working with joint distributions.
+
+\subsection{Conditional probability}
+
+\begin{defbox}[Conditional probability]
+For events $A, B$ with $P(B) > 0$:
+\[
+P(A \mid B) = \frac{P(A \cap B)}{P(B)}.
+\]
+Read: ``probability of $A$ given $B$.''
+\end{defbox}
+
+\textbf{Geometric reading.} Picture the entire sample space as a rectangle. $B$ is the slice where $B$ holds; $A \cap B$ is the part of $A$ inside that slice. $P(A \mid B)$ is the proportion of $B$ that's also inside $A$.
+
+\begin{center}
+
+\footnotesize\textit{Conditional probability as an area ratio (bottom-right schematic). The full rectangle is the sample space. The right-hand column is event $B$; the blue band on the left is the part of event $A$ outside $B$. The bottom-right cell $A \cap B$ is where both hold. Conditioning on $B$ throws away everything outside the $B$ column and rescales: $P(A \mid B)$ is the fraction of the $B$ column occupied by $A \cap B$. Dividing by $P(B)$ in the formula is exactly this rescaling — it makes the reduced world ($B$) sum to $1$ again. The slide's worked figures confirm it: for two coin tosses $P(H_2 \mid H_1) = \tfrac{1/4}{1/2} = \tfrac{1}{2}$.}
+\end{center}
+
+\textbf{Conceptual reading.} Conditioning on $B$ ``zooms into the world where $B$ is true'' and asks how much of that zoomed-in world is also in $A$.
+
+\begin{exbox}[Conditional probability for two coin tosses]
+$A$: second coin is heads. $B$: first coin is heads.\\[0.3em]
+$P(A \cap B) = P(HH) = \frac{1}{4}$. $P(B) = \frac{1}{2}$.\\[0.3em]
+$P(A \mid B) = \frac{1/4}{1/2} = \frac{1}{2}$.\\[0.3em]
+\textbf{So the second coin's probability is unchanged given the first} — they're independent. Conditional probability detects this: when $P(A \mid B) = P(A)$, the variables are independent.
+\end{exbox}
+
+\subsection{The product rule}
+
+Rearranging the conditional-probability formula gives the \textbf{product rule}:
+
+\begin{defbox}[Product rule]
+\[
+P(A \cap B) = P(B) \cdot P(A \mid B) = P(A) \cdot P(B \mid A).
+\]
+Two equivalent expressions, depending on which conditional is convenient.
+\end{defbox}
+
+For more than two events, the product rule chains:
+\[
+P(E_1, E_2, \dots, E_n) = P(E_1) \cdot P(E_2 \mid E_1) \cdot P(E_3 \mid E_1, E_2) \cdots P(E_n \mid E_1, \dots, E_{n-1}).
+\]
+
+\textbf{The chain rule} (as it's commonly known) is what makes Bayesian networks (next week) tractable: instead of storing the full joint over $n$ variables, store conditionals over each variable's parents only.
+
+\subsubsection*{Worked chain rule example}
+
+\begin{exbox}[Chain rule for $P(A, B, C)$]
+\[
+P(A, B, C) = P(A) \cdot P(B \mid A) \cdot P(C \mid A, B).
+\]
+\textbf{Or alternatively:}
+\[
+P(A, B, C) = P(C) \cdot P(B \mid C) \cdot P(A \mid B, C).
+\]
+\textbf{Or any of $3! = 6$ orderings.} They all give the same number — only the conditional probabilities involved differ.
+\end{exbox}
+
+% =====================================================================
+\section{Judgement under uncertainty: humans get it wrong}
+
+\textbf{Daniel Kahneman and Amos Tversky} famously showed that humans systematically make probabilistic errors. (Kahneman won the Nobel Prize in Economics for this body of work; \emph{Thinking, Fast and Slow} is the popular synthesis.)
+
+\subsection{The librarian/farmer scenario}
+
+\begin{exbox}[Steve the librarian or farmer?]
+Profile: \emph{``Steve is shy and withdrawn, invariably helpful, with little interest in the world of reality. A meek and tidy soul, with a need for order and structure, and a passion for detail.''}\\[0.3em]
+Most people guess Steve is a librarian (the description matches the stereotype).\\[0.3em]
+Then: \emph{``On this dating site there are 80 farmers and 20 librarians.''} Most people \textbf{still} guess librarian — they don't update on the new information.\\[0.3em]
+Correct calculation:
+\[
+P(\text{farmer} \mid \text{profile}) \;\propto\; P(\text{profile} \mid \text{farmer}) \cdot P(\text{farmer}) = 0.2 \times 0.8 = 0.16.
+\]
+\[
+P(\text{librarian} \mid \text{profile}) \;\propto\; 0.8 \times 0.2 = 0.16.
+\]
+After normalising, both are equally likely. The base-rate ratio (4:1 farmers) exactly cancels the profile match (4:1 librarian-shaped).
+\end{exbox}
+
+\textbf{The error:} ignoring the \textbf{prior} (the base-rate ratio of 80:20). Profile matching feels diagnostic, base rates feel boring — but the maths weights them equally.
+
+\subsection{Other classical biases}
+
+\begin{itemize}
+  \item \textbf{Conjunction fallacy}: people judge $P(A \land B)$ greater than $P(A)$ when $B$ ``fits'' the description. Mathematically impossible.
+  \item \textbf{Availability heuristic}: estimating probability by how easily examples come to mind (overestimating plane crashes vs car crashes).
+  \item \textbf{Anchoring}: probabilities biased by the first number you hear.
+\end{itemize}
+
+These are widely studied; the broader lesson for AI is that human probability judgment is unreliable — and that's why we want machines to do it via Bayes' theorem instead.
+
+% =====================================================================
+\section{Bayes theorem}
+
+\textbf{Bayes' theorem} is the formal tool for combining priors and evidence.
+
+\subsection{The theorem}
+
+\begin{defbox}[Bayes theorem]
+\[
+P(A \mid B) = \frac{P(B \mid A) \cdot P(A)}{P(B)}.
+\]
+Or in hypothesis-and-evidence form:
+\[
+P(H \mid E) = \frac{P(E \mid H) \cdot P(H)}{P(E)}
+\]
+where $P(H)$ is the \textbf{prior}, $P(E \mid H)$ is the \textbf{likelihood}, $P(E)$ is the \textbf{evidence}, and $P(H \mid E)$ is the \textbf{posterior}.
+\end{defbox}
+
+\subsection{Derivation}
+
+The product rule gives two expressions for $P(A \cap B)$:
+\[
+P(A \cap B) = P(B) \cdot P(A \mid B), \qquad P(A \cap B) = P(A) \cdot P(B \mid A).
+\]
+Equate them and divide both sides by $P(B)$:
+\[
+P(A \mid B) = \frac{P(B \mid A) \cdot P(A)}{P(B)}.
+\]
+That's it. The whole theorem is one rearrangement of the product rule.
+
+\subsection{Marginalisation: computing $P(B)$}
+
+Often $P(B)$ isn't directly available. The \textbf{law of total probability}:
+\[
+P(B) = P(B \mid A) \cdot P(A) + P(B \mid \neg A) \cdot P(\neg A).
+\]
+General version:
+\[
+P(B) = \sum_{i} P(B \mid A_i) \cdot P(A_i)
+\]
+where $\{A_1, A_2, \dots\}$ is a partition of the sample space (mutually exclusive, exhaustive).
+
+This is the marginalisation step in Bayes' theorem applications. \textbf{Most past-paper Bayes problems require it.}
+
+\subsection{Worked example: medical test (the canonical case)}
+
+\begin{exbox}[Bayes on a rare disease]
+\textbf{Setup:} a severe but rare disease. Tests come back positive or negative; the test is correct 99 times out of 100.\\[0.3em]
+$P(\text{positive} \mid \text{disease}) = 0.99$, $P(\text{negative} \mid \neg\text{disease}) = 0.99$.\\[0.3em]
+\textbf{The disease is rare:} only 1 in 10{,}000 people have it. So $P(\text{disease}) = 0.0001$.\\[0.3em]
+\textbf{The test comes back positive. Should you worry?} Compute $P(\text{disease} \mid \text{positive})$ via Bayes.\\[0.3em]
+First, $P(\text{positive})$: a positive can occur via the disease (true positive) or via no-disease (false positive):
+\begin{align*}
+P(\text{positive}) &= P(\text{positive} \mid \text{disease}) \cdot P(\text{disease}) \\
+                   &\quad + P(\text{positive} \mid \neg\text{disease}) \cdot P(\neg\text{disease}) \\
+                   &= 0.99 \times 0.0001 + 0.01 \times 0.9999 \\
+                   &\approx 0.0001 + 0.01 = 0.0101 \approx 0.01.
+\end{align*}
+Then by Bayes:
+\[
+P(\text{disease} \mid \text{positive}) = \frac{0.99 \times 0.0001}{0.01} \approx 0.0099 \approx 1\%.
+\]
+\textbf{So a positive test on a 99\%-accurate test for a 1-in-10{,}000 disease gives only $\approx 1\%$ chance of actually having the disease.}
+\end{exbox}
+
+\textbf{Why so low?} The rarity of the disease swamps the test's accuracy. Out of 10{,}000 people: 1 has the disease (and tests positive); 9{,}999 don't, but $\approx 100$ of them get false positives. So out of $\approx 101$ positive tests, only 1 is genuinely diseased. $1 / 101 \approx 1\%$.
+
+\subsubsection*{Intuition via natural frequencies}
+
+The same calculation, in plain frequencies:
+\begin{itemize}
+  \item Imagine 10,000 people.
+  \item 1 has the disease; that 1 tests positive (99\% chance).
+  \item 9,999 don't have the disease; $\approx 100$ of them test positive (1\% false positive rate).
+  \item Total positives: $1 + 100 = 101$. Of those, 1 is truly diseased.
+\end{itemize}
+$P(\text{disease} \mid \text{positive}) = 1 / 101 \approx 1\%$. \textbf{Same answer; many people find this presentation more intuitive than Bayes' formula.}
+
+\subsection{Why this feels counterintuitive}
+
+\textbf{Humans confuse two backward probabilities:} $P(\text{disease} \mid \text{positive})$ and $P(\text{positive} \mid \text{disease})$.
+
+\begin{trapbox}[: confusing $P(A \mid B)$ with $P(B \mid A)$]
+The two are related by Bayes but \textbf{not equal} in general. Mixing them up is the most common probabilistic-reasoning error in real life — and a heavily-tested concept on past papers.\\[0.3em]
+For the medical test: $P(\text{positive} \mid \text{disease}) = 0.99$ (the test is accurate); $P(\text{disease} \mid \text{positive}) \approx 0.01$ (a positive test rarely indicates the disease, given the disease is rare). \textbf{Same data, totally different number.}
+\end{trapbox}
+
+\subsection{Where the difference comes from}
+
+The product rule:
+\[
+P(\text{disease} \mid \text{positive}) \cdot P(\text{positive}) \;=\; P(\text{positive} \mid \text{disease}) \cdot P(\text{disease}).
+\]
+\[
+P(\text{disease} \mid \text{positive}) \cdot 0.01 \;=\; P(\text{positive} \mid \text{disease}) \cdot 0.0001.
+\]
+The two conditionals differ by the ratio of $P(\text{disease})$ to $P(\text{positive})$ — that's $\frac{0.0001}{0.01} = 0.01$, or a factor of 100. So $P(\text{disease} \mid \text{positive})$ is 100 times \emph{smaller} than $P(\text{positive} \mid \text{disease})$.
+
+\textbf{Whenever the prior $P(H)$ is very different from the evidence $P(E)$, the two conditionals diverge dramatically.}
+
+\subsection{Independence}
+
+\begin{defbox}[Independence]
+Events $A$ and $B$ are \textbf{independent} iff
+\[
+P(A \mid B) = P(A) \quad \Longleftrightarrow \quad P(A \cap B) = P(A) \cdot P(B).
+\]
+The relation is \textbf{symmetric}: $A \perp B \iff B \perp A$.
+\end{defbox}
+
+\textbf{Two senses of ``independent''.} Sometimes called ``unconditional independence.'' Conditional independence (given a third variable) is a separate notion (week 30).
+
+\textbf{How to verify independence.} Compute both $P(A \cap B)$ and $P(A) \cdot P(B)$. If equal, independent.
+
+\subsubsection*{Worked independence check}
+
+\begin{exbox}[Independence of two coin tosses]
+$A$: first coin is heads. $B$: second coin is heads. $P(A) = P(B) = \frac{1}{2}$.\\[0.3em]
+$P(A \cap B) = P(HH) = \frac{1}{4}$.\\[0.3em]
+$P(A) \cdot P(B) = \frac{1}{2} \cdot \frac{1}{2} = \frac{1}{4}$. \textbf{Equal. Independent.}\\[0.3em]
+\textbf{Compare to dice example.} $A$: first die rolls $\le 3$. $B$: second die equals 6. $P(A) = \frac{1}{2}$, $P(B) = \frac{1}{6}$. $P(A \cap B) = \frac{3 \cdot 1}{36} = \frac{1}{12} = \frac{1}{2} \cdot \frac{1}{6}$. \textbf{Independent} (different dice).
+\end{exbox}
+
+% =====================================================================
+\section{Why we need probabilistic AI frameworks}
+
+Humans are bad at probabilistic reasoning when:
+\begin{itemize}
+  \item We lack experience with the scenario (rare diseases, novel domains).
+  \item Multiple conditional probabilities interact.
+  \item Base rates are extreme.
+\end{itemize}
+
+For an AI agent acting in the world, we need a \textbf{systematic} way to:
+\begin{itemize}
+  \item Encode the joint probability over many variables compactly.
+  \item Update beliefs as new evidence arrives.
+  \item Compute posteriors without enumerating all possible worlds.
+\end{itemize}
+
+That's the topic of next week — \textbf{Bayesian networks}.
+
+% =====================================================================
+\section{Exam-mode answers}
+
+\begin{exambox}[(MCQ): Which of the following statements about probability theory are true? Mark all that apply.]
+\textit{TRUE:}
+\begin{itemize}[leftmargin=*, itemsep=0pt, topsep=0pt]
+  \item ``The probability of an outcome has to be between 0 and 1 (inclusive).''
+  \item ``The probability of an event has to be between 0 and 1 (inclusive).''
+  \item ``The sum of the probabilities of all possible outcomes in a sample space must be 1.''
+  \item ``In a sample space, only one outcome can happen at the time.''
+\end{itemize}
+\textit{FALSE: ``The sum of the probabilities of all possible \emph{events} in an event space must be 1'' — events overlap, so their probabilities don't sum to 1.}
+\end{exambox}
+
+\begin{exambox}[(MCQ): A medical test has $p(\text{positive} \mid \text{disease}) = 0.99$ and $p(\text{negative} \mid \neg\text{disease}) = 0.98$. The disease affects 1 in 100 people. Given a positive test, what is the probability the person has the disease?]
+\textit{Bayes:}
+\[
+p(\text{disease} \mid \text{positive}) = \frac{p(\text{positive} \mid \text{disease}) \cdot p(\text{disease})}{p(\text{positive})}.
+\]
+\textit{Compute $p(\text{positive})$:}
+\[
+p(\text{positive}) = 0.99 \times 0.01 + 0.02 \times 0.99 = 0.0099 + 0.0198 = 0.0297.
+\]
+\textit{Then:}
+\[
+p(\text{disease} \mid \text{positive}) = \frac{0.99 \times 0.01}{0.0297} = \frac{0.0099}{0.0297} \approx 0.33.
+\]
+\textit{Trap distractors: 0.99 (confuses with $P(\text{positive} \mid \text{disease})$); 0.01 (just the prior).}
+\end{exambox}
+
+\begin{exambox}[(MCQ): Which of the following information is sufficient to calculate $p(x \mid y)$? Mark all that apply.]
+\textit{Test each option using the conditional-probability definition $p(x \mid y) = p(x, y) / p(y)$:}
+\begin{itemize}[leftmargin=*, itemsep=0pt, topsep=0pt]
+  \item $p(y \mid x)$ and $p(x)$ — \textbf{INSUFFICIENT}: missing $p(y)$. Bayes gives $p(x \mid y) = p(y \mid x) \cdot p(x) / p(y)$, so we'd also need $p(y)$.
+  \item $p(y \mid x)$ and $p(y)$ — \textbf{INSUFFICIENT}: missing $p(x)$.
+  \item $p(x, y)$ and $p(y)$ — \textbf{SUFFICIENT}: $p(x \mid y) = p(x, y) / p(y)$ directly.
+  \item $p(y \mid x), p(x), p(y)$ — \textbf{SUFFICIENT}: full Bayes.
+  \item $x$ and $y$ are independent, and the value of $p(x)$ — \textbf{SUFFICIENT}: independence means $p(x \mid y) = p(x)$.
+\end{itemize}
+\end{exambox}
+
+\begin{exambox}[(MCQ): You are at the gym. $p(\text{raining}) = 0.25$. Your friend wears a jacket regardless: $p(\text{jacket}) = 0.5$. They wear it more often when raining: $p(\text{jacket} \mid \text{raining}) = 0.7$. What is $p(\text{raining} \mid \text{jacket})$?]
+\textit{Bayes:}
+\[
+p(\text{raining} \mid \text{jacket}) = \frac{p(\text{jacket} \mid \text{raining}) \cdot p(\text{raining})}{p(\text{jacket})} = \frac{0.7 \times 0.25}{0.5} = \frac{0.175}{0.5} = 0.35.
+\]
+\textit{Updated belief: 35\% (up from the prior 25\%) given the new evidence.}
+\end{exambox}
+
+\begin{exambox}[(MCQ): For events $A$ and $B$, when is $P(A \cup B) = P(A) + P(B)$?]
+\textit{Correct: \textbf{When $A$ and $B$ are mutually exclusive (i.e., $A \cap B = \emptyset$).}}\\[0.3em]
+\textit{Trap: ``always'' — false; you must subtract the intersection in general.}
+\end{exambox}
+
+% =====================================================================
+\section*{Key equations / algorithms cheat sheet}
+
+\textbf{Probability axioms:}
+\[
+0 \le p(\omega) \le 1, \qquad \sum_{\omega \in \Omega} p(\omega) = 1.
+\]
+
+\textbf{Probability of an event:}
+\[
+P(A) = \sum_{\omega \in A} p(\omega).
+\]
+
+\textbf{Additive rule:}
+\[
+P(A \cup B) = P(A) + P(B) - P(A \cap B).
+\]
+
+\textbf{Conditional probability:}
+\[
+P(A \mid B) = \frac{P(A \cap B)}{P(B)}.
+\]
+
+\textbf{Product rule:}
+\[
+P(A \cap B) = P(B) \cdot P(A \mid B) = P(A) \cdot P(B \mid A).
+\]
+
+\textbf{Chain rule (general):}
+\[
+P(E_1, \dots, E_n) = P(E_1) \cdot P(E_2 \mid E_1) \cdot P(E_3 \mid E_1, E_2) \cdots P(E_n \mid E_1, \dots, E_{n-1}).
+\]
+
+\textbf{Bayes theorem:}
+\[
+P(A \mid B) = \frac{P(B \mid A) \cdot P(A)}{P(B)}.
+\]
+
+\textbf{Marginalisation (often used to compute $P(B)$):}
+\[
+P(B) = P(B \mid A) \cdot P(A) + P(B \mid \neg A) \cdot P(\neg A).
+\]
+
+\textbf{Marginal from joint:}
+\[
+P(X) = \sum_y P(X, Y = y).
+\]
+
+\textbf{Independence:}
+\[
+A \text{ and } B \text{ are independent} \iff P(A \cap B) = P(A) \cdot P(B) \iff P(A \mid B) = P(A).
+\]
+
+% =====================================================================
+\section*{Pitfalls and MCQ traps consolidated}
+
+\begin{trapbox}[summary]
+\begin{tabular}{@{}p{6.5cm}p{8cm}@{}}
+\toprule
+\thead{Trap} & \thead{Right answer} \\
+\midrule
+$P(A \cup B) = P(A) + P(B)$ always   & \textbf{Only if $A \cap B = \emptyset$.} \\
+$P(A \mid B) = P(B \mid A)$           & \textbf{No} — Bayes relates them but they differ in general. \\
+``Probabilities of all events sum to 1.'' & \textbf{No} — only \emph{outcomes} sum to 1. \\
+``Independent $\Rightarrow P(A \cap B) = 0$.'' & \textbf{No}, that's mutually exclusive. \\
+``Mutually exclusive $\Rightarrow$ independent.'' & \textbf{No, opposite!} ME means knowing one happened tells you the other didn't. \\
+Ignoring the prior in Bayes            & \textbf{Don't.} The base rate is half of Bayes. \\
+99\%-accurate test $\Rightarrow$ 99\% chance of disease & \textbf{No}, depends on rarity. Could be 1\%. \\
+$P(B)$ in Bayes is just a single observation & \textbf{No}, it's the marginal across all $A$. \\
+\bottomrule
+\end{tabular}
+\end{trapbox}
+
+\textbf{Other confusions:}
+
+\begin{itemize}
+  \item \textbf{Mutually exclusive vs.\ independent.} ME: $A \cap B = \emptyset$ (one rules out the other). Independent: knowing one tells you nothing about the other. These are \emph{opposites}, not synonyms. (For non-trivial events with $P > 0$, ME implies dependence: knowing $A$ happened tells you $B$ didn't.)
+  \item \textbf{Random variable vs.\ event.} A random variable can take many values; an event is a specific subset of outcomes. ``The temperature'' is a random variable; ``the temperature is above 20°C'' is an event.
+  \item \textbf{Base rate fallacy.} Ignoring the prior $P(H)$ when interpreting the likelihood $P(E \mid H)$. The librarian/farmer experiment shows people doing this even with explicit ratios.
+  \item \textbf{$P(B)$ in Bayes is computed via marginalisation.} Most students forget this step. $P(B) = \sum_A P(B \mid A) P(A)$. Without it you can't compute the posterior.
+  \item \textbf{Chain rule order matters for computation, not for value.} You can chain in any variable order — the resulting joint is the same, but the conditional probabilities involved will differ.
+  \item \textbf{$P(\neg A) = 1 - P(A)$.} An obvious identity but easy to overlook when computing marginals.
+  \item \textbf{Conjunction fallacy.} $P(A \cap B) \le P(A)$ always — but humans often think $A \cap B$ is more likely than $A$ when $B$ adds plausible detail.
+\end{itemize}
+
+% =====================================================================
+\section*{Self-check questions}
+
+\begin{enumerate}
+  \item \textbf{Distinguish} an outcome, a sample space, and an event. Give examples for two-coin tosses and a single die roll.
+  \item \textbf{State} the basic laws of probability for outcomes.
+  \item \textbf{Define} a probability space as a triple. What does each component capture?
+  \item \textbf{Apply} the additive rule: for $P(A) = 0.4$, $P(B) = 0.5$, $P(A \cap B) = 0.2$, compute $P(A \cup B)$.
+  \item \textbf{Distinguish} mutually exclusive events and independent events. Give an example of each.
+  \item \textbf{Verify} independence: if $P(A) = 0.3$, $P(B) = 0.4$, $P(A \cap B) = 0.12$, are $A$ and $B$ independent?
+  \item \textbf{Compute} $P(A \mid B)$ given $P(A \cap B) = 0.1$ and $P(B) = 0.4$. Then state the product rule that gives $P(A \cap B)$ from $P(B)$ and the conditional.
+  \item \textbf{Derive} Bayes theorem from the product rule.
+  \item \textbf{Compute} $P(\text{disease} \mid \text{positive})$ for a test with sensitivity 0.95, specificity 0.90, applied to a population with 1\% prevalence.
+  \item \textbf{Explain} why $P(\text{disease} \mid \text{positive})$ can be much smaller than $P(\text{positive} \mid \text{disease})$. What property of the prior drives this?
+  \item \textbf{Apply} the chain rule to factorise $P(A, B, C)$ in three different orderings.
+  \item \textbf{Construct} a small example where two random variables look correlated but are in fact independent. Use the test $P(X \mid Y) = P(X)$.
+  \item \textbf{Discuss} the librarian/farmer example. Why do humans tend to ignore the base rate, and what does Bayes prescribe instead?
+  \item \textbf{Explain} $p(\text{positive}) = p(\text{positive} \mid \text{disease}) \cdot p(\text{disease}) + p(\text{positive} \mid \neg\text{disease}) \cdot p(\neg\text{disease})$. What's this called, and why do you need it for Bayes?
+  \item \textbf{Marginalise} a joint $P(X, Y)$ over $Y$ to obtain $P(X)$. Show the calculation for a 2x2 table.
+\end{enumerate}
+
+\end{document}

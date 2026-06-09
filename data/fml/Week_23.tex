@@ -1,0 +1,579 @@
+\documentclass[11pt, a4paper]{article}
+\usepackage{fontspec}\setmainfont{Helvetica Neue}\setmonofont{Menlo}
+\usepackage{unicode-math}\setmathfont{STIX Two Math}
+\usepackage[margin=2cm, top=2cm, bottom=2.5cm]{geometry}
+\usepackage{microtype}\usepackage{parskip}
+\setlength{\parskip}{0.6em}\setlength{\parindent}{0pt}
+\usepackage[colorlinks=true, linkcolor=NavyBlue, urlcolor=NavyBlue, citecolor=NavyBlue]{hyperref}
+\usepackage{xcolor}\usepackage[dvipsnames]{xcolor}
+\usepackage{amsmath}\usepackage{booktabs}\usepackage{array}\usepackage{tabularx}
+\usepackage{graphicx}
+\graphicspath{{figures/week23/}}
+\newcommand{\thead}[1]{\textbf{#1}}
+\usepackage{enumitem}
+\setlist[itemize]{leftmargin=1.5em, itemsep=0.2em, topsep=0.3em}
+\setlist[enumerate]{leftmargin=1.5em, itemsep=0.2em, topsep=0.3em}
+\usepackage[most]{tcolorbox}\tcbuselibrary{breakable, skins, theorems}
+\definecolor{defBg}{HTML}{EAF2FB}\definecolor{defBd}{HTML}{1F4E79}
+\definecolor{exBg}{HTML}{F4F4F4}\definecolor{exBd}{HTML}{555555}
+\definecolor{tipBg}{HTML}{E8F5E9}\definecolor{tipBd}{HTML}{2E7D32}
+\definecolor{trapBg}{HTML}{FCE4EC}\definecolor{trapBd}{HTML}{AD1457}
+\definecolor{pitBg}{HTML}{FFF8E1}\definecolor{pitBd}{HTML}{B27600}
+\definecolor{noteBg}{HTML}{F3E5F5}\definecolor{noteBd}{HTML}{6A1B9A}
+\definecolor{tldrBg}{HTML}{E1F5FE}\definecolor{tldrBd}{HTML}{0277BD}
+\newtcolorbox{defbox}[1][]{enhanced, breakable, colback=defBg, colframe=defBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={Definition: #1}}
+\newtcolorbox{exbox}[1][]{enhanced, breakable, colback=exBg, colframe=exBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={Worked example: #1}}
+\newtcolorbox{exambox}[1][]{enhanced, breakable, colback=tipBg, colframe=tipBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={Exam-mode answer #1}}
+\newtcolorbox{trapbox}[1][]{enhanced, breakable, colback=trapBg, colframe=trapBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={MCQ trap #1}}
+\newtcolorbox{pitfallbox}[1][]{enhanced, breakable, colback=pitBg, colframe=pitBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={Pitfall #1}}
+\newtcolorbox{notebox}[1][]{enhanced, breakable, colback=noteBg, colframe=noteBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={Lecturer aside #1}}
+\newtcolorbox{tldrbox}[1][]{enhanced, breakable, colback=tldrBg, colframe=tldrBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={TL;DR #1}}
+\usepackage{titlesec}
+\titleformat{\section}[block]{\Large\bfseries\color{defBd}}{\thesection.}{0.6em}{}
+\titleformat{\subsection}[block]{\large\bfseries\color{defBd!80!black}}{\thesubsection}{0.5em}{}
+\titleformat{\subsubsection}[block]{\normalsize\bfseries}{}{0pt}{}
+\titlespacing*{\section}{0pt}{1.6em}{0.6em}\titlespacing*{\subsection}{0pt}{1.2em}{0.4em}
+\usepackage{fancyhdr}\pagestyle{fancy}\fancyhf{}
+\fancyhead[L]{\small CM52054 — Week 23}\fancyhead[R]{\small Message Passing}
+\fancyfoot[C]{\small\thepage}\renewcommand{\headrulewidth}{0.3pt}
+\newcommand{\examflag}{\textcolor{tipBd}{\textbf{[EXAM]}}\,}
+\newcommand{\trapflag}{\textcolor{trapBd}{\textbf{[TRAP]}}\,}
+\newcommand{\doflag}{\textcolor{defBd}{\textbf{[DO]}}\,}
+\title{\vspace{-1cm}{\Huge\bfseries Week 23 — Message Passing in Graphical Models} \\[0.4em]{\large Markov chains, transition matrices, marginal computation; the sum--product algorithm; factor-graph messages}}
+\author{\large CM52054 Foundational Machine Learning \\[0.2em]\normalsize University of Bath \,$\cdot$\, Dr Rohit Babbar}
+\date{Revision notes}
+\begin{document}\maketitle\thispagestyle{empty}\vspace{1em}
+
+\begin{tldrbox}
+\begin{itemize}[leftmargin=*]
+  \item Wk23 is the \emph{inference} algorithm for Wk22's graphical models. Given a factor graph and a partial observation, compute the marginal $P(x_i\,|\,\text{evidence})$ for any RV. Naive computation is $O(n^N)$ — exponential. \textbf{Message passing} (sum--product) reduces this to $O(N n^2)$ for chains and tree-structured factor graphs.
+  \item Lecture restricts to \textbf{chains and trees}. Loops in the graph break exact message passing; loopy belief propagation is out of scope.
+  \item \textbf{Markov chains revisited}: discrete state set $\{s_0, \ldots, s_{n-1}\}$, transition matrix $T \in \mathbb{R}^{n\times n}$ with $T_{ab} = P(s_a \to s_b)$. Each row is a categorical distribution; learn it by counting transitions and normalising rows.
+  \item \textbf{Marginal vs belief}: marginal $P(x_i) = \sum_{\text{others}} P(x_1, \ldots, x_N)$ — without evidence. \textbf{Belief} $b_i(x_i) = \sum_{\text{others}} P(x_1, \ldots, x_N\,|\,\text{evidence})$ — with evidence. Same formula, different conditioning. Lecture overloads $P$ to mean the post-evidence joint, so the two formulas coincide.
+  \item \textbf{Why message passing works} \examflag{}: rearrange the sum-of-products by pushing each sum inside the products that depend on its variable. Converts an $O(n^N)$ nested sum into a chain of $O(n^2)$ pairwise sums.
+  \item \textbf{Sum--product / message passing} \doflag{}: each edge carries two messages, one in each direction. A message is a function (an array of numbers, one per state of the receiving RV).
+  \begin{itemize}
+    \item Variable-to-factor: $m_{v\to F}(x_v) = \prod_{G\in N_v\setminus F} m_{G\to v}(x_v)$.
+    \item Factor-to-variable: $m_{F\to v}(x_v) = \sum_{x \notin v} F(\cdot)\prod_{u\in N_F\setminus v} m_{u\to F}(x_u)$.
+  \end{itemize}
+  \item \textbf{Belief at any node} $=$ product of incoming messages times the local unary term: $b_j(x_j) = U(x_j)\prod_{i\in N_j} m_{i\to j}(x_j)$.
+  \item \textbf{Compute once, reuse everywhere.} One forward pass and one backward pass produces all messages. Every node's marginal is then obtained ``for free'' as the product of its incoming messages — quadratic per node, linear in $N$ overall.
+  \item \examflag{}\textbf{Why ``sum--product''.} Each message update alternates two operations: \emph{multiply} incoming messages and the factor (combine independent pieces of information at a node), and \emph{sum} over variables you don't want to keep (marginalise out).
+\end{itemize}
+\end{tldrbox}
+
+% =====================================================================
+\section{Recap and where Wk23 fits}
+
+Wk22 introduced graphical models as compact representations of joint distributions. Wk23 is the algorithmic engine: given a graphical model and some evidence, compute marginals or beliefs at any node efficiently.
+
+The key restrictions for the unit:
+\begin{itemize}
+  \item Inference is restricted to \textbf{chain-structured} or \textbf{tree-structured} factor graphs. Trees admit exact polynomial-time inference. Loopy graphs admit only approximate algorithms (loopy belief propagation, junction tree, sampling) — out of scope.
+  \item Distributions are \textbf{discrete}. The same algorithm extends to continuous Gaussian distributions (Kalman filters), but Wk23 stays with finite state spaces.
+\end{itemize}
+
+\textbf{Concepts already in place} (recall, do not re-derive): Markov chain (Wk22 §4.4), Markov property (Wk22 §4.4), factor graph (Wk22 §3.2), conditional probability and joint factorisation (Wk22 §3.1).
+
+% =====================================================================
+\section{Markov chains, transition matrices, sampling}
+
+\subsection{Finite state machines vs Markov chains}
+
+\begin{defbox}[Finite state machine (FSM)]
+A directed graph of \emph{states} with deterministic transitions between them. At any time the system is in exactly one state; an external input chooses the next state.
+\end{defbox}
+
+\textbf{Example.} Traffic lights with states $\{n=$ north-south flow, $e=$ east-west flow, $p=$ pedestrian crossing$\}$. A possible sequence: $n \to e \to n \to e \to p \to n \ldots$. The FSM specifies allowed transitions.
+
+\textbf{FSMs vs Markov chains.}
+\begin{itemize}
+  \item Markov chains are \emph{probabilistic}; FSMs are usually deterministic.
+  \item Markov chains can have infinitely many states; FSMs are finite.
+  \item Markov chains satisfy the Markov property (next state depends only on current); FSMs may have arbitrary input-driven transitions.
+\end{itemize}
+
+\begin{notebox}[: ``external input'' and how an FSM ``runs on'' a Markov chain]
+In a \emph{deterministic} FSM there are \textbf{no transition probabilities} — the system sits in its
+current state and does not move until an \textbf{external input} (an observed outside event: a coin
+inserted, a character read, a timer expiring) arrives. Given (current state, input) the next state is
+\textbf{100\% determined}. A turnstile: state \texttt{Locked} $+$ input \texttt{Coin}
+$\to$ \texttt{Unlocked}, with certainty — no dice.
+
+An FSM ``runs on'' a Markov chain when you \textbf{stop tracking the exact inputs and replace them
+with how often they occur}. If, historically, the timer fires before a pedestrian arrives 50\% of the
+time, then $P(e\to n)=0.5$. The external input is \emph{absorbed into} the transition probabilities;
+the FSM topology (which transitions are allowed) is the skeleton, the transition matrix is the engine
+that now advances the system autonomously each tick — no input needed. A Markov chain is an
+autonomous, input-free FSM.
+\end{notebox}
+
+\begin{center}
+
+\footnotesize\textit{The traffic-light FSM as a concrete state-transition diagram. Circles are states --- $n$ (north-south flow), $e$ (east-west flow), $p$ (pedestrian crossing) --- and arrows are allowed transitions: the arc from $e$ back to $n$ and forward to $p$ shows that east-west flow can transition to either of the other two states. The timeline below shows one possible sequence of states over time, illustrating how the system moves through states step by step. This is a \emph{deterministic} FSM; the probabilistic version is a Markov chain, which would attach a probability to each arrow.}
+\end{center}
+
+\subsection{Discrete Markov chain --- transition matrix}
+
+\begin{defbox}[Transition matrix]
+For a discrete Markov chain over $n$ states $\{s_0, \ldots, s_{n-1}\}$, the \textbf{transition matrix} is $T \in \mathbb{R}^{n\times n}$ with
+\[
+T_{ab} = P(\text{next state} = s_b \,|\, \text{current state} = s_a).
+\]
+Rows are probability distributions: $\sum_b T_{ab} = 1$ for every $a$. Each row is a \textbf{categorical distribution} over the $n$ states.
+\end{defbox}
+
+\textbf{Example} (traffic lights, lecture's matrix):
+\[
+s_0 = n,\ s_1 = e,\ s_2 = p, \qquad
+T = \begin{pmatrix} 0 & 1 & 0 \\ 0.5 & 0 & 0.5 \\ 1 & 0 & 0 \end{pmatrix}.
+\]
+Reading row 1: from $e$, go to $n$ with probability 0.5 or to $p$ with probability 0.5; never stay at $e$.
+
+\subsection{Learning the transition matrix from data}
+
+A row of $T$ is a categorical distribution. To learn it from training sequences:
+
+\textbf{Maximum-likelihood (count-and-normalise).}
+\begin{enumerate}
+  \item Initialise $T$ with all 1's (uniform; equivalent to a uniform Dirichlet prior).
+  \item For each observed transition $s_a \to s_b$ in the training data, increment $T_{ab}$.
+  \item Normalise each row of $T$ to sum to 1.
+\end{enumerate}
+This is the MAP estimate under a uniform Dirichlet prior, equivalently MLE plus +1 Laplace smoothing.
+
+\textbf{Why Dirichlet?} The Dirichlet distribution is conjugate to the categorical (i.e.\ posterior $\propto$ prior $\times$ likelihood stays Dirichlet) — see Wk22 §8 for the analogous Beta-Bernoulli conjugacy.
+
+\subsection{Sampling from a Markov chain}
+
+Given a learned transition matrix $T$, generate a new sequence:
+\begin{enumerate}
+  \item Sample a start state $x_1 \sim P_{\text{start}}$, where $P_{\text{start}}$ is fitted from training-sequence first-states.
+  \item Sample a length $L \sim \text{Poisson}(\bar L)$ where $\bar L$ is the mean training-sequence length.
+  \item For $i = 2, \ldots, L$: sample $x_i \sim T_{x_{i-1}, \cdot}$ (the row of $T$ indexed by the previous state).
+\end{enumerate}
+
+\textbf{Optional sophistication.} Introduce explicit start/stop states; the chain ends when it transitions into the stop state.
+
+\subsection{Fake place names --- character-level Markov chain}
+
+\textbf{Setup.} Treat each character (a-z, plus space) as a state. Train $T$ on a list of UK place names: Ballymoney, Peacehaven, Barking, ...
+
+\textbf{Sample output.} ``ackilin, ckleryhtz, harkbrdy borthr, ...'' Phoneme-like, vaguely English-flavoured, but mostly nonsense.
+
+\textbf{Why it doesn't fully work.} English isn't generated by a low-order Markov process. A character only depends on the previous character — too short a memory. The fix is a longer \emph{generation-time} memory window (a higher-order $n$-gram), \emph{not} more training data: even infinite training data cannot rescue a 1-character memory, because while generating, the model forgets every character but the last. Each adjacent letter-pair looks plausible (``ck'', ``le''), so the output is phoneme-like, but the word as a whole drifts into nonsense.
+
+\subsection{$n$-gram models --- bigger memory}
+
+A \textbf{2-gram} (bigram) model uses the previous \emph{two} characters as the state — so each ``state'' is a pair of letters, and the transition is from a pair to the next single character. Equivalently, the state space has $26^2 = 676$ states instead of 26, and the transition matrix is $676 \times 26$.
+
+\textbf{Trade-off.}
+\begin{itemize}
+  \item Larger $n$-gram $\Rightarrow$ longer memory $\Rightarrow$ more realistic text.
+  \item Larger $n$-gram $\Rightarrow$ exponentially many states $\Rightarrow$ exponentially more data needed to fit reliably (rare bigrams have 0 counts and Laplace-smoothed probabilities).
+\end{itemize}
+
+\begin{center}
+
+\footnotesize\textit{A 2-gram (bigram) Markov chain for character sequences. Each node now holds a \emph{pair} of characters (``be'', ``es'', ``st'', ``to'', ``on'') rather than a single character --- the state is the last two characters seen. The transition from ``be'' to ``es'' fires when the character ``s'' is generated (the new character appended to the window), and so on. The chain shown encodes the substring ``\texttt{beston}''. With $n$-gram states the model has longer memory and generates more realistic text, but the state space grows as $26^n$, requiring exponentially more training data.}
+\end{center}
+
+This is the same issue that motivated kernel density estimation's curse of dimensionality (Wk20).
+
+% =====================================================================
+\section{Inference: marginals and beliefs}
+
+\subsection{The inference question}
+
+Suppose we have a graphical model with $N$ RVs $x_1, \ldots, x_N$ and observe some of them. We want the \textbf{marginal probability} of any individual RV, i.e.\ the probability that $x_i$ takes a particular value, accounting for the rest of the model and the observed values.
+
+\textbf{Definition.}
+\[
+P(x_i) \;=\; \sum_{\substack{x_1, \ldots, x_N \\ \text{except } x_i}} P(x_1, \ldots, x_N).
+\]
+Sum the joint over all variables except $x_i$.
+
+\textbf{When we have evidence}, replace the joint by the joint conditioned on the evidence; the formula has the same shape:
+\[
+b_i(x_i) \;=\; \sum_{\text{others}} P(x_1, \ldots, x_N \,|\, \text{evidence}).
+\]
+The lecture overloads $P$ to mean ``the joint, after applying evidence,'' so marginal and belief have the same expression.
+
+\begin{notebox}[: reading the notation $b_j(x_j)$]
+The two indices do \emph{different} jobs. The \textbf{subscript} $j$ in $b_j$ says \emph{which node}
+— ``this is the belief function for node $j$.'' The \textbf{argument} $x_j$ says \emph{which value}
+— $b_j(x_j)$ is a whole vector, one number per state $x_j$ can take ($b_3(\texttt{'a'})$,
+$b_3(\texttt{'b'})$, \dots). It is \textbf{not} ``predicting the next state'': that would be the
+transition $P(x_j\mid x_{j-1})$. $b_j(x_j)$ is a \emph{global} quantity — the updated distribution
+for node $j$ given the \emph{whole} chain and \emph{all} evidence, including evidence to its
+\emph{right} (the future), with every other node marginalised out.
+\end{notebox}
+
+\subsection{Why naive computation is hopeless}
+
+For a length-5 chain $x_1 \to x_2 \to x_3 \to x_4 \to x_5$ over $n$-state RVs:
+\[
+b_3(x_3) \;=\; \sum_{x_1, x_2, x_4, x_5} P(x_1)\,P(x_2|x_1)\,P(x_3|x_2)\,P(x_4|x_3)\,P(x_5|x_4).
+\]
+Naive evaluation: nested 4-deep loop over $n^4$ assignments, each requiring 4 multiplications. Total: $O(n^5)$ for one fixed $x_3$.
+
+Generalising to length $N$ and $n$ states: $O(n^N)$. For $n = 26$ (English alphabet) and $N = 10$, this is $26^{10} \approx 1.4 \times 10^{14}$ — far beyond practical.
+
+\textbf{This is the curse of dimensionality showing up at inference time.}
+
+% =====================================================================
+\section{Efficient computation via term rearrangement}
+
+The key insight: most of the terms in the joint don't depend on most of the summation variables. Move each sum to the innermost place where its variable appears.
+
+\begin{notebox}[: what summing-out means]
+Marginalising (summing out) a variable \emph{eliminates} it: once you have summed over every value of a variable, the result no longer depends on it. The lecturer's gloss — to find the mean height of the people in a class you sum over them, and the answer is a single number that no longer depends on which person you picked. ``Summed over, no longer depends on it.''
+\end{notebox}
+
+\subsection{Worked rearrangement on a length-5 chain}
+
+Starting from
+\[
+b_3(x_3) = \sum_{x_1, x_2, x_4, x_5} P(x_5|x_4)\,P(x_4|x_3)\,P(x_3|x_2)\,P(x_2|x_1)\,P(x_1).
+\]
+
+\textbf{Step 1 — push $\sum_{x_1}$ inside.} Only $P(x_2|x_1)$ and $P(x_1)$ depend on $x_1$:
+\[
+b_3(x_3) = \sum_{x_2, x_4, x_5} P(x_5|x_4)\,P(x_4|x_3)\,P(x_3|x_2)\sum_{x_1} P(x_2|x_1)\,P(x_1).
+\]
+The inner sum is a function of $x_2$. Compute it once, store it.
+
+\textbf{Step 2 — push $\sum_{x_5}$ inside.} Only $P(x_5|x_4)$ depends on $x_5$:
+\[
+b_3(x_3) = \sum_{x_2, x_4} P(x_4|x_3)\,P(x_3|x_2)\sum_{x_1}P(x_2|x_1)P(x_1) \cdot \sum_{x_5}P(x_5|x_4).
+\]
+The inner sum is a function of $x_4$. Store it.
+
+\textbf{Step 3 — proceed similarly for $\sum_{x_2}$, then $\sum_{x_4}$.}
+
+\textbf{Result.} Each remaining sum is over a single variable, with each summand a product of two terms (a transition probability and a stored partial-sum function). Each of these costs $O(n^2)$. There are $N-1$ such sums for a chain of length $N$. \textbf{Total complexity: $O(Nn^2)$ — linear in $N$, quadratic in $n$.}
+
+\textbf{For $N = 10$, $n = 26$}: $10 \cdot 676 = 6{,}760$ operations vs $1.4\times 10^{14}$ for naive. Ten orders of magnitude.
+
+\begin{notebox}[: this is dynamic programming]
+The trick is exactly dynamic programming applied to the joint distribution: cache intermediate quantities (the partial sums) and reuse them. Each ``stored function'' is a vector indexed by the relevant RV's state. Message passing is the systematic, automated version of this manual rearrangement.
+\end{notebox}
+
+% =====================================================================
+\section{Message passing on a chain --- worked example}
+
+\subsection{The setup}
+
+Chain: $x_1 \to x_2 \to x_3 \to x_4 \to x_5$. We want $b_3(x_3)$ — the marginal of the middle RV.
+
+The trick: define a \textbf{message} from each pair of adjacent nodes. A message $m_{i\to j}(x_j)$ is a function of $x_j$, capturing ``everything I know about $x_j$ from the side of the chain on my side.''
+
+\begin{center}
+
+\footnotesize\textit{The five-node chain $x_1 \to x_2 \to x_3 \to x_4 \to x_5$ as a graphical model. The arrows show the direction of conditional dependence (each node depends on the one to its left), but \textbf{message passing sends information in both directions} --- one message travels from left to right, another from right to left along each edge. Each message is a function (an array of numbers, one per possible value of the receiving RV), not a single scalar. The ``two messages per edge'' principle is the core mechanism: the left message summarises everything from $\{x_1, \ldots, x_{i-1}\}$ and the right message summarises everything from $\{x_{i+1}, \ldots, x_N\}$.}
+\end{center}
+
+\subsection{Forward messages (left side $\to x_3$)}
+
+\textbf{Message from $x_1$ to $x_2$:}
+\[
+m_{1\to 2}(x_2) \;=\; \sum_{x_1} P(x_2 | x_1)\,P(x_1).
+\]
+A function of $x_2$ — for each value of $x_2$, the marginal probability that comes from the left side of the chain.
+
+\textbf{Message from $x_2$ to $x_3$:}
+\[
+m_{2\to 3}(x_3) \;=\; \sum_{x_2} P(x_3 | x_2)\,m_{1\to 2}(x_2).
+\]
+Use the previous message as input. This captures everything from $\{x_1, x_2\}$ that's relevant to $x_3$.
+
+\subsection{Backward messages (right side $\to x_3$)}
+
+\textbf{Why start at $x_5$?} The backward pass begins at $x_5$ because $x_5$ appears in only one term, $P(x_5|x_4)$ — it is a ``leaf''/localised term that can be summed out immediately. This is exactly symmetric to why $x_1$ is eliminated first in the forward pass.
+
+\textbf{Message from $x_5$ to $x_4$:}
+\[
+m_{5\to 4}(x_4) \;=\; \sum_{x_5} P(x_5 | x_4).
+\]
+(For a Markov chain with no extra evidence on $x_5$, the unary term is uniform; this just sums to 1 unless evidence is present.)
+
+\textbf{Message from $x_4$ to $x_3$:}
+\[
+m_{4\to 3}(x_3) \;=\; \sum_{x_4} P(x_4 | x_3)\,m_{5\to 4}(x_4).
+\]
+
+\subsection{Combine at $x_3$}
+
+\textbf{Belief at $x_3$:}
+\[
+\boxed{\;b_3(x_3) \;=\; m_{2\to 3}(x_3) \cdot m_{4\to 3}(x_3).\;}
+\]
+The product of the incoming messages --- left-side info times right-side info. \textbf{Clean answer in $O(n^2)$ per message and $O(N)$ messages.}
+
+\begin{center}
+
+\footnotesize\textit{The complete message-passing trace for $b_3(x_3)$ on the five-node chain. The chain is drawn with arrows in both directions above the nodes, indicating that messages flow both ways. On the \textbf{left}: the forward message $m_{1\to 2}(x_2) = \sum_{x_1} P(x_2|x_1)P(x_1)$ marginalises out $x_1$; it is then consumed to build $m_{2\to 3}(x_3) = \sum_{x_2} P(x_3|x_2)\,m_{1\to 2}(x_2)$. On the \textbf{right}: $m_{5\to 4}(x_4) = \sum_{x_5} P(x_5|x_4)$ starts the backward pass, which feeds $m_{4\to 3}(x_3) = \sum_{x_4} P(x_4|x_3)\,m_{5\to 4}(x_4)$. The belief at the centre is the product: $b_3(x_3) = m_{4\to 3}(x_3)\,m_{2\to 3}(x_3)$. Every arrow on the diagram corresponds directly to one of these equations.}
+\end{center}
+
+\textbf{This is the headline result.} Inference is now polynomial. The graph structure is the algorithm.
+
+% =====================================================================
+\section{Generalising --- the sum--product algorithm}
+
+\subsection{The general message rule}
+
+For a tree-structured factor graph or Markov chain:
+
+\begin{defbox}[Message rule (chain / tree case)]
+The message from RV $i$ to RV $j$ along an edge is
+\[
+m_{i\to j}(x_j) \;=\; \sum_{x_i} U(x_i)\,F(x_i, x_j)\prod_{k\in N_i\setminus j} m_{k\to i}(x_i),
+\]
+where $U(x_i)$ is the local unary factor (e.g.\ a prior $P(x_i)$ or local evidence), $F(x_i, x_j)$ is the pairwise factor between $i$ and $j$ (e.g.\ a transition probability), and $N_i\setminus j$ are all neighbours of $i$ except $j$.
+\end{defbox}
+
+\begin{notebox}[: deconstructing the message rule — read it right to left]
+A message is a \textbf{vector}, one entry per state of the receiving node $j$ — node $i$ telling
+node $j$ ``here is how likely I think each of your states is, given my whole side of the graph.''
+\begin{itemize}
+  \item $\prod_{k\in N_i\setminus j} m_{k\to i}(x_i)$ — the \textbf{inbox}: multiply every message
+  reaching $i$ \emph{except} the one from $j$. Excluding $j$ stops an echo chamber (don't send $j$'s
+  own information back to it).
+  \item $U(x_i)$ — \textbf{local context}: fold in $i$'s own unary factor (prior / local evidence).
+  Now $i$ has a complete belief about its own states.
+  \item $F(x_i,x_j)$ — the \textbf{bridge}: the pairwise factor translates $i$'s belief into terms of
+  $j$'s states.
+  \item $\sum_{x_i}$ — the \textbf{exit clean-up}: marginalise out $x_i$ so the result is a clean
+  vector indexed only by $x_j$.
+\end{itemize}
+Slogan: \textbf{multiply incoming, sum out the rest}. The final belief $b_j(x_j)=U(x_j)\prod_{i\in N_j}m_{i\to j}(x_j)$
+multiplies \emph{all} incoming messages — no exclusion — because $j$ is the destination and wants the
+full picture. (Edges are undirected — evidence flows both ways via a forward and a backward pass —
+but a \emph{single} message never feeds back to its own sender.)
+\end{notebox}
+
+\textbf{Belief at any node.} For RV $j$ with neighbours $N_j$:
+\[
+\boxed{\;b_j(x_j) \;=\; U(x_j)\prod_{i\in N_j} m_{i\to j}(x_j).\;}
+\]
+
+\textbf{Recipe.} A node's belief is its local unary term times the product of all incoming messages.
+
+\subsection{Reusing computation --- one pass gets all marginals}
+
+The crucial insight: once you have computed all messages on the chain (one in each direction along each edge), you can compute the belief at \emph{every} node ``for free.''
+
+\textbf{Procedure for a length-$N$ chain.}
+\begin{enumerate}
+  \item \textbf{Forward pass.} Compute $m_{1\to 2}, m_{2\to 3}, \ldots, m_{N-1\to N}$ in order.
+  \item \textbf{Backward pass.} Compute $m_{N\to N-1}, m_{N-1\to N-2}, \ldots, m_{2\to 1}$ in order.
+  \item \textbf{For each node $j$}: $b_j(x_j) = m_{j-1\to j}(x_j) \cdot m_{j+1\to j}(x_j)$ (with edge cases for $j=1$ and $j=N$).
+\end{enumerate}
+
+\textbf{Cost.} Each message is $O(n^2)$. There are $2(N-1)$ messages. Belief at each node is $O(n)$. Total: $O(Nn^2)$.
+
+\textbf{For comparison.} Naive marginalisation \emph{at every node} would be $O(N \cdot n^N)$. Message passing pays $O(Nn^2)$ \emph{once} for everything.
+
+% =====================================================================
+\section{Factor graph message passing}
+
+For a general factor graph (not just a chain), there are two kinds of messages — variable-to-factor and factor-to-variable.
+
+\subsection{The two message rules}
+
+\begin{defbox}[Factor graph message passing (sum--product)]
+\textbf{Variable-to-factor message:} the variable forwards information from all \emph{other} factors connected to it.
+\[
+m_{v\to F}(x_v) \;=\; \prod_{G\in N_v\setminus F} m_{G\to v}(x_v).
+\]
+\textbf{Factor-to-variable message:} the factor combines its local function with messages from all \emph{other} variables it touches, and marginalises out everything except the destination.
+\[
+m_{F\to v}(x_v) \;=\; \sum_{\mathbf{x}_{\setminus v}} F(\mathbf{x})\prod_{u\in N_F\setminus v} m_{u\to F}(x_u),
+\]
+where $\mathbf{x}_{\setminus v}$ are all variables in $F$'s scope except $v$.
+\end{defbox}
+
+\textbf{Why ``sum--product.''} Each message update alternates two operations:
+\begin{itemize}
+  \item \textbf{Product.} At a variable, multiply messages from independent neighbours; at a factor, combine its function with incoming messages.
+  \item \textbf{Sum.} Marginalise out variables you don't want to keep.
+\end{itemize}
+Hence the algorithm name.
+
+\subsection{Voice recognition as a factor-graph example}
+
+\textbf{Setup.} The audio is sampled at 100 frames per second. At each time $i$, we want to infer the \emph{phoneme} $x_i$ being uttered. There are $\approx 45$ phonemes (English) plus a silence symbol.
+
+\textbf{Two kinds of factors.}
+\begin{itemize}
+  \item $P_{i,i+1}(x_i, x_{i+1})$ — pairwise transition factor between consecutive phonemes; the language's phoneme transition statistics.
+  \item $U_i(x_i)$ — unary factor capturing how compatible each phoneme value is with the audio frame at time $i$. (E.g.\ from a small acoustic classifier.)
+\end{itemize}
+
+\textbf{This is a Hidden Markov Model (HMM).} The phonemes $x_i$ (the lecture also writes them $z_i$) are \emph{hidden states}; the audio frames $y_i$ are the \emph{observations}. The two factor types play complementary roles: the transition factor $P_{i,i+1}$ captures \emph{temporal} dependence between consecutive hidden states, whereas the unary factor is the \emph{instantaneous}, per-frame likelihood $U_i(x_i)\propto P(y_i|x_i)$ — it scores one frame of audio in isolation, with no temporal structure.
+
+\textbf{Factor graph.} Circles for phoneme RVs $\{x_1, x_2, x_3, x_4, \ldots\}$, factor squares $P_{i,i+1}$ on each edge, factor squares $U_i$ on each variable.
+
+\begin{center}
+
+\footnotesize\textit{The factor graph for the 4-phoneme voice recognition model. \textbf{Circles} are random-variable nodes: $x_1, x_2, x_3, x_4$ are the hidden phoneme states at consecutive time frames. \textbf{Squares} are factor nodes: the horizontal squares $P_{12}, P_{23}, P_{34}$ are pairwise transition factors --- each encodes $P(x_{i+1}|x_i)$, the phoneme language model. The vertical squares $U_1, U_2, U_3, U_4$ are unary factors --- each encodes how well the current audio frame matches each phoneme value ($U_i(x_i) \propto P(y_i|x_i)$). Messages travel along every edge in both directions to combine the transition model with the audio evidence at every frame.}
+\end{center}
+
+\subsection{Worked unary factor}
+
+\textbf{Silence frame.} The audio is silence. A reasonable unary factor:
+\[
+U_1(\text{sil}) = 0.60,\quad U_1(/s/) = 0.25,\quad U_1(/t/) = 0.10,\quad U_1(/k/) = 0.04,\quad U_1(/\text{æ}/) = 0.01.
+\]
+``Silence'' is most probable; some confusable consonants are next.
+
+\textbf{Non-silence frame, /k/ most likely.}
+\[
+U_1(/k/) = 0.55,\ U_1(/t/) = 0.20,\ U_1(\text{sil}) = 0.15,\ U_1(/s/) = 0.08,\ U_1(/\text{æ}/) = 0.02.
+\]
+``/k/'' is favoured; the others are residual confusability.
+
+\trapflag{}\textbf{Vector form follows a fixed phoneme order.} When the unary factor is written as a vector, e.g.\ $U_1 = [0.15,\, 0.08,\, 0.20,\, 0.55,\, 0.02]$, the entries are indexed in a \emph{fixed phoneme-index order} — here the state space order $[\text{sil},\, /s/,\, /t/,\, /k/,\, /\text{æ}/]$ — \emph{not} the order in which the per-phoneme values were listed above.
+
+\subsection{Messages on the voice recognition factor graph}
+
+The forward sweep (from left edge of chain to the right):
+
+\begin{enumerate}
+  \item $m_{U_1\to x_1}(x_1) = U_1(x_1)$. (Unary factor sends its function as the message.)
+  \item $m_{x_1\to P_{12}}(x_1) = m_{U_1\to x_1}(x_1) = U_1(x_1)$. (The variable forwards the unary message.)
+  \item $m_{P_{12}\to x_2}(x_2) = \sum_{x_1} P_{12}(x_1, x_2)\,m_{x_1\to P_{12}}(x_1)$.
+  \item $m_{U_2\to x_2}(x_2) = U_2(x_2)$.
+  \item $m_{x_2\to P_{23}}(x_2) = m_{P_{12}\to x_2}(x_2) \cdot m_{U_2\to x_2}(x_2)$. (Two incoming messages multiplied.)
+  \item Continue: $m_{P_{23}\to x_3}, m_{U_3\to x_3}, m_{x_3\to P_{34}}, \ldots$
+\end{enumerate}
+
+The backward sweep is symmetric.
+
+\begin{center}
+
+\footnotesize\textit{The factor graph mid-forward-sweep, with message formulas annotated directly on the diagram. Below $x_1$: the unary factor sends $m_{U_1\to x_1}(x_1) = U_1(x_1)$, which the variable node forwards to $P_{12}$ unchanged. Above the chain: $m_{P_{12}\to x_2}(x_2) = \sum_{x_1} P_{12}(x_1, x_2)\,m_{x_1\to P_{12}}(x_1)$ is the factor-to-variable message that marginalises out $x_1$ and delivers a summary to $x_2$. Below $x_2$: $m_{U_2\to x_2}(x_2) = U_2(x_2)$ is the second unary message arriving at $x_2$. The variable $x_2$ then multiplies both incoming messages before forwarding to $P_{23}$: $m_{x_2\to P_{23}}(x_2) = m_{P_{12}\to x_2}(x_2)\cdot m_{U_2\to x_2}(x_2)$. This annotated diagram shows exactly how the two types of message (factor-to-variable and variable-to-factor) alternate across the sweep.}
+\end{center}
+
+\textbf{Belief at any phoneme node $x_j$:}
+\[
+b_j(x_j) \;=\; U_j(x_j) \cdot m_{P_{j-1,j}\to x_j}(x_j) \cdot m_{P_{j,j+1}\to x_j}(x_j).
+\]
+The product of: the local audio fit (unary), the left-side context (forward message), and the right-side context (backward message).
+
+% =====================================================================
+\section{When does message passing apply?}
+
+\textbf{Tree-structured graphs (no loops):} exact, $O(Nn^2)$.
+
+\textbf{Loopy graphs:} the algorithm doesn't terminate cleanly — messages keep updating because they re-enter the system through the loop. Approximate variants exist:
+\begin{itemize}
+  \item \textbf{Loopy belief propagation}: iterate the message updates until they (hopefully) converge. No guarantee of correctness, but works in practice for many graphs (e.g.\ LDPC error-correcting codes, where messages converge \emph{because} the graph is locally tree-like).
+  \item \textbf{Junction tree algorithm}: convert the loopy graph into a tree by clustering RVs. Exact but exponential in the size of the largest cluster.
+  \item \textbf{Sampling}: MCMC, Gibbs sampling. Approximate, generic, slow.
+  \item \textbf{Variational methods}: parametrise an approximating distribution and minimise KL divergence. The Laplace approximation (Wk20) is a special case.
+\end{itemize}
+
+\textbf{For this unit:} stick to tree-structured / chain examples. Loopy belief propagation is mentioned but not examined.
+
+% =====================================================================
+\section{Exam-mode answers}
+
+\begin{exambox}[{Concept: Define a transition matrix for a discrete Markov chain. How is each row interpreted?}]
+\textit{For a Markov chain over $n$ discrete states $\{s_0, \ldots, s_{n-1}\}$, the transition matrix $T \in \mathbb{R}^{n\times n}$ has entries $T_{ab} = P(\text{next state}=s_b \,|\, \text{current state}=s_a)$. Each row $T_{a, \cdot}$ is a categorical distribution — non-negative entries summing to 1 — representing the conditional distribution over the next state given the current state $s_a$.}
+\end{exambox}
+
+\begin{exambox}[{Concept: How is a Markov chain's transition matrix learned from data? Why is the Dirichlet prior a natural choice?}]
+\textit{Maximum-likelihood training: count each observed transition $s_a \to s_b$ in the training sequences, then normalise each row to sum to 1. Equivalently, MAP estimation under a uniform Dirichlet prior, which adds 1 to every count before normalising (Laplace smoothing). The Dirichlet prior is conjugate to the categorical distribution: posterior $\times$ prior remains Dirichlet, so updating with new data is closed-form.}
+\end{exambox}
+
+\begin{exambox}[{Concept: Why is naive marginal computation in a graphical model intractable? Give the complexity in terms of $N$ (number of RVs) and $n$ (states per RV).}]
+\textit{Naive computation evaluates $P(x_i) = \sum_{\text{others}} P(x_1, \ldots, x_N)$ as a nested sum over all $n^{N-1}$ assignments of the other RVs. For each assignment, the joint requires multiplying $N$ factors. Total cost: $O(n^N)$ — exponential in the number of RVs. For $n=26$ and $N=10$, this is $\approx 1.4 \times 10^{14}$ operations — completely intractable.}
+\end{exambox}
+
+\begin{exambox}[{\doflag{}Concept: How does message passing reduce naive $O(n^N)$ inference to $O(Nn^2)$?}]
+\textit{The key idea: each variable in the joint sum-of-products participates only in the factors that touch it directly. Push each summation inside the products that don't depend on its variable. The resulting nested structure has each sum over a single variable, with each summand a product of $\le 2$ terms. Each such ``message'' costs $O(n^2)$ to compute (one operation per pair of states). For a chain of length $N$, there are $2(N-1)$ messages — total $O(Nn^2)$. This is dynamic programming: cache intermediate quantities (the messages) and reuse them.}
+\end{exambox}
+
+\begin{exambox}[{\doflag{}Compute: For a length-5 Markov chain, write the forward message $m_{2\to 3}(x_3)$ in terms of $m_{1\to 2}$.}]
+\textit{$m_{1\to 2}(x_2) = \sum_{x_1} P(x_2|x_1)P(x_1)$ — the forward message from node 1 to 2.}\\[0.2em]
+\textit{Then $m_{2\to 3}(x_3) = \sum_{x_2} P(x_3|x_2)\,m_{1\to 2}(x_2)$. Costs $O(n^2)$ — for each of $n$ values of $x_3$, sum over $n$ values of $x_2$.}
+\end{exambox}
+
+\begin{exambox}[{Concept: Write the belief at any node in a tree-structured factor graph in terms of incoming messages.}]
+\textit{$b_j(x_j) = U(x_j)\prod_{i\in N_j} m_{i\to j}(x_j)$ — the local unary factor times the product of all incoming messages. Once all messages have been computed by one forward and one backward pass, this is an $O(n)$ operation per node.}
+\end{exambox}
+
+\begin{exambox}[{Concept: State the two factor-graph message-update rules.}]
+\textit{\textbf{Variable to factor}: $m_{v\to F}(x_v) = \prod_{G\in N_v\setminus F} m_{G\to v}(x_v)$ — multiply incoming messages from all factors except the destination.}\\[0.3em]
+\textit{\textbf{Factor to variable}: $m_{F\to v}(x_v) = \sum_{\mathbf{x}_{\setminus v}} F(\mathbf{x})\prod_{u\in N_F\setminus v} m_{u\to F}(x_u)$ — multiply factor function by all variable-to-factor messages from variables in the factor's scope (except destination), then marginalise out those variables.}\\[0.3em]
+\textit{Together these are called the \textbf{sum--product algorithm} because each message alternates a sum (marginalise) and a product (combine independent information).}
+\end{exambox}
+
+\begin{exambox}[{Concept: Why does message passing fail (or only approximate) on graphs with loops?}]
+\textit{Message passing relies on each message capturing ``everything I know from my side.'' On a tree, each edge cleanly partitions the graph into two sides; a message summarises one side perfectly. On a loop, the partition fails — information flowing through the loop returns to its origin and double-counts. The algorithm can either be modified (junction tree, which clusters RVs to break loops, exponential in cluster size) or run as an iterative approximation (loopy belief propagation, no convergence guarantee but often good in practice). For this unit, restrict to tree-structured / chain graphs.}
+\end{exambox}
+
+% =====================================================================
+\section*{Key equations cheat sheet}
+\addcontentsline{toc}{section}{Key equations cheat sheet}
+
+\begin{tabularx}{\linewidth}{@{}lX@{}}
+\toprule
+\thead{Object} & \thead{Formula / fact} \\
+\midrule
+Transition matrix entry          & $T_{ab} = P(s_a \to s_b)$, rows sum to 1 \\
+Marginal                          & $P(x_i) = \sum_{\text{others}} P(x_1, \ldots, x_N)$ \\
+Belief                            & $b_i(x_i) = \sum_{\text{others}} P(x_1, \ldots, x_N \,|\, \text{evidence})$ \\
+Naive cost                        & $O(n^N)$ \\
+Message passing cost              & $O(N n^2)$ \\
+Forward message (chain)           & $m_{i\to j}(x_j) = \sum_{x_i} U(x_i)\,F(x_i, x_j)\prod_{k\in N_i\setminus j}m_{k\to i}(x_i)$ \\
+Belief at node $j$                & $b_j(x_j) = U(x_j)\prod_{i\in N_j} m_{i\to j}(x_j)$ \\
+Variable-to-factor message        & $m_{v\to F}(x_v) = \prod_{G\in N_v\setminus F} m_{G\to v}(x_v)$ \\
+Factor-to-variable message        & $m_{F\to v}(x_v) = \sum_{\mathbf{x}_{\setminus v}} F(\mathbf{x})\prod_{u\in N_F\setminus v} m_{u\to F}(x_u)$ \\
+Sum--product slogan               & ``Multiply incoming, sum out the rest'' \\
+Compute once, reuse everywhere    & one forward + one backward pass produces all node beliefs \\
+\bottomrule
+\end{tabularx}
+
+% =====================================================================
+\section*{Pitfalls and traps consolidated}
+\addcontentsline{toc}{section}{Pitfalls and traps consolidated}
+
+\begin{itemize}
+  \item \textbf{Messages are functions, not numbers.} Each message $m_{i\to j}(x_j)$ is a vector indexed by $x_j$ — one value per state of the receiving RV.
+  \item \textbf{Two messages per edge.} One in each direction. Don't merge them; they carry different information (left-side context vs right-side context).
+  \item \textbf{The $\setminus$ notation.} $N_i \setminus j$ means ``all neighbours of $i$ except $j$.'' This excludes the destination — the message from $i$ to $j$ summarises everything from $i$'s side that is \emph{not} already in the channel from $j$ to $i$.
+  \item \textbf{Forward and backward passes must be ordered.} A forward message at position $k$ depends on the forward message at position $k-1$; the backward message similarly. Don't try to parallelise across the chain naively.
+  \item \trapflag{}\textbf{``Message passing is exact on any graph.''} \textbf{False.} Exact only on trees / chains. Loopy graphs give approximate (or non-converging) results.
+  \item \textbf{Belief = product of incoming messages times unary.} Not the sum.
+  \item \textbf{Don't apply naive computation to large graphs.} $O(n^N)$ explodes fast.
+  \item \textbf{Don't confuse the transition matrix with the joint distribution.} The transition matrix is the \emph{conditional} $P(x_{i+1}\,|\,x_i)$. The joint is the product of all such conditionals plus a starting distribution.
+  \item \textbf{$n$-gram models still suffer from data sparsity.} Larger $n$ means better memory but exponentially fewer counts per state pair. Smoothing / backoff is essential.
+  \item \textbf{Sum--product computes marginals.} For \emph{most likely} sequence (MAP), use the closely-related max-product (Viterbi) algorithm — not in scope here.
+\end{itemize}
+
+% =====================================================================
+\section*{Self-check questions}
+\addcontentsline{toc}{section}{Self-check questions}
+
+\begin{enumerate}
+  \item Define a transition matrix for a discrete Markov chain. Why must each row sum to 1?
+  \item Distinguish a finite state machine from a Markov chain.
+  \item Outline the procedure for learning a transition matrix from training sequences. Why is the +1 (Laplace) smoothing equivalent to a uniform Dirichlet prior?
+  \item Sketch the procedure for sampling a sequence from a learned Markov chain.
+  \item Why does a 1-gram (single character memory) model produce poor English-like text? How does an $n$-gram model improve, and what is the trade-off?
+  \item Define the marginal of an RV and the belief of an RV. Why are they the same formula in the lecture's overloaded notation?
+  \item Show that naive marginal computation in a chain of length $N$ over $n$-state RVs is $O(n^N)$. Use $n=26$ and $N=10$ as a concrete numeric example.
+  \item Walk through the term-rearrangement argument that brings the cost down to $O(Nn^2)$. Identify which sums move where.
+  \item Write the forward and backward message-update equations for a chain. Express the belief at the middle node in terms of two messages.
+  \item State the belief equation for any node in a tree-structured factor graph.
+  \item State the variable-to-factor and factor-to-variable message rules. Identify which one performs the ``sum'' and which the ``product'' part of sum--product.
+  \item Walk through the message passing on a 4-node voice recognition factor graph (variables $x_1, \ldots, x_4$, pairwise factors $P_{12}, P_{23}, P_{34}$, unary factors $U_1, \ldots, U_4$).
+  \item Why is one forward + one backward pass sufficient to obtain marginals at every node?
+  \item True or false: ``Message passing always gives exact marginals.'' Justify.
+  \item Forward link: when does message passing extend to continuous distributions? (Answer: Gaussian distributions, leading to Kalman filters — out of scope for this unit.)
+  \item In what sense is message passing dynamic programming?
+\end{enumerate}
+
+\end{document}

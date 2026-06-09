@@ -1,0 +1,613 @@
+\documentclass[11pt, a4paper]{article}
+
+% --- Fonts and engine ---
+\usepackage{fontspec}
+\setmainfont{Helvetica Neue}
+\setmonofont{Menlo}
+\usepackage{unicode-math}
+\setmathfont{STIX Two Math}
+
+% --- Layout ---
+\usepackage[margin=2cm, top=2cm, bottom=2.5cm]{geometry}
+\usepackage{microtype}
+\usepackage{parskip}
+\setlength{\parskip}{0.6em}
+\setlength{\parindent}{0pt}
+
+% --- Typography and links ---
+\usepackage[colorlinks=true, linkcolor=NavyBlue, urlcolor=NavyBlue, citecolor=NavyBlue]{hyperref}
+\usepackage{xcolor}
+\usepackage[dvipsnames]{xcolor}
+
+% --- Math and tables ---
+\usepackage{amsmath}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{tabularx}
+\usepackage{graphicx}
+\graphicspath{{figures/week02/}}
+\newcommand{\thead}[1]{\textbf{#1}}
+
+% --- Lists ---
+\usepackage{enumitem}
+\setlist[itemize]{leftmargin=1.5em, itemsep=0.2em, topsep=0.3em}
+\setlist[enumerate]{leftmargin=1.5em, itemsep=0.2em, topsep=0.3em}
+
+% --- Boxed callouts ---
+\usepackage[most]{tcolorbox}
+\tcbuselibrary{breakable, skins, theorems}
+
+% Color palette
+\definecolor{defBg}{HTML}{EAF2FB}
+\definecolor{defBd}{HTML}{1F4E79}
+\definecolor{exBg}{HTML}{F4F4F4}
+\definecolor{exBd}{HTML}{555555}
+\definecolor{tipBg}{HTML}{E8F5E9}
+\definecolor{tipBd}{HTML}{2E7D32}
+\definecolor{trapBg}{HTML}{FCE4EC}
+\definecolor{trapBd}{HTML}{AD1457}
+\definecolor{pitBg}{HTML}{FFF8E1}
+\definecolor{pitBd}{HTML}{B27600}
+\definecolor{noteBg}{HTML}{F3E5F5}
+\definecolor{noteBd}{HTML}{6A1B9A}
+\definecolor{tldrBg}{HTML}{E1F5FE}
+\definecolor{tldrBd}{HTML}{0277BD}
+
+\newtcolorbox{defbox}[1][]{enhanced, breakable, colback=defBg, colframe=defBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={Definition: #1}}
+\newtcolorbox{exbox}[1][]{enhanced, breakable, colback=exBg, colframe=exBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={Worked example: #1}}
+\newtcolorbox{exambox}[1][]{enhanced, breakable, colback=tipBg, colframe=tipBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={Exam-mode answer #1}}
+\newtcolorbox{trapbox}[1][]{enhanced, breakable, colback=trapBg, colframe=trapBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={MCQ trap #1}}
+\newtcolorbox{pitfallbox}[1][]{enhanced, breakable, colback=pitBg, colframe=pitBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={Pitfall #1}}
+\newtcolorbox{notebox}[1][]{enhanced, breakable, colback=noteBg, colframe=noteBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={Lecturer aside #1}}
+\newtcolorbox{tldrbox}[1][]{enhanced, breakable, colback=tldrBg, colframe=tldrBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={TL;DR #1}}
+
+\usepackage{titlesec}
+\titleformat{\section}[block]{\Large\bfseries\color{defBd}}{\thesection.}{0.6em}{}
+\titleformat{\subsection}[block]{\large\bfseries\color{defBd!80!black}}{\thesubsection}{0.5em}{}
+\titleformat{\subsubsection}[block]{\normalsize\bfseries}{}{0pt}{}
+\titlespacing*{\section}{0pt}{1.6em}{0.6em}
+\titlespacing*{\subsection}{0pt}{1.2em}{0.4em}
+
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small CM52054 — Week 2}
+\fancyhead[R]{\small Decision Trees}
+\fancyfoot[C]{\small\thepage}
+\renewcommand{\headrulewidth}{0.3pt}
+
+\newcommand{\examflag}{\textcolor{tipBd}{\textbf{[EXAM]}}\,}
+\newcommand{\trapflag}{\textcolor{trapBd}{\textbf{[TRAP]}}\,}
+\newcommand{\doflag}{\textcolor{defBd}{\textbf{[DO]}}\,}
+
+\title{\vspace{-1cm}{\Huge\bfseries Week 2 — Decision Trees} \\[0.4em]{\large Continuous decision stumps, recursive partitioning, Gini impurity, information gain, overfitting and hyperparameters, the supervised/unsupervised glossary}}
+\author{\large CM52054 Foundational Machine Learning \\[0.2em]\normalsize University of Bath \,$\cdot$\, Dr Rohit Babbar}
+\date{Revision notes}
+
+\begin{document}
+
+\maketitle
+\thispagestyle{empty}
+
+\vspace{1em}
+
+\begin{tldrbox}
+\begin{itemize}[leftmargin=*]
+  \item \textbf{Supervised learning's general form.} A model is a parametric function $f_{\boldsymbol\theta}: \mathbb{R}^n \to \{0,\ldots,K-1\}$ chosen from a restricted family. Training picks $\boldsymbol\theta$ that minimises the total loss $\sum_{i=1}^N L(y_i, f_{\boldsymbol\theta}(\mathbf{x}_i))$ on the training data. Different model families (trees, linear models, networks) and different losses (0--1, squared, Gini, cross-entropy) instantiate the same skeleton.
+  \item \textbf{Continuous decision stump} extends the binary-feature stump (Wk~1) to real-valued inputs: pick a feature dimension $f$ and a split threshold $s$; predict by ``$x_f < s$ vs $x_f \ge s$.'' Optimisation is brute force: sweep every dimension, try the midpoint between every consecutive pair of training values, take the (dimension, split) with the lowest training loss.
+  \item \textbf{Decision tree = recursive partitioning.} Apply the continuous-stump procedure to the training data; for each side of the resulting split, \emph{recurse} on the data points on that side. Internal nodes hold (feature, threshold) splits; leaf nodes hold a predicted class. The model parameter $\boldsymbol\theta$ \emph{is} the tree.
+  \item \textbf{0--1 loss fails for tree training} because it gives no credit for partial purity gains beyond the first split. Two replacements work, both measuring \emph{node impurity}: \\
+        \quad \textbf{Gini impurity} $G(p) = \sum_i p_i(1 - p_i) = 1 - \sum_i p_i^2$ — the probability that two random samples from the node have different classes; $0$ for a pure node, peaks at the uniform mix. \\
+        \quad \textbf{Information gain} $I(\text{split}) = H(\text{parent}) - \frac{n_l}{n} H(\text{left}) - \frac{n_r}{n} H(\text{right})$, with $H(p) = -\sum_i p_i \log p_i$. \\
+        Gini is the default (no $\log$ to compute); information gain is preferred for regression and has stronger theory. Both \emph{weight} the children by the count of training points reaching them.
+  \item \trapflag{}\textbf{[Q1.6]} Decision trees can handle both categorical and real-valued data — \textbf{True}. The split rule generalises naturally: for a categorical feature, ``does $x_f$ equal $c$?''; for a real-valued feature, ``is $x_f < s$?''.
+  \item \textbf{Overfitting is the tree's chronic failure mode.} Left unconstrained, a tree will keep splitting until every leaf is pure, producing a staircase boundary that traces individual training points. Two hyperparameters are the principled fix: (1) maximum tree depth, (2) minimum leaf-node size. The choice of split criterion (Gini vs information gain) is also a hyperparameter.
+  \item \textbf{Parameters vs hyperparameters} — parameters are learnt from data (the tree's nodes and thresholds); hyperparameters are choices about the training process itself (depth limit, leaf size, criterion). Both are tunable, but hyperparameters are typically tuned on a \emph{held-out validation set}, never on the training data alone.
+  \item \textbf{Glossary you'll need across the unit:} \emph{supervised} (have labels; classification or regression), \emph{unsupervised} (no labels; clustering, density estimation, dimensionality reduction — Wks~19--20), \emph{semi-supervised} (small labelled $+$ large unlabelled), \emph{weakly supervised} (cheap, noisy labels in $\rightarrow$ accurate labels out).
+\end{itemize}
+\end{tldrbox}
+
+% =====================================================================
+\section{The supervised learning skeleton, formalised}
+
+Wk~1 introduced the five-step pipeline by walking through a toy problem; Wk~2 starts by writing the supervised-learning portion in symbols, because every later week reuses the notation.
+
+\begin{defbox}[Supervised learning, formal]
+A supervised learning task is the problem of approximating an unknown function
+\[
+y = f(\mathbf{x}) \qquad \mathbf{x} \in \mathbb{R}^n,\; y \in \{0, 1, \ldots, K-1\}
+\]
+from a training dataset $\mathcal{D} = \{(\mathbf{x}_i, y_i)\}_{i=1}^N$ of $N$ input--output pairs. Here $n$ is the number of features (the input dimensionality) and $K$ is the number of output classes.
+\end{defbox}
+
+Three immediate observations the lecturer flagged:
+
+\begin{itemize}
+  \item There are infinitely many functions $f$ that fit any finite dataset perfectly — countless wiggly curves pass through the same $N$ points. Searching the space of \emph{all} functions is impossible and useless (the perfectly-fit candidates will disagree wildly on test data).
+  \item So we don't search all functions. We search a \textbf{restricted family} parameterised by a vector of choices $\boldsymbol\theta$:
+  \[
+  f_{\boldsymbol\theta}(\mathbf{x}) \quad \text{with parameters } \boldsymbol\theta.
+  \]
+  Linear regression's $\boldsymbol\theta$ is a weight vector $[w_1, \ldots, w_n]^\top$. A decision tree's $\boldsymbol\theta$ \emph{is the tree itself} — its structure plus the (feature, threshold) at every internal node and the predicted class at every leaf. A neural network's $\boldsymbol\theta$ is the collection of all weights and biases. The choice of family is the modelling assumption.
+  \item Choosing $\boldsymbol\theta$ requires a way to score candidates: the \emph{loss function}.
+\end{itemize}
+
+\begin{defbox}[Loss function and total loss]
+A \textbf{loss function} $L(y_i, f_{\boldsymbol\theta}(\mathbf{x}_i))$ scores how badly $f_{\boldsymbol\theta}$'s prediction on $\mathbf{x}_i$ matches the true label $y_i$. The \textbf{total loss} on the training set is
+\[
+\mathcal{L}(\boldsymbol\theta) \;=\; \sum_{i=1}^{N} L\bigl(y_i, f_{\boldsymbol\theta}(\mathbf{x}_i)\bigr)
+\]
+and training is the optimisation $\boldsymbol\theta^* = \arg\min_{\boldsymbol\theta} \mathcal{L}(\boldsymbol\theta)$.
+\end{defbox}
+
+The choice of $L$ is consequential and is one of the things this week wrestles with: 0--1 loss works for the decision \emph{stump} but breaks for the decision \emph{tree}, and the two replacements (Gini impurity and information gain) define how trees actually train in practice.
+
+\subsection{Recasting the decision stump in this notation}
+
+The Wk~1 algorithm, rewritten in the new vocabulary:
+
+\begin{itemize}
+  \item Parameters: $\boldsymbol\theta = (\text{feature}, \text{match})$, a chosen feature index and a chosen value (true/false in the binary case).
+  \item Function: $f_{\boldsymbol\theta}(\mathbf{x}) = \delta(x_{\text{feature}}, \text{match})$, where $\delta(a, b) = 1$ when $a = b$ and $0$ otherwise (Kronecker delta — an identity-test).
+  \item Loss: 0--1 loss
+  \[
+  L(y_i, f_{\boldsymbol\theta}(\mathbf{x}_i)) =
+  \begin{cases}
+    0 & \text{if } y_i = f_{\boldsymbol\theta}(\mathbf{x}_i) \\
+    1 & \text{otherwise}
+  \end{cases}
+  \]
+\end{itemize}
+
+\begin{defbox}[0--1 loss]
+\textbf{0--1 loss} (a.k.a.\ misclassification loss) charges 1 for every wrong prediction and 0 for every right one. The total 0--1 loss equals the number of misclassified training points; \textbf{accuracy = 1 - average 0--1 loss}.
+\end{defbox}
+
+The space of functions a decision stump can express is exactly the identity test (or its negation) on a single feature. As a model family this is extraordinarily restricted — usually too restricted to capture anything interesting in real data. The lecturer's remark: ``this is not very useful.''
+
+% =====================================================================
+\section{Continuous decision stump: from binary to real-valued inputs}
+
+\subsection{The setup}
+
+Wk~1's data was binary in both inputs and outputs. Real datasets are usually \emph{continuous}-valued in the inputs (sensor readings, prices, pixel intensities, embeddings). The binary-stump rule ``does feature $f$ equal value $m$'' is meaningless when $x_f$ is a real number — almost no two examples take exactly the same value.
+
+The natural fix is to \emph{partition} the feature axis instead of testing equality:
+
+\begin{defbox}[Continuous decision stump]
+A \textbf{continuous decision stump} is a single-feature, single-threshold decision rule. With parameters $\boldsymbol\theta = (\text{feature}, \text{split})$,
+\[
+f_{\boldsymbol\theta}(\mathbf{x}) =
+\begin{cases}
+0 & \text{if } x_{\text{feature}} < \text{split} \\
+1 & \text{if } x_{\text{feature}} \ge \text{split}.
+\end{cases}
+\]
+Training searches over (feature, threshold) pairs to find the one that minimises training loss.
+\end{defbox}
+
+\begin{center}
+
+\footnotesize\textit{A continuous-input classification problem. Each dot is one training example, positioned by its two real-valued features; its colour is its true class. Unlike Wk~1's binary features, almost no two examples share an exact value, so the equality test of the binary stump is useless here. But the classes still occupy roughly distinct regions of the plane, so a threshold on one axis --- a continuous decision stump --- can already begin to separate them.}
+\end{center}
+
+\subsection{Brute-force optimisation of the stump}
+
+Two parameters, both simple to enumerate. The lecturer's pseudocode:
+
+\doflag{}
+\begin{enumerate}
+  \item \textbf{Sweep each feature dimension.}
+  \item \textbf{For every candidate split} on that dimension — by convention, the midpoint between every consecutive pair of training values when sorted along the axis (so the threshold sits cleanly between two real exemplars, never on top of one).
+  \item \textbf{Evaluate the loss} of the resulting stump on the training set.
+  \item \textbf{Return} the (feature, split) with the lowest loss (equivalently, highest training accuracy).
+\end{enumerate}
+
+The slide walks the audience through a 2D toy: two clusters of red and blue points loosely separable by a vertical line. Several candidate (feature, split) choices are tried:
+
+\begin{center}
+\begin{tabular}{lll}
+\toprule
+\thead{Feature (axis)} & \thead{Split value} & \thead{Training accuracy} \\
+\midrule
+2nd dim ($y$) & $+0.5$ & 50.8\% \\
+2nd dim ($y$) & $+0.3$ & 52.1\% \\
+1st dim ($x$) & $-0.5$ & 83.2\% \\
+1st dim ($x$) & $+0.2$ & 92.4\% \\
+1st dim ($x$) & $\;\;\,0.0$ & 100.0\% \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+The takeaway is general: \emph{which axis you pick matters more than which value on that axis.} Splitting along $y$ caps out near 50\% (no horizontal cut separates the two vertical bands well); splitting along $x$ can reach 100\% with the right threshold. The brute-force loop discovers this automatically by trying all $(\text{feature}, \text{split})$ pairs.
+
+\begin{center}
+
+\footnotesize\textit{The brute-force sweep on the 2D toy. Each shaded half-plane is one of the stump's two predicted regions; the black line is the chosen threshold. The bullets trace five candidate (feature, split) pairs --- the same five rows as the table above: horizontal cuts along the $y$-axis stall near 50\% because the two classes form left/right bands, whereas a vertical cut along $x$ climbs to a perfect 100\%. This is the lesson of \S2.2 made visible --- \emph{which axis} you split on matters far more than the exact threshold value.}
+\end{center}
+
+\begin{notebox}
+The lecturer flagged the implementation detail that ties may sit \emph{exactly} at threshold values when training data has limited precision. Standard convention: pick the midpoint between consecutive sorted exemplars, which guarantees no training point sits exactly on the boundary in normal floating-point precision.
+\end{notebox}
+
+\subsection{When a single split isn't enough}
+
+Continuous stumps work when the classes are separable by an \emph{axis-aligned} hyperplane. Real data rarely cooperates. The slide's second toy is a circular-boundary problem: blue points clustered in the centre, red points in a ring around them. \emph{No} single (feature, split) reaches even 80\% — a horizontal or vertical line through the data always cuts approximately half the ring on each side.
+
+\begin{center}
+
+\footnotesize\textit{A dataset that defeats any single decision stump: blue points fill a central disc, red points form a ring around them. Every axis-aligned cut --- horizontal or vertical --- leaves roughly half the red ring on each side, so no single (feature, split) reaches even 80\% accuracy. This is a non-linearly-separable problem, and it is precisely what motivates the recursive splitting of \S3.}
+\end{center}
+
+\begin{defbox}[Linearly separable]
+A dataset is \textbf{linearly separable} if there exists a single hyperplane (in 2D, a straight line; in $n$ dimensions, an $(n-1)$-dimensional flat) that perfectly separates the classes. \textbf{Most real datasets are not linearly separable in their original feature space.}
+\end{defbox}
+
+\begin{notebox}
+Two ways out of non-linear-separability surface in this unit:
+\begin{itemize}
+  \item \textbf{Recursive splitting} (this week's solution): keep partitioning the partitioned regions. The decision boundary becomes a staircase of axis-aligned cuts that approximates the true (curved) boundary. This gives \emph{decision trees}, then \emph{random forests} (Wk~4).
+  \item \textbf{Lift to higher dimensions} (Wks~25--29's solution): pass the data through a non-linear map $\phi(\mathbf{x})$ into a richer space where a hyperplane suffices. This gives the \emph{kernel trick}, the powering idea behind non-linear SVMs and what deep learning learns automatically (``representation learning'').
+\end{itemize}
+\end{notebox}
+
+% =====================================================================
+\section{Decision trees: recursive partitioning}
+
+\subsection{The construction algorithm}
+
+Once you accept that one split isn't enough, the natural escalation is to apply the splitting procedure \emph{recursively}: split the data; on each side, split again; on each grand-child, split again — until some stopping criterion fires.
+
+\begin{defbox}[Decision tree]
+A \textbf{decision tree} is a binary tree of axis-aligned splits. Each \textbf{internal node} carries a (feature, threshold) pair and routes a query left or right based on whether the query's feature value is below or above the threshold. Each \textbf{leaf node} carries a predicted class label. To classify a query, descend from root to a leaf along the test-determined path; return the leaf's label.
+\end{defbox}
+
+\begin{center}
+
+\footnotesize\textit{A trained decision tree. A query enters at the arrow on top. Each grey rounded-rectangle \textbf{internal node} holds one (feature, threshold) test --- e.g.\ ``$x_3 < -6$'' --- and sends the query left if the test is true, right if false. Each \textbf{leaf} (the large digits) holds a predicted class label. Classifying a query means descending root-to-leaf along the path its feature values pick out. The whole object --- the topology, every node's test, every leaf's label --- \emph{is} the parameter $\boldsymbol\theta$.}
+\end{center}
+
+The construction algorithm:
+
+\doflag{}
+\begin{verbatim}
+def build_tree(data):
+    if all training points in data have the same class:
+        return Leaf(label = that class)
+    else:
+        for each feature f:
+            for each candidate split s on f:
+                score this (f, s) by L(split)        # loss explained below
+        pick (f*, s*) with lowest L
+        left  = build_tree(data with x[f*] <  s*)
+        right = build_tree(data with x[f*] >= s*)
+        return InternalNode(f*, s*, left, right)
+\end{verbatim}
+
+This is \textbf{greedy} optimisation: at each node, brute-force the best single split, then recurse. The greedy choice is locally optimal but not globally optimal — finding the globally best tree (over all possible trees of bounded size) is NP-hard, and greedy is the standard practical compromise.
+
+\subsection{\texorpdfstring{What does the parameter $\boldsymbol\theta$ look like?}{What does the parameter theta look like?}}
+
+For a tree, $\boldsymbol\theta$ has variable structure — it is the entire tree. Concretely:
+
+\begin{itemize}
+  \item For each internal node: a chosen \emph{feature index} and a chosen \emph{threshold value}.
+  \item For each leaf node: a predicted \emph{class label}.
+  \item The tree's \emph{topology} (which nodes are children of which) is itself part of $\boldsymbol\theta$.
+\end{itemize}
+
+This contrasts with linear regression's flat parameter vector $[w_1, \ldots, w_n]^\top$ (Wk~8 owns) — there, $\boldsymbol\theta$ has a fixed shape determined by the input dimension, and only the values vary. Trees have variable-shape parameters: same dataset, different stopping criterion, fundamentally different parameter object.
+
+\subsection{Worked picture: building a tree on a non-linearly-separable dataset}
+
+Apply the algorithm to the circular-boundary toy:
+
+\begin{enumerate}
+  \item \textbf{Root split.} Brute-force every (feature, threshold) on the full dataset; pick the best one. The resulting split partitions the plane in two with a vertical (or horizontal) line; neither half is pure.
+  \item \textbf{Recurse on the left half.} Brute-force splits using \emph{only the points that fell on the left}. Find the best (feature, threshold) for those points alone; this might cut along the other axis this time.
+  \item \textbf{Recurse on the right half.} Independently, do the same with the right half's points.
+  \item \textbf{Continue} on the four resulting quadrants, then on their sub-quadrants, etc.
+  \item \textbf{Stop} when (a) the data at a node is single-class, or (b) a hyperparameter limit fires (max depth reached, leaf size below minimum, etc. — see overfitting section).
+\end{enumerate}
+
+The decision boundary the tree carves out is a \emph{staircase} of axis-aligned cuts that approximates the true curved boundary. In high enough resolution, even a circle can be approximated arbitrarily well — but, as we'll see in the overfitting section, ``arbitrarily well on training'' is exactly the wrong target.
+
+\begin{center}
+
+\footnotesize\textit{Recursive partitioning on the circular-boundary dataset. The first split cuts the plane with a vertical line; the algorithm then recurses on each side, splitting the sub-regions again, so the boundary becomes a staircase of axis-aligned rectangles. The small diagram (lower left) is the same model drawn as a tree --- one internal node per cut, each node tinted by the red/blue class ratio of the points reaching it, matching the background shading. A partition of space and a tree are two views of the one model.}
+\end{center}
+
+\subsection{Splitting on quantised and categorical features}
+
+The construction algorithm above assumed truly continuous features (sweep the midpoints between sorted values). Two other input types appear constantly in real data, and the candidate-split list — not the algorithm — is what changes.
+
+\begin{notebox}[Quantised real inputs: split only at bin boundaries.]
+Continuous data is often \emph{pre-grouped into ranges} before it reaches the tree — age recorded as ``18--24'', income as ``£20k--£30k'', a date kept as ``year only.'' The exact underlying values have been \emph{discarded}: two people both in the ``18--24'' bin are now \textbf{indistinguishable} to the model — same feature value, and (whatever their labels) the tree cannot tell them apart on this feature. Consequently, testing a threshold \emph{inside} a bin separates nothing and yields zero information gain — every point in the bin goes the same way regardless. The brute-force sweep therefore only tries candidate thresholds at the \textbf{bin boundaries}; the information-gain profile is a set of discrete spikes at the bin transitions rather than a continuous curve. (Wk~3 returns to this.)
+\end{notebox}
+
+\begin{notebox}[Categorical inputs: what a categorical split actually looks like.]
+A categorical (unordered) feature — favourite cheese, profession, marital status — has no ``$<$'' to threshold. Instead each split is a \textbf{boolean test} ``is feature $== $ category $k$?'':
+\begin{itemize}
+  \item The \textbf{left child} holds exactly the rows whose value \emph{is} category $k$. It is grown further by splitting on \emph{other} features (those rows already agree on this one).
+  \item The \textbf{right child} holds the remaining mixture of \emph{all other} categories. It is free to split on the \emph{same} categorical feature again, peeling off another category $k'$ — and so on down the branch.
+\end{itemize}
+So a one-hot ``one-left-rest-right'' tree can still fully resolve a categorical feature: it just does so one category per level on the right spine. Crucially, the categorical feature here is an \textbf{input used to predict a separate target} (e.g.\ predict loan approval \emph{from} profession) — it is not itself the prediction target.
+
+\textbf{Cost.} For $n$ categories there are just $n$ candidate splits (test each category vs.\ the rest) — $O(n)$. Enumerating \emph{all} subset partitions of the categories into left/right would be $O(2^{n-1})$, exponential and rarely worth it. (Wk~3 tabulates this.)
+\end{notebox}
+
+\subsection{Trees and the loan example}
+
+The slide gives an interpretability-oriented example: a 3-class loan decision (approve / reject / hold) with 4 features (age, salary, marital status, profession). The tree's path from root to leaf is a sequence of human-readable tests — ``age $\ge 30$? salary $\ge 40$k? marital status $\ne$ single? approve.''
+
+This is not a side benefit; it is the reason regulated industries (banking, insurance, healthcare) often \emph{require} interpretable models. ``The applicant was rejected because their salary was below £30k and their existing credit was over £10k'' is a defensible, auditable explanation; ``a 50-million-parameter neural network output a low score'' is not. Trees are among the most interpretable supervised models, so they're a sensible \emph{first} choice in regulated domains, even when more accurate (less interpretable) models exist.
+
+\begin{pitfallbox}[interpretability vs accuracy]
+A trained tree is a sequence of human-readable decisions, but that does not make it the most accurate model for a given problem. The accuracy/interpretability trade-off shows up everywhere: random forests (Wk~4) buy accuracy at the cost of interpretability (you have to look at hundreds of trees together); deep networks buy more accuracy at the cost of \emph{much} less interpretability. Pick the position on the trade-off that matches the deployment constraints — an interpretable wrong answer can be more damaging than an opaque right one.
+\end{pitfallbox}
+
+% =====================================================================
+\section{Why 0--1 loss fails for trees, and what to use instead}
+
+\subsection{The failure mode of 0--1 loss inside the tree}
+
+For a stump, 0--1 loss works: the algorithm picks the (feature, threshold) that misclassifies the fewest training points, and that's the best single split available.
+
+Inside a tree, 0--1 loss \emph{breaks}. After the first split, both child nodes typically still contain a mix of classes. Whichever (feature, threshold) you try for the next split, you may not be able to reduce the count of misclassified points until you've split many more times (a single intermediate split makes both children purer in \emph{distribution} without yet removing any wrong predictions). 0--1 loss is blind to ``less wrong'' — it sees only ``wrong'' or ``not wrong.'' Trees built with 0--1 loss waste splits and stall.
+
+The fix is to use a loss function that \emph{rewards partial purity gains}. Two such functions are standard.
+
+\subsection{Gini impurity}
+
+\begin{defbox}[Gini impurity]
+For a set of training points whose class proportions are $p_1, p_2, \ldots, p_K$ (with $\sum_i p_i = 1$), the \textbf{Gini impurity} is
+\[
+G(p) \;=\; \sum_i p_i(1 - p_i) \;=\; 1 - \sum_i p_i^2.
+\]
+\end{defbox}
+
+\textbf{Intuition.} $G(p)$ is the probability that, drawing two examples independently with replacement from the node, they have \emph{different} classes. A pure node (all examples one class) has $G = 0$; a node with maximum class diversity has $G$ close to $1 - 1/K$.
+
+\textbf{Algebra.} The two equivalent forms:
+\begin{align*}
+\sum_i p_i(1 - p_i) &= \sum_i p_i - \sum_i p_i^2 = 1 - \sum_i p_i^2,
+\end{align*}
+since $\sum_i p_i = 1$. The slide derives the right-hand form because it's marginally faster to compute (one subtraction at the end vs.\ a multiplication per class).
+
+\textbf{Why partial credit.} $G$ varies smoothly with the proportions. Splitting a 50/50 node into a 60/40 and a 40/60 reduces $G$ even though no point is yet correctly classified. 0--1 loss would call this a wash; Gini sees the progress.
+
+\subsection{Information gain (entropy-based)}
+
+\begin{defbox}[Entropy]
+For a set of training points with class proportions $p_1, \ldots, p_K$, the \textbf{entropy} is
+\[
+H(p) \;=\; -\sum_i p_i \log p_i,
+\]
+with $0 \log 0$ defined as $0$. Using $\log_2$ gives entropy in bits; using $\log_e$ gives nats. Entropy is the average number of bits/nats needed to encode a sample from this distribution (it is the foundation of information theory; without it, modern compression and communication wouldn't exist).
+\end{defbox}
+
+Entropy of a pure node is $0$ (no surprise, $p_i \log p_i = 1 \cdot 0 = 0$). Entropy of a uniform $K$-class node is $\log K$ (maximum surprise).
+
+\begin{defbox}[Information gain of a split]
+The \textbf{information gain} of a candidate split, with $n_l$ exemplars going left and $n_r$ going right (and $n = n_l + n_r$ total at the parent), is
+\[
+I(\text{split}) \;=\; H(p^{(\text{parent})}) \;-\; \frac{n_l}{n} H(p^{(\text{left})}) \;-\; \frac{n_r}{n} H(p^{(\text{right})}).
+\]
+The split with the \emph{maximum} information gain is selected.
+\end{defbox}
+
+\textbf{Reading the formula.} Information gain measures how many bits of class uncertainty are eliminated by traversing the split. The two child entropies are weighted by the fraction of data each child receives, because a small child node ``matters less'' than a large one.
+
+\subsection{Weighting the split (a single number from two child impurities)}
+
+Both Gini and entropy give a single impurity for a single node. A split has \emph{two} children, so a single comparable score per split is needed. The standard recipe is the same for both: take a count-weighted average.
+
+For Gini impurity:
+\[
+L(\text{split}) \;=\; \frac{n_l}{n} G(p^{(\text{left})}) \;+\; \frac{n_r}{n} G(p^{(\text{right})}).
+\]
+For information gain, the weighted child entropies are subtracted from the parent (as in the IG definition above). The intuition: a branch with more data deserves more weight in the score, because it contributes more to the future tree's training set.
+
+\subsection{Gini vs information gain in practice}
+
+For typical class-proportion ranges, the two functions look almost identical when plotted as a function of $p$ (binary case): both peak in the middle, both are zero at the endpoints, both are smooth.
+
+\begin{center}
+
+\footnotesize\textit{Gini impurity (red) and entropy --- the basis of information gain --- (green) for a two-class node, plotted against the proportion $p$ of one class. Both vanish at the pure endpoints ($p=0$ and $p=1$) and rise to a single peak at the even mixture $p=0.5$, so both reward moving a node toward purity. They differ only in vertical scale, not in shape, which is exactly why the two split criteria pick almost the same splits in practice.}
+\end{center}
+
+\begin{center}
+\renewcommand{\arraystretch}{1.2}
+\begin{tabularx}{\linewidth}{l X X}
+\toprule
+& \thead{Gini impurity} & \thead{Information gain (entropy)} \\
+\midrule
+Form & $1 - \sum_i p_i^2$ & $-\sum_i p_i \log p_i$ \\
+Compute cost & cheap (no log) — \textbf{default in scikit-learn} & slightly higher \\
+Strengths & fast, similar trees in practice & extends to \emph{regression} (variance reduction); has stronger information-theoretic theory \\
+Range (binary) & $[0, 0.5]$ & $[0, 1]$ (in bits) \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+The lecturer's headline: ``almost identical in typical conditions.'' Pick Gini if you're free to; pick entropy/IG if your problem is regression or if you specifically want IG's theoretical properties.
+
+\begin{trapbox}[Gini and IG are not just ``two impurity functions you can swap''.]
+It is tempting to think Gini and information gain differ \emph{only} by which impurity function $\sum_i p_i(1-p_i)$ vs.\ $-\sum_i p_i\log p_i$ you plug in. For \textbf{classification} that is essentially true: both are functions of the same class proportions $p_i$, both vanish at purity, both peak at the uniform mix, and they pick almost the same splits (see the plot above).
+
+The genuine difference shows up in \textbf{regression}. Entropy is an information-theoretic quantity, and information theory has a \emph{continuous} counterpart: the differential entropy of a Gaussian is $\tfrac12\log(2\pi e\,\sigma^2)$, directly tied to its variance. So for a continuous target, ``information gain'' shape-shifts into \textbf{variance reduction} — it has a natural regression form (Wk~3 derives it). Gini impurity, $1-\sum_i p_i^2$, is purely a discrete \emph{category-mismatch probability} (the chance two random draws have different classes). It has \textbf{no continuous form} and no relationship to variance — there is nothing for Gini to ``become'' when the target is real-valued. That asymmetry, not the choice of impurity formula, is the real distinction.
+\end{trapbox}
+
+\begin{pitfallbox}[loss function vs evaluation metric]
+Gini and information gain are \emph{loss functions used during training} — they tell the tree-building algorithm which split to pick. \textbf{Test-time accuracy} (or any other performance metric like F1 — Wk~4) is what you report and what business cares about. The two are different roles: a surrogate loss that's easy to optimise drives the training; a proper performance measure judges the result. This generalises beyond trees: deep networks train on cross-entropy loss but report accuracy; SVMs train on hinge loss but report accuracy. \emph{Don't confuse the two.}
+\end{pitfallbox}
+
+% =====================================================================
+\section{Overfitting and the hyperparameters that contain it}
+
+\subsection{The shape of overfitting in a tree}
+
+Trees with no stopping criterion grow until every leaf is pure. On the circular-boundary dataset, the resulting decision boundary traces tiny rectangular bumps around individual points — a staircase that perfectly separates the training data, but bears little resemblance to the true (smooth, circular) underlying boundary.
+
+\begin{defbox}[Overfitting]
+\textbf{Overfitting} is when a model fits the noise in the training data, not just the signal. Symptoms: very low training error and substantially higher test error. The model has memorised idiosyncrasies of the training set that don't generalise.
+\end{defbox}
+
+The slide makes the diagnostic explicit:
+
+\begin{itemize}
+  \item Overfitting cannot be detected from training data alone — by definition, an overfit model performs \emph{well} on training.
+  \item It can be detected by holding out a portion of the data the model never sees during training (a \emph{validation} set) and checking error there.
+  \item Wk~3 develops this in detail as the \emph{bias--variance trade-off} and as \emph{cross-validation}.
+\end{itemize}
+
+\examflag{}\trapflag{}\textbf{(Q2.5)} The textbook symptom of overfitting is \textbf{low training error and high testing error}. Other combinations indicate different problems: high train + high test = underfitting; low train + low test = a happily-fit model; high train + low test = a contradiction (would suggest data leakage or a labelling bug).
+
+\subsection{Early stopping: the two principal hyperparameters}
+
+The standard fix is to stop the tree from growing fully:
+
+\begin{itemize}
+  \item \textbf{Maximum tree depth.} A bound on how deep any path from root to leaf can be. Forces the tree to be a coarser approximation, sacrificing training accuracy for generalisation.
+  \item \textbf{Minimum leaf-node size.} The smallest number of training points a leaf is allowed to contain. With minimum size 1, the tree can isolate individual points (the source of the overfit staircase); with minimum size 5 or 10, it must aggregate at least that many points per leaf, forcing it to ignore single-point ``corners.''
+\end{itemize}
+
+Other early-stopping criteria exist (minimum impurity decrease, maximum number of leaves, $\ldots$) but these two are the canonical pair.
+
+\subsection{Parameters vs hyperparameters}
+
+\begin{defbox}[Parameter / hyperparameter distinction]
+\textbf{Parameters} are the values the training procedure \emph{learns from data}. For a tree: the (feature, threshold) at every internal node and the predicted label at every leaf — i.e., the tree itself.
+
+\textbf{Hyperparameters} are the choices about the training procedure itself, made \emph{before} training begins. For a tree: the maximum depth, the minimum leaf-node size, the choice of split criterion (Gini or information gain).
+\end{defbox}
+
+The lecturer's wry note: hyperparameters are also optimised — ``disturbingly often by hand.'' In practice, hyperparameters are tuned by:
+
+\begin{itemize}
+  \item \textbf{Held-out validation set} — train on a slice of the data, evaluate on a held-out slice; pick the hyperparameters with the best validation-set score.
+  \item \textbf{Cross-validation} — variant that uses multiple train/validate splits and averages, more robust on small datasets (Wk~3 owns).
+  \item \textbf{Grid search / random search / Bayesian optimisation} — automated procedures for sweeping the hyperparameter space.
+\end{itemize}
+
+\begin{pitfallbox}[don't tune hyperparameters on the test set]
+The test set must remain untouched until \emph{final} evaluation. If you tune hyperparameters by checking test-set performance, you've effectively used the test set as part of training, and the resulting test score is no longer an honest estimate of generalisation. Use a separate validation set (or cross-validation on the training data) for hyperparameter tuning; reserve the test set for one final number at the end.
+\end{pitfallbox}
+
+% =====================================================================
+\section{The supervised/unsupervised glossary}
+
+The lecture closes with a vocabulary tour. Everything later in the unit fits into one of these categories; this is the map.
+
+\subsection{Supervised learning}
+
+You have labelled data — input/output pairs. The split is by the type of $y$:
+
+\begin{itemize}
+  \item \textbf{Classification.} $y$ is a discrete label. Wk~2 (decision trees), Wk~4 (random forests, performance metrics), Wk~11 (logistic regression), Wks~25--29 (SVMs and kernels) all live here. Examples: identifying camera-trap animals from images; predicting voting intention from demographics.
+  \item \textbf{Regression.} $y$ is a continuous real value. Wk~8 (linear regression by least squares), Wk~10 (Bayesian linear regression), Wk~21 (regularised regression). Examples: predicting the critical temperature of a superconductor from its material properties; inferring particle paths from LHC detector readings.
+  \item \textbf{Multi-label classification.} $y$ is a \emph{set} of labels (each example can have several). E.g.\ tagging objects in an image, multi-tag news articles, text summarisation by extracting multiple source sentences.
+  \item \textbf{Structured prediction.} $y$ is anything more complex — a sequence (part-of-speech tagging), a tree (syntactic parsing), a CAD model (automated design). The unit doesn't develop these in depth, but Wks~22--23 (graphical models, message passing) build the machinery used.
+\end{itemize}
+
+The lecturer's noteworthy aside: large language models like ChatGPT are trained as a \emph{multi-class classification} task — at each position, predict the next token from a vocabulary of (often) $\sim 100{,}000$ tokens. The classification framework scales remarkably far when the vocabulary is large enough.
+
+\subsection{Unsupervised learning}
+
+You have data but no labels. The goal is to find structure in the inputs themselves. Wk~19 owns most of this:
+
+\begin{itemize}
+  \item \textbf{Clustering.} Group similar data points together (similarity is application-defined). Examples: identifying co-regulated genes from expression data; discovering social groups from a friend graph.
+  \item \textbf{Density estimation.} Model $p(\mathbf{x})$ — the probability distribution from which the data is drawn.
+  \item \textbf{Dimensionality reduction / manifold learning.} Reduce the number of dimensions while preserving the information that matters. Used both as a preprocessing step (smaller inputs to downstream models) and for visualisation (project to 2D for human inspection — important for verification).
+\end{itemize}
+
+\subsection{Semi-supervised and weakly supervised}
+
+Two practical hybrids worth naming, both motivated by the asymmetry that \emph{collecting} data is cheap but \emph{labelling} data is expensive.
+
+\begin{itemize}
+  \item \textbf{Semi-supervised learning.} A small amount of labelled data + a large amount of unlabelled data. Algorithms exploit structure in the unlabelled portion (clusters, low-dimensional manifolds) to inform the supervised problem.
+  \item \textbf{Weakly supervised learning.} Labels are cheap-but-noisy or coarse; the model is trained to produce \emph{stronger} labels than the inputs. Slide example: ``image contains a cat'' is fast to label but coarse; ``bounding box around the cat'' is what you actually want at output, and you train from the cheap supervision to predict the expensive supervision.
+\end{itemize}
+
+% =====================================================================
+\section*{Exam-mode answers}
+
+\begin{exambox}[1 — State the supervised learning problem formally]
+\textbf{1 mark}: A supervised learning task is to learn a function $y = f(\mathbf{x})$ from a training dataset $\{(\mathbf{x}_i, y_i)\}_{i=1}^N$ where $\mathbf{x}_i \in \mathbb{R}^n$ and $y_i \in \{0, \ldots, K-1\}$ for $K$ classes (classification) or $y_i \in \mathbb{R}$ (regression). \\
+\textbf{1 mark}: We restrict the search to a parametric family $f_{\boldsymbol\theta}$. \\
+\textbf{1 mark}: A loss function $L(y_i, f_{\boldsymbol\theta}(\mathbf{x}_i))$ scores predictions; total loss is $\sum_i L$. \\
+\textbf{1 mark}: Training picks $\boldsymbol\theta^* = \arg\min_{\boldsymbol\theta} \sum_i L(y_i, f_{\boldsymbol\theta}(\mathbf{x}_i))$.
+\end{exambox}
+
+\begin{exambox}[2 — Explain the continuous decision stump and how it differs from a binary one]
+\textbf{1 mark}: A continuous decision stump partitions a real-valued feature axis using a threshold: predict class~0 if $x_{\text{feature}} < \text{split}$, class~1 otherwise. \\
+\textbf{1 mark}: Compared to the binary stump (which tests equality of a binary feature with a chosen value), the continuous version handles real-valued inputs by using inequality with a chosen threshold. \\
+\textbf{1 mark}: Training is brute-force: sweep every feature dimension and try every candidate threshold (typically the midpoints between consecutive sorted training values), evaluate the loss, return the best (feature, threshold) pair.
+\end{exambox}
+
+\begin{exambox}[3 — Describe the decision tree training algorithm]
+\textbf{1 mark}: A decision tree is built by recursive partitioning. \\
+\textbf{1 mark}: At the current node, if all training points reaching it are of one class, create a leaf node with that label. \\
+\textbf{1 mark}: Otherwise, search over all (feature, threshold) pairs and pick the one minimising a chosen loss (Gini or information gain). \\
+\textbf{1 mark}: Recursively build trees for the data going left and the data going right. \\
+\textbf{1 mark}: Stop when a stopping criterion fires (single-class node, or a hyperparameter limit such as max depth or min leaf size). The optimisation is greedy — locally optimal per node, not globally optimal across the tree.
+\end{exambox}
+
+\begin{exambox}[4 — Define Gini impurity and explain why it's preferred over 0--1 loss for tree training]
+\textbf{1 mark}: $G(p) = \sum_i p_i(1 - p_i) = 1 - \sum_i p_i^2$. \\
+\textbf{1 mark}: Intuition: probability that two samples drawn with replacement have different classes; zero for a pure node. \\
+\textbf{1 mark}: 0--1 loss only sees ``classified correctly'' vs ``not'' — it gives no credit for splits that move proportions toward purity without yet flipping a prediction. Trees built with 0--1 loss stall after the first split. \\
+\textbf{1 mark}: Gini varies smoothly with class proportions, so it rewards partial-purity gains and yields useful splits at every level of the tree.
+\end{exambox}
+
+\begin{exambox}[5 — Define entropy and information gain]
+\textbf{1 mark}: $H(p) = -\sum_i p_i \log p_i$ — the average number of bits/nats needed to encode a sample. \\
+\textbf{1 mark}: For a candidate split with $n_l$ points going left, $n_r$ going right (total $n$):
+\[
+I(\text{split}) = H(p^{(\text{parent})}) - \frac{n_l}{n} H(p^{(\text{left})}) - \frac{n_r}{n} H(p^{(\text{right})}).
+\]
+\textbf{1 mark}: Information gain is \emph{maximised}, not minimised — it measures bits of uncertainty eliminated, so larger is better. \\
+\textbf{1 mark}: Children are weighted by data fraction so that splits separating large blocks count more than splits separating tiny ones.
+\end{exambox}
+
+\begin{exambox}[6 — Compare Gini and information gain]
+\textbf{1 mark}: Both measure node impurity; both peak at the uniform mixture and are zero at purity. \\
+\textbf{1 mark}: They produce nearly identical splits in practice for typical class proportions. \\
+\textbf{1 mark}: Gini is faster to compute (no logarithm), so it's the default choice in implementations like scikit-learn. \\
+\textbf{1 mark}: Information gain is preferred when (a) the task is regression — Gini doesn't generalise; (b) information-theoretic justifications matter to the application.
+\end{exambox}
+
+\begin{exambox}[7 — Distinguish parameters from hyperparameters; give examples for a decision tree]
+\textbf{1 mark}: \emph{Parameters} are values the training procedure learns from data. \\
+\textbf{1 mark}: \emph{Hyperparameters} are choices about the training procedure made before training. \\
+\textbf{1 mark}: For a decision tree: parameters = the (feature, threshold) at every internal node, the predicted label at every leaf, and the tree's topology. \\
+\textbf{1 mark}: Hyperparameters = max tree depth, minimum leaf-node size, choice of split criterion (Gini vs information gain). \\
+\textbf{1 mark}: Hyperparameters are typically tuned on a held-out validation set, never on the training set alone (and never on the test set, which would invalidate the test-score's role as a generalisation estimate).
+\end{exambox}
+
+\begin{exambox}[8 — How does overfitting manifest in a decision tree, and how do you prevent it?]
+\textbf{1 mark}: Overfitting in a tree shows as deep, narrow branches that isolate individual training points or tiny clusters — leaves of size 1 or 2 with axis-aligned ``corners'' that follow noise rather than any underlying pattern. \\
+\textbf{1 mark}: Symptom: very low training error, much higher test error. \\
+\textbf{1 mark}: Detected via a held-out test/validation set (cannot be detected from training data alone — the model performs well there by definition). \\
+\textbf{1 mark}: Prevented by hyperparameter constraints: maximum tree depth and minimum leaf-node size are the two principal levers. Both prevent the tree from splitting noise. \\
+\textbf{1 mark} for noting cross-validation as the principled way of choosing those hyperparameters (Wk~3 expands).
+\end{exambox}
+
+% =====================================================================
+\section*{Key ideas to carry forward}
+
+\begin{tldrbox}
+\begin{itemize}[leftmargin=*]
+  \item \textbf{The supervised-learning skeleton} — model family $f_{\boldsymbol\theta}$, loss function $L$, total loss $\sum_i L$, training $= \arg\min$ — is the schema for \emph{every} supervised method in the unit. Wk~7 onwards swaps the optimiser; the skeleton stays.
+  \item \textbf{Greedy recursive partitioning} produces decision trees. The algorithm is a brute-force optimiser running locally at each node; the tree it produces is a piecewise-constant approximation of the true class boundary.
+  \item \textbf{Loss matters during training.} 0--1 loss is the right metric for \emph{evaluation}, but Gini or information gain is what trees actually train on. Don't conflate ``what we report'' with ``what we minimise.''
+  \item \textbf{Overfitting is the universal failure mode of capacity-rich models.} Wk~3's bias--variance decomposition formalises this; Wk~21's regularisation is the principled fix; Wk~4's random forests are an empirical fix specifically for trees.
+  \item \textbf{Decision tree $\rightarrow$ random forest (Wk~4)} is a major thread. Wk~4 takes the same brute-force tree procedure, builds many trees from random subsets of data and features, and averages the predictions (bagging). The output is much more accurate, much less interpretable, much harder to overfit.
+  \item \textbf{The supervised/unsupervised glossary} is the navigation chart: every later week pins itself to one of the categories (supervised classification, supervised regression, unsupervised clustering, etc.). Use it as the table of contents for the unit.
+\end{itemize}
+\end{tldrbox}
+
+\end{document}

@@ -1,0 +1,529 @@
+\documentclass[11pt, a4paper]{article}
+
+% --- Fonts and engine ---
+\usepackage{fontspec}
+\setmainfont{Helvetica Neue}
+\setmonofont{Menlo}
+\usepackage{unicode-math}
+\setmathfont{STIX Two Math}
+
+% --- Layout ---
+\usepackage[margin=2cm, top=2cm, bottom=2.5cm]{geometry}
+\usepackage{microtype}
+\usepackage{parskip}
+\setlength{\parskip}{0.6em}
+\setlength{\parindent}{0pt}
+
+% --- Typography and links ---
+\usepackage[colorlinks=true, linkcolor=NavyBlue, urlcolor=NavyBlue, citecolor=NavyBlue]{hyperref}
+\usepackage{xcolor}
+\usepackage[dvipsnames]{xcolor}
+
+% --- Math and tables ---
+\usepackage{amsmath}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{tabularx}
+\usepackage{graphicx}
+\graphicspath{{figures/week03/}}
+\newcommand{\thead}[1]{\textbf{#1}}
+
+% --- Lists ---
+\usepackage{enumitem}
+\setlist[itemize]{leftmargin=1.5em, itemsep=0.2em, topsep=0.3em}
+\setlist[enumerate]{leftmargin=1.5em, itemsep=0.2em, topsep=0.3em}
+
+% --- Boxed callouts ---
+\usepackage[most]{tcolorbox}
+\tcbuselibrary{breakable, skins, theorems}
+
+% Color palette
+\definecolor{defBg}{HTML}{EAF2FB}
+\definecolor{defBd}{HTML}{1F4E79}
+\definecolor{exBg}{HTML}{F4F4F4}
+\definecolor{exBd}{HTML}{555555}
+\definecolor{tipBg}{HTML}{E8F5E9}
+\definecolor{tipBd}{HTML}{2E7D32}
+\definecolor{trapBg}{HTML}{FCE4EC}
+\definecolor{trapBd}{HTML}{AD1457}
+\definecolor{pitBg}{HTML}{FFF8E1}
+\definecolor{pitBd}{HTML}{B27600}
+\definecolor{noteBg}{HTML}{F3E5F5}
+\definecolor{noteBd}{HTML}{6A1B9A}
+\definecolor{tldrBg}{HTML}{E1F5FE}
+\definecolor{tldrBd}{HTML}{0277BD}
+
+\newtcolorbox{defbox}[1][]{enhanced, breakable, colback=defBg, colframe=defBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={Definition: #1}}
+\newtcolorbox{exbox}[1][]{enhanced, breakable, colback=exBg, colframe=exBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={Worked example: #1}}
+\newtcolorbox{exambox}[1][]{enhanced, breakable, colback=tipBg, colframe=tipBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={Exam-mode answer #1}}
+\newtcolorbox{trapbox}[1][]{enhanced, breakable, colback=trapBg, colframe=trapBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={MCQ trap #1}}
+\newtcolorbox{pitfallbox}[1][]{enhanced, breakable, colback=pitBg, colframe=pitBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={Pitfall #1}}
+\newtcolorbox{notebox}[1][]{enhanced, breakable, colback=noteBg, colframe=noteBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={Lecturer aside #1}}
+\newtcolorbox{tldrbox}[1][]{enhanced, breakable, colback=tldrBg, colframe=tldrBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={TL;DR #1}}
+
+\usepackage{titlesec}
+\titleformat{\section}[block]{\Large\bfseries\color{defBd}}{\thesection.}{0.6em}{}
+\titleformat{\subsection}[block]{\large\bfseries\color{defBd!80!black}}{\thesubsection}{0.5em}{}
+\titleformat{\subsubsection}[block]{\normalsize\bfseries}{}{0pt}{}
+\titlespacing*{\section}{0pt}{1.6em}{0.6em}
+\titlespacing*{\subsection}{0pt}{1.2em}{0.4em}
+
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small CM52054 — Week 3}
+\fancyhead[R]{\small Bias--Variance Tradeoff}
+\fancyfoot[C]{\small\thepage}
+\renewcommand{\headrulewidth}{0.3pt}
+
+\newcommand{\examflag}{\textcolor{tipBd}{\textbf{[EXAM]}}\,}
+\newcommand{\trapflag}{\textcolor{trapBd}{\textbf{[TRAP]}}\,}
+\newcommand{\doflag}{\textcolor{defBd}{\textbf{[DO]}}\,}
+
+\title{\vspace{-1cm}{\Huge\bfseries Week 3 — Decision Trees Extended \& the Bias--Variance Tradeoff} \\[0.4em]{\large Categorical and quantised inputs, regression with trees, the MSE decomposition, why ensembles target the variance term}}
+\author{\large CM52054 Foundational Machine Learning \\[0.2em]\normalsize University of Bath \,$\cdot$\, Dr Rohit Babbar}
+\date{Revision notes}
+
+\begin{document}
+
+\maketitle
+\thispagestyle{empty}
+
+\vspace{1em}
+
+\begin{tldrbox}
+\begin{itemize}[leftmargin=*]
+  \item \textbf{Decision trees extend naturally to other input/output types.} For \emph{quantised} real inputs (e.g.\ age bins): split between bins using info gain at the bin transitions. For \emph{categorical} inputs (e.g.\ favourite cheese): there's no order to scan, so use ``one category goes left, the rest go right'' (linear in the number of categories, $O(n)$) rather than enumerating all binary partitions ($O(2^{n-1})$). For \emph{regression} outputs: split to minimise within-node \textbf{variance} of the targets, and report the leaf's mean target as the prediction.
+  \item \textbf{Bias--variance decomposition.} For squared-error regression with $y = f(\mathbf{x}) + \varepsilon$ ($\mathbb{E}[\varepsilon]=0$, $\mathrm{Var}(\varepsilon)=\sigma^2$), the expected prediction error decomposes:
+  \[
+  \mathbb{E}_{\mathcal{D},\varepsilon}\!\left[(y - \hat{f}(\mathbf{x};\mathcal{D}))^2\right] \;=\; \underbrace{\bigl(f(\mathbf{x}) - \mathbb{E}_{\mathcal{D}}[\hat{f}(\mathbf{x};\mathcal{D})]\bigr)^2}_{\text{Bias}^2} \;+\; \underbrace{\mathbb{E}_{\mathcal{D}}\!\left[(\hat{f}(\mathbf{x};\mathcal{D}) - \mathbb{E}_{\mathcal{D}}[\hat{f}(\mathbf{x};\mathcal{D})])^2\right]}_{\text{Variance}} \;+\; \sigma^2.
+  \]
+  \item \textbf{Three components, three different things.} \emph{Bias}$^2$ is the systematic error from your model family being wrong (e.g.\ fitting a line to a circle). \emph{Variance} is how much the trained model wobbles when the training set changes. \emph{Noise} ($\sigma^2$) is the data-intrinsic randomness — irreducible, not your fault.
+  \item \textbf{The trade-off.} Richer model families (deeper trees, higher-degree polynomials, larger neural nets) typically \emph{decrease} bias and \emph{increase} variance. Simpler families do the opposite. There is a sweet spot — neither too crude nor too flexible — that minimises the sum.
+  \item \trapflag{}\textbf{[Q1.7]} Increasing model complexity reduces bias but increases variance — \textbf{True}. The classic statement of the trade-off; expect this exact phrasing on the past paper.
+  \item \textbf{The proof itself is non-examinable as a whole}, but \emph{the components, their meaning, and the overall idea of the decomposition are examinable.} Read the derivation once to see how the three terms fall out; remember the picture (dartboard: bias = how far off the centre; variance = how scattered the throws) and the formula structure.
+  \item \textbf{Why this material lands here.} The trade-off motivates everything that follows in the unit. Random forests (Wk~4) attack the variance term by averaging many high-variance trees. Regularisation (Wk~21) attacks the variance term by shrinking model complexity. Both are interventions in the bias--variance budget.
+  \item \textbf{Notation reminder.} A model trained on dataset $\mathcal{D}$ is written $\hat{f}(\cdot;\mathcal{D})$ — the dependence on $\mathcal{D}$ is what makes it a random object. The expectation $\mathbb{E}_{\mathcal{D}}[\cdot]$ averages over the choice of training set; $\mathbb{E}_{\varepsilon}[\cdot]$ averages over the noise.
+\end{itemize}
+\end{tldrbox}
+
+% =====================================================================
+\section{Decision trees with other input and output types}
+
+Wk~2's decision tree handles real-valued features mapped to a discrete class label. Real datasets have richer input types and richer output types; the tree generalises to all of them with small adaptations.
+
+\subsection{Quantised real inputs}
+
+Continuous data is often \emph{quantised} into bins before reaching the model — ``age 12--17, 18--24, 25--34, $\ldots$'' or ``year only.'' From the tree's point of view this is a real-valued feature whose only meaningful split points are the bin boundaries: there's no information in splitting between observations within the same bin, because they're indistinguishable in the data.
+
+The Wk~2 brute-force scan adapts trivially: only consider thresholds \emph{between} adjacent bins. The slide visualises information gain as discrete spikes localised at the bin transitions.
+
+\begin{notebox}
+This becomes important when the lab data is age-binned, or when a dataset mixes truly continuous features with binned ones — the algorithm doesn't change, only the candidate-threshold list does.
+\end{notebox}
+
+\begin{center}
+
+\footnotesize\textit{Quantised real input in practice. The coloured stacked bars (top right) form a histogram of the three classes across age-bins --- green, blue, and red each representing one class. The vertical black line marks the chosen split threshold: the algorithm places it \emph{between} two adjacent bins rather than at an arbitrary real value, because within a bin all points are indistinguishable. The row of magenta spikes below is the information-gain profile --- spikes appear \emph{only} at bin transitions, confirming that candidate splits are discrete. The tallest spike corresponds to the chosen split: the bin boundary where moving from left to right produces the greatest reduction in class uncertainty.}
+\end{center}
+
+\subsection{Categorical (unordered) inputs}
+
+What about a feature like ``favourite cheese'' — Cheddar, Brie, Stilton, Gouda? It looks like a quantised feature (a histogram of categories), but it has no natural order. The split rule ``$x_f < s$'' is meaningless when $x_f$ takes nominal values.
+
+Two ways to make the tree work for categorical features:
+
+\begin{description}
+  \item[\textbf{Try every binary partition.}] Enumerate all ways of assigning each category to either ``left'' or ``right.'' Pick the partition with the lowest split loss. With $n$ categories there are $2^{n-1}$ such partitions (the $-1$ accounts for the symmetry that swapping ``left'' and ``right'' gives the same split). This explodes fast: for $n=20$ categories, that's $\sim 5 \times 10^5$ candidate partitions per feature per node.
+  \item[\textbf{One left, rest right.}] Try each category alone on the left side, with all others on the right. This gives only $n$ candidate splits per feature per node — \emph{linear} in the number of categories.
+\end{description}
+
+The slide's preference is the second approach for three reasons: \emph{fixed storage} (each split's parameter is a single category index, not a subset), \emph{simpler code}, and \emph{linear} cost.
+
+\begin{center}
+\renewcommand{\arraystretch}{1.2}
+\begin{tabular}{lll}
+\toprule
+\thead{Strategy} & \thead{Number of candidates per node} & \thead{Storage per split} \\
+\midrule
+All binary partitions & $O(2^{n-1})$ & subset of categories \\
+One left, rest right & $O(n)$ & single category index \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\examflag{}\textbf{[Q1.6]} Trees handle both categorical and real-valued data — \textbf{True}. The mechanism is what differs (one-vs-rest binary partition for categorical; threshold scan for real-valued), not the overall recursive-partitioning algorithm.
+
+\subsection{Regression (continuous output)}
+
+The same recursive structure handles continuous targets with two changes:
+
+\begin{enumerate}
+  \item The leaf prediction is no longer a class label but the \textbf{mean of the targets} of training points reaching the leaf.
+  \item The loss for evaluating a candidate split is no longer Gini or information gain (those are designed for class proportions), but the \textbf{variance of the targets within each child node}.
+\end{enumerate}
+
+\begin{defbox}[Variance reduction split criterion]
+For a regression tree, score a candidate split by the count-weighted sum of child variances:
+\[
+L(\text{split}) \;=\; \frac{n_l}{n}\,\sigma_l^2 \;+\; \frac{n_r}{n}\,\sigma_r^2,
+\]
+where $\sigma_l^2 = \mathbb{E}[(Y_l - \mathbb{E}[Y_l])^2]$ is the variance of the targets going left (similarly $\sigma_r^2$ for right), $n_l$ and $n_r$ are the counts going left/right, and $n = n_l + n_r$. The split with the \emph{lowest} weighted variance is chosen.
+\end{defbox}
+
+\textbf{Intuition.} Variance measures how much the targets in a node disagree. A pure regression node — all training targets equal — has variance zero, and predicting the mean is exactly right. The variance criterion is the regression analogue of Gini impurity: both are zero on perfect-purity nodes, both reward splits that increase per-child consistency.
+
+\begin{notebox}
+The slide also asks: ``the median may confer an advantage — any idea when?'' The median is more robust to outliers than the mean, because a single very-large target value drags the mean substantially while moving the median only slightly. So when leaf targets contain outliers, predicting the median rather than the mean gives more stable predictions.
+\end{notebox}
+
+\subsection{Information gain for regression (an aside)}
+
+Information gain doesn't immediately apply to regression — IG is defined over class probabilities, and a continuous target has no class probabilities. The standard workaround is to fit a Gaussian to the target distribution at each node and use the entropy of that Gaussian:
+
+\[
+H(\mathcal{N}(\mu, \sigma^2)) \;=\; \tfrac{1}{2}\log(2\pi e \sigma^2),
+\]
+
+then compute information gain as in Wk~2 with this surrogate entropy:
+\[
+I(\text{split}) \;=\; \tfrac{1}{2}\log(2\pi e \sigma_p^2) \;-\; \tfrac{n_l}{2n}\log(2\pi e \sigma_l^2) \;-\; \tfrac{n_r}{2n}\log(2\pi e \sigma_r^2).
+\]
+
+This is rarely used in practice — the variance-reduction criterion is simpler and produces equivalent splits, since both come down to ``minimise the weighted child variances.'' Treat this slide as background; if you want the regression equivalent of information gain, this is what it is, but variance reduction is the working tool.
+
+% =====================================================================
+\section{The bias--variance tradeoff: setup}
+
+\subsection{Why this matters now}
+
+The whole motivation for moving from a single tree (Wk~2) to a forest of trees (Wk~4) is the observation that decision trees, especially deep ones, are \emph{high-variance} models — small changes to the training data produce noticeably different trees. To talk about that precisely, you need a way to decompose ``how wrong is this model'' into ``how wrong because of model-family mismatch'' (bias) and ``how wrong because of training-data sensitivity'' (variance). That decomposition is the bias--variance tradeoff, and it's a general phenomenon in ML — not just a thing about trees.
+
+\begin{notebox}
+The lecturer explicitly framed this as broadly transferable: ``you may go to an interview a year from now and somebody might ask you what is bias-variance trade-off — it's not at all only related to decision trees and random forests.'' The same decomposition shows up in Wk~21 (regularisation explicitly trades bias for variance) and in any discussion of model capacity.
+\end{notebox}
+
+\subsection{The regression setting and the data model}
+
+We work in the regression setting because squared error has a clean decomposition. Assume:
+
+\begin{itemize}
+  \item There is a true (unknown, ``oracle'') function $f: \mathbb{R}^d \to \mathbb{R}$ that we are trying to estimate.
+  \item Training data is a finite sample $\mathcal{D} = \{(\mathbf{x}_i, y_i)\}_{i=1}^n$ where $y_i = f(\mathbf{x}_i) + \varepsilon_i$.
+  \item The noise $\varepsilon$ is a random variable with $\mathbb{E}[\varepsilon] = 0$ and $\mathrm{Var}(\varepsilon) = \sigma^2$, independent of $\mathbf{x}$.
+  \item We use a learning algorithm (decision tree, linear regressor, neural network, $\ldots$) on $\mathcal{D}$ to produce an estimator $\hat{f}(\cdot; \mathcal{D})$.
+  \item We evaluate squared-error loss on a fresh test point: $L = (y - \hat{f}(\mathbf{x}; \mathcal{D}))^2$.
+\end{itemize}
+
+\begin{defbox}[Estimator]
+$\hat{f}(\cdot; \mathcal{D})$ is the \textbf{estimator} — the trained model produced by running the learning algorithm on $\mathcal{D}$. It is a function of the input \emph{and} an implicit dependency on $\mathcal{D}$. Crucially, $\hat{f}$ is a \emph{random object}: re-sampling $\mathcal{D}$ from the same data distribution gives a different $\hat{f}$.
+\end{defbox}
+
+\begin{pitfallbox}[``estimator'' vs ``model'']
+The slide uses ``estimator'' to distinguish from ``model'' — a model is the parametric family (linear regression, decision tree); an estimator is the trained instance produced by fitting that model to a particular dataset. Different $\mathcal{D}$, same model family $\Rightarrow$ different estimators.
+\end{pitfallbox}
+
+The expected error we want to study is taken over both random sources:
+\[
+\mathbb{E}_{\mathcal{D}, \varepsilon}\!\left[(y - \hat{f}(\mathbf{x}; \mathcal{D}))^2\right]
+\]
+— the average squared error, where the average is over (a) the choice of training set $\mathcal{D}$ and (b) the test-point noise $\varepsilon$. The input $\mathbf{x}$ is held fixed (we are asking about error at a particular test location).
+
+\subsection{The bias of an estimator (and why ``bias'' is the right name)}
+
+Before tackling the decomposition, the slide builds up the language of biased and unbiased estimators with a simple example.
+
+\begin{defbox}[Unbiased estimator]
+An estimator $\hat\theta$ of a population parameter $\theta$ is \textbf{unbiased} if
+\[
+\mathbb{E}[\hat\theta] = \theta.
+\]
+On average over the random data, it neither systematically overestimates nor underestimates $\theta$.
+\end{defbox}
+
+\textbf{Example: the sample mean is unbiased.} Let $X_1, \ldots, X_n$ be i.i.d.\ with $\mathbb{E}[X_i] = \mu$. The sample mean is
+\[
+\bar X = \tfrac{1}{n}\sum_{i=1}^n X_i.
+\]
+By linearity of expectation:
+\[
+\mathbb{E}[\bar X] = \tfrac{1}{n}\sum_i \mathbb{E}[X_i] = \tfrac{1}{n}\cdot n\mu = \mu.
+\]
+So $\bar X$ is unbiased — on average over the random sample, it lands on $\mu$.
+
+\textbf{Example: the naive sample variance is biased.} The natural estimator
+\[
+\tilde s^2 = \tfrac{1}{n}\sum_{i=1}^n (X_i - \bar X)^2
+\]
+is \emph{not} unbiased; in fact $\mathbb{E}[\tilde s^2] = \tfrac{n-1}{n}\sigma^2 < \sigma^2$.
+
+\textbf{The algebraic identity.} The whole argument hinges on rewriting the sum of squared deviations \emph{from the sample mean} $\bar X$ as a sum of squared deviations \emph{from the true mean} $\mu$. The trick is add-and-subtract $\mu$ inside the bracket, then expand the square:
+\begin{align*}
+\sum_{i=1}^n (X_i - \bar X)^2
+  &= \sum_i \bigl((X_i - \mu) - (\bar X - \mu)\bigr)^2 \\
+  &= \sum_i (X_i - \mu)^2 \;-\; 2(\bar X - \mu)\sum_i (X_i - \mu) \;+\; \sum_i (\bar X - \mu)^2.
+\end{align*}
+The middle sum simplifies because $\sum_i (X_i - \mu) = \bigl(\sum_i X_i\bigr) - n\mu = n\bar X - n\mu = n(\bar X - \mu)$, and the last sum has no $i$-dependence so it is just $n(\bar X - \mu)^2$. Substituting:
+\[
+\sum_i (X_i - \bar X)^2
+  = \sum_i (X_i - \mu)^2 \;-\; 2(\bar X - \mu)\cdot n(\bar X - \mu) \;+\; n(\bar X - \mu)^2
+  = \sum_i (X_i - \mu)^2 \;-\; n(\bar X - \mu)^2.
+\]
+The two $(\bar X - \mu)^2$ terms ($-2n$ and $+n$) combine to $-n$, giving the identity used below. Intuitively: deviations measured from $\bar X$ are systematically \emph{smaller} than deviations from $\mu$ — by exactly $n(\bar X - \mu)^2$ — because $\bar X$ is the point that minimises the sum of squared deviations of this particular sample. That shortfall is the source of the bias. Taking expectations of each piece:
+\[
+\mathbb{E}\!\left[\sum (X_i - \mu)^2\right] = n\sigma^2, \qquad \mathbb{E}\!\left[n(\bar X - \mu)^2\right] = n \cdot \mathrm{Var}(\bar X) = n \cdot \tfrac{\sigma^2}{n} = \sigma^2.
+\]
+Therefore
+\[
+\mathbb{E}[\tilde s^2] = \tfrac{1}{n}(n\sigma^2 - \sigma^2) = \tfrac{n-1}{n}\sigma^2.
+\]
+Using $n-1$ in the denominator instead corrects the bias (this is why R/Python use Bessel's correction by default).
+
+\begin{notebox}
+The take-away isn't the variance-of-variance derivation per se. It's the \emph{language}: ``bias of an estimator $=$ how far its expectation is from the true target.'' That language makes the bias term in the next section's decomposition immediately interpretable.
+\end{notebox}
+
+% =====================================================================
+\section{The MSE decomposition: $\text{MSE} = \text{Bias}^2 + \text{Variance} + \text{Noise}$}
+
+\subsection{The result you should remember}
+
+\begin{defbox}[Bias--variance decomposition (regression with squared loss)]
+For an estimator $\hat{f}$ trained on a random dataset $\mathcal{D}$, evaluated at test point $\mathbf{x}$ with noisy true label $y = f(\mathbf{x}) + \varepsilon$:
+\[
+\boxed{\;
+\mathbb{E}_{\mathcal{D},\varepsilon}\!\left[(y - \hat f(\mathbf{x};\mathcal{D}))^2\right]
+\;=\;
+\underbrace{\bigl(f(\mathbf{x}) - \mathbb{E}_{\mathcal{D}}[\hat f(\mathbf{x};\mathcal{D})]\bigr)^2}_{\text{Bias}^2(\hat f)}
+\;+\;
+\underbrace{\mathbb{E}_{\mathcal{D}}\!\left[\bigl(\hat f(\mathbf{x};\mathcal{D}) - \mathbb{E}_{\mathcal{D}}[\hat f(\mathbf{x};\mathcal{D})]\bigr)^2\right]}_{\text{Variance}(\hat f)}
+\;+\;
+\underbrace{\sigma^2}_{\text{Noise}}
+\;}
+\]
+\end{defbox}
+
+Three terms, three plain-English meanings:
+
+\begin{itemize}
+  \item \textbf{Bias}$^2$: how far the \emph{average} prediction (averaged over training sets) sits from the true value. A non-zero bias means the model family itself is incapable of representing the true function — a linear model fitting a circular boundary, or a depth-2 tree fitting a deeply non-linear surface.
+  \item \textbf{Variance}: how much $\hat{f}(\mathbf{x};\mathcal{D})$ wobbles around its own mean as $\mathcal{D}$ changes. A high-variance model is one whose decisions are sensitive to the particular training sample — small changes to the data produce noticeably different predictions.
+  \item \textbf{Noise} $\sigma^2$: the irreducible variance of $y$ around $f(\mathbf{x})$. Even the oracle $f$ itself cannot beat this; it is the data-distribution's inherent ambiguity. \emph{Cannot} be reduced by any learning algorithm.
+\end{itemize}
+
+\subsection{The dartboard picture}
+
+The lecturer's go-to mental image: imagine you train your model 100 times on 100 different training sets and plot all 100 predictions at the same test point $\mathbf{x}$ as darts on a dartboard. The bullseye is $f(\mathbf{x})$.
+
+\begin{itemize}
+  \item \textbf{Bias} $=$ distance from the centre of mass of the dart cluster to the bullseye. Are you systematically off-target?
+  \item \textbf{Variance} $=$ how tightly the dart cluster is grouped around its own centre. Are your throws consistent with each other?
+\end{itemize}
+
+\begin{center}
+\renewcommand{\arraystretch}{1.4}
+\begin{tabular}{l|cc}
+& \textbf{Low variance} & \textbf{High variance} \\
+\hline
+\textbf{Low bias} & ideal: tight cluster on bullseye & noisy but unbiased — average is right, individual predictions wobble \\
+\textbf{High bias} & systematic miss but consistent — wrong about the same way every time & worst case: scattered \emph{and} centred elsewhere \\
+\end{tabular}
+\end{center}
+
+\begin{center}
+
+\footnotesize\textit{The classic dartboard visualisation of bias and variance. Each of the four targets represents one combination: the columns are \textbf{Low Variance} (throws tightly grouped) vs \textbf{High Variance} (throws scattered), the rows are \textbf{Low Bias} (centre of mass near the bullseye) vs \textbf{High Bias} (centre of mass displaced from the bullseye). The red dot is the bullseye --- the true value $f(\mathbf{x})$; the blue dots are individual predictions from different training sets. \emph{Top-left}: the ideal --- tight and centred. \emph{Top-right}: consistent on average but noisy per run --- averaging many such estimators (as a random forest does) recovers the top-left picture. \emph{Bottom-left}: every training run gives the same wrong answer --- more data or a richer model family is needed. \emph{Bottom-right}: the worst case, combining both failure modes.}
+\end{center}
+
+\subsection{Worked-out derivation}
+
+\textbf{The proof as a whole is non-examinable}, but you should be able to recognise the steps and explain why each term shows up. Going through it once is the best way to make the formula structure stick.
+
+Write $\mathbb{E}$ for $\mathbb{E}_{\mathcal{D},\varepsilon}$ throughout. Start from the MSE:
+\[
+\text{MSE} \;=\; \mathbb{E}\!\left[(y - \hat f(\mathbf{x}))^2\right].
+\]
+
+\textbf{Step 1 — substitute $y = f(\mathbf{x}) + \varepsilon$.}
+\[
+\text{MSE} \;=\; \mathbb{E}\!\left[(f(\mathbf{x}) + \varepsilon - \hat f(\mathbf{x}))^2\right].
+\]
+
+\textbf{Step 2 — group $f - \hat f$ as one block, $\varepsilon$ separately, and expand $(a + b)^2 = a^2 + 2ab + b^2$.}
+\[
+\text{MSE} \;=\; \mathbb{E}\!\left[(f(\mathbf{x}) - \hat f(\mathbf{x}))^2\right] \;+\; 2\,\mathbb{E}\!\left[(f(\mathbf{x}) - \hat f(\mathbf{x}))\,\varepsilon\right] \;+\; \mathbb{E}[\varepsilon^2].
+\]
+
+\textbf{Step 3 — kill the cross term.} $\varepsilon$ is independent of $\hat{f}$ (the noise on a test point is independent of the training sample), so $\mathbb{E}[(f - \hat f)\varepsilon] = \mathbb{E}[f - \hat f]\,\mathbb{E}[\varepsilon] = \mathbb{E}[f - \hat f] \cdot 0 = 0$. The third term $\mathbb{E}[\varepsilon^2] = \sigma^2$ (since $\varepsilon$ has mean zero, $\mathbb{E}[\varepsilon^2] = \mathrm{Var}(\varepsilon) = \sigma^2$).
+
+So:
+\[
+\text{MSE} \;=\; \mathbb{E}\!\left[(f(\mathbf{x}) - \hat f(\mathbf{x}))^2\right] \;+\; \sigma^2.
+\]
+
+\textbf{Step 4 — split the first term using the add-subtract trick: insert $\mathbb{E}[\hat{f}(\mathbf{x})]$.}
+\[
+f(\mathbf{x}) - \hat f(\mathbf{x}) \;=\; \bigl(f(\mathbf{x}) - \mathbb{E}[\hat f(\mathbf{x})]\bigr) \;+\; \bigl(\mathbb{E}[\hat f(\mathbf{x})] - \hat f(\mathbf{x})\bigr).
+\]
+Square this and expand:
+\[
+(f - \hat f)^2 \;=\; (f - \mathbb{E}\hat f)^2 \;+\; 2(f - \mathbb{E}\hat f)(\mathbb{E}\hat f - \hat f) \;+\; (\mathbb{E}\hat f - \hat f)^2.
+\]
+
+\textbf{Step 5 — take the expectation, watch the cross term collapse.} The first piece $(f - \mathbb{E}\hat f)^2$ is deterministic in $\mathcal{D}$ (both $f$ and $\mathbb{E}\hat{f}$ are constants once you fix $\mathbf{x}$), so its expectation is itself:
+\[
+\mathbb{E}[(f - \mathbb{E}\hat f)^2] \;=\; (f - \mathbb{E}\hat f)^2 \;=\; \text{Bias}^2.
+\]
+The third piece is exactly the definition of variance:
+\[
+\mathbb{E}[(\mathbb{E}\hat f - \hat f)^2] \;=\; \mathrm{Var}(\hat f).
+\]
+The middle piece: pull the constant $f - \mathbb{E}\hat f$ out and observe $\mathbb{E}[\mathbb{E}\hat f - \hat f] = \mathbb{E}\hat f - \mathbb{E}\hat f = 0$. So the cross term vanishes.
+
+\textbf{Putting it together:}
+\[
+\text{MSE} \;=\; \text{Bias}^2(\hat f) \;+\; \mathrm{Var}(\hat f) \;+\; \sigma^2.
+\]
+
+\begin{notebox}
+The two cancellation arguments — independence of $\varepsilon$ from $\hat{f}$ in step 3, and the fact that $\mathbb{E}[\mathbb{E}\hat{f} - \hat{f}] = 0$ in step 5 — are the only non-trivial steps. The rest is algebra. If you can articulate \emph{why those two terms vanish}, you understand the proof at the depth the lecturer expects.
+\end{notebox}
+
+% =====================================================================
+\section{The trade-off, and what to do about it}
+
+\subsection{Where the trade-off comes from}
+
+Bias and variance respond oppositely to model capacity:
+
+\begin{itemize}
+  \item A \textbf{simple} model (linear regression, shallow tree) has a small set of functions it can express. Its bias is typically high (it can't capture complex truth), but its variance is low (the same simple shape gets fitted to whatever training data you provide).
+  \item A \textbf{complex} model (very deep tree, high-degree polynomial, large neural net) can express many functions, so it can in principle approximate the truth (low bias). But it can also fit noise; small changes to the training data dramatically change which complex shape it picks (high variance).
+\end{itemize}
+
+\examflag{}\trapflag{}\textbf{(Q1.7)} \emph{Increasing model complexity reduces bias but increases variance} is the standard formulation of the trade-off, and it's the past paper's wording verbatim. Mark this sentence as one to reproduce on demand.
+
+\begin{center}
+\renewcommand{\arraystretch}{1.3}
+\begin{tabularx}{\linewidth}{l X}
+\toprule
+\thead{Symptom} & \thead{Likely diagnosis and fix} \\
+\midrule
+Both training and test error are high & \textbf{Underfitting} (high bias). Model family is too restricted. Use a richer family — deeper tree, more features, polynomial inputs, larger network. \\
+Training error is low, test error is much higher & \textbf{Overfitting} (high variance). Model is fitting noise. Reduce capacity (constrain depth / leaf size, regularise — Wk~21), gather more training data, or ensemble (Wk~4). \\
+Both errors are low and close together & Healthy fit — congratulations. \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\subsection{Decision trees as a case study}
+
+The trade-off makes the move from a single tree to a forest of trees \emph{principled} rather than ad hoc:
+
+\begin{itemize}
+  \item A fully-grown decision tree is a low-bias, high-variance estimator. Any sufficiently deep tree can approximate any function on the training data (low bias), but the precise shape of the tree depends sensitively on which training points happened to be sampled (high variance).
+  \item A constrained tree (low max depth, large min leaf size) is a higher-bias, lower-variance estimator — coarser approximations, more stable across training samples.
+  \item Random forests (Wk~4) take the high-variance, low-bias position: train many fully-grown trees on bootstrap samples, average their predictions. The averaging \emph{reduces variance} (independent estimators average to a less wobbly composite) without adding bias (each tree is still flexible enough to capture the truth, and the average preserves that capacity in expectation).
+\end{itemize}
+
+The lecturer's framing: ``the goal in random forest is to lower the variance term $\mathbb{E}_{\mathcal{D}}[(\mathbb{E}\hat f - \hat f)^2]$ by having more and more estimates of $\hat{f}$ — i.e.\ growing lots of decision trees into (random) forests.'' This is the bridge from Wk~3's theoretical machinery to Wk~4's algorithmic content.
+
+\subsection{Other places the trade-off is the lever}
+
+Almost every practical ML technique can be read as an intervention on the bias--variance budget:
+
+\begin{itemize}
+  \item \textbf{Regularisation} (Wk~21) — adding a penalty term that shrinks weights toward zero. Increases bias (the unregularised optimum is moved away), but reduces variance (the optimum doesn't chase noisy training data). The hyperparameter $\lambda$ controls where you sit on the trade-off curve. \emph{Why} this reduces variance is worth spelling out — see the box below.
+  \item \textbf{Cross-validation} — the principled way to choose where on the trade-off curve you want to be, by estimating the test error at several capacity settings and picking the minimum.
+  \item \textbf{More data} — moves the trade-off curve down (variance scales like $1/\sqrt{N}$ in many models; bias is unchanged). The cheapest variance reduction available, when feasible.
+  \item \textbf{Architecture choice in deep learning} — picking a CNN over a fully-connected network for image data is a bias choice: CNNs encode the prior that local patterns matter, which lowers bias on image tasks compared to a generic network.
+\end{itemize}
+
+\begin{notebox}[Why a weight penalty lowers variance.]
+A regularised objective adds a penalty to the loss:
+\[
+\mathcal{L}_{\text{reg}}(\mathbf{w}) \;=\; \underbrace{\sum_i L(y_i, f_{\mathbf{w}}(\mathbf{x}_i))}_{\text{fit the data}} \;+\; \lambda\,\Omega(\mathbf{w}),
+\]
+where $\Omega(\mathbf{w})$ grows with the size of the weights (e.g.\ $\|\mathbf{w}\|_2^2$ or $\|\mathbf{w}\|_1$). The penalty \textbf{shrinks the fitted weights toward zero}.
+
+The variance argument: \emph{large weights are exactly what a model needs to chase individual noisy data points.} A sharp wiggle that threads through a particular noisy observation requires steep slopes — large coefficients. Those large weights are also what differs most from one training sample to the next, since each sample's noise pulls them in a different direction; that sample-to-sample swing \emph{is} the variance term. By capping weight size, the penalty forbids the model from contorting itself around any single point. The fitted function becomes \textbf{smoother and less sensitive to the particular training sample drawn} — i.e.\ lower variance. The cost is a little bias: the constrained optimum can no longer reach the (lower-loss) unregularised solution, so the average prediction is pulled slightly off the truth. Larger $\lambda$ trades more bias for less variance; $\lambda = 0$ recovers the unregularised, high-variance fit.
+\end{notebox}
+
+\begin{pitfallbox}[bias-variance is not always a trade-off in practice]
+The classical picture (bias and variance trading off as capacity increases) is the \emph{textbook} story and the basis of past-paper Q1.7. In modern deep learning, the picture can break down — very large models sometimes show the ``double descent'' phenomenon where test error decreases past the interpolation threshold. This unit doesn't develop double descent, but be aware that the classical trade-off is the picture you're being examined on, not the only picture in the world.
+\end{pitfallbox}
+
+% =====================================================================
+\section*{Exam-mode answers}
+
+\begin{exambox}[1 — How does a decision tree handle categorical inputs?]
+\textbf{1 mark}: Categorical features have no order, so the threshold-scan rule from real-valued features doesn't apply. \\
+\textbf{1 mark}: The standard solution is ``one category goes left, the rest go right'' — try each category alone on one side. \\
+\textbf{1 mark}: This gives $O(n)$ candidate splits per feature per node ($n$ = number of categories), as opposed to $O(2^{n-1})$ for evaluating every binary partition. \\
+\textbf{1 mark}: Advantages: fixed storage per split (one category index), simpler code, linear cost.
+\end{exambox}
+
+\begin{exambox}[2 — Adapt a decision tree to regression]
+\textbf{1 mark}: Each leaf stores the \emph{mean} of training targets that reach it (median for outlier-resistant predictions). \\
+\textbf{1 mark}: Splits are scored by minimising the count-weighted variance of the children:
+\[
+L(\text{split}) = \frac{n_l}{n} \sigma_l^2 + \frac{n_r}{n}\sigma_r^2.
+\]
+\textbf{1 mark}: Variance is the regression analogue of Gini impurity: zero for a pure node (all targets equal), grows with target disagreement. \\
+\textbf{1 mark}: Information gain can be adapted by fitting a Gaussian per node and using its entropy $\tfrac{1}{2}\log(2\pi e \sigma^2)$, but variance reduction is the standard choice.
+\end{exambox}
+
+\begin{exambox}[3 — State and explain the bias--variance decomposition]
+\textbf{1 mark}: For squared-error regression with $y = f(\mathbf{x}) + \varepsilon$,
+\[
+\mathbb{E}\!\left[(y - \hat f(\mathbf{x};\mathcal{D}))^2\right] = \text{Bias}^2(\hat f) + \mathrm{Var}(\hat f) + \sigma^2.
+\]
+\textbf{1 mark}: $\text{Bias}^2 = (f(\mathbf{x}) - \mathbb{E}_{\mathcal{D}}[\hat{f}(\mathbf{x};\mathcal{D})])^2$ — the systematic error: how far the average estimator is from the truth. \\
+\textbf{1 mark}: $\mathrm{Var}(\hat{f}) = \mathbb{E}_{\mathcal{D}}[(\hat f - \mathbb{E}\hat f)^2]$ — the data-sensitivity: how much the estimator wobbles when the training set changes. \\
+\textbf{1 mark}: $\sigma^2 = \mathrm{Var}(\varepsilon)$ — irreducible noise from the data distribution; not a function of the learning algorithm. \\
+\textbf{1 mark} for the dartboard intuition: bias = distance from cluster centre to bullseye; variance = scatter of the cluster around its own centre.
+\end{exambox}
+
+\begin{exambox}[4 — Why is the cross term in the bias--variance proof zero?]
+\textbf{1 mark}: After expanding $(y - \hat f)^2 = ((f - \hat f) + \varepsilon)^2$, the cross term is $2\,\mathbb{E}[(f - \hat f)\varepsilon]$. \\
+\textbf{1 mark}: $\varepsilon$ is independent of $\hat f$ — the noise on a test sample is independent of which training set $\mathcal{D}$ produced $\hat{f}$. \\
+\textbf{1 mark}: Independence factorises the expectation: $\mathbb{E}[(f - \hat f)\varepsilon] = \mathbb{E}[f - \hat f]\cdot\mathbb{E}[\varepsilon]$. \\
+\textbf{1 mark}: $\mathbb{E}[\varepsilon] = 0$ by the noise model assumption, so the whole product vanishes.
+\end{exambox}
+
+\begin{exambox}[5 — Increasing model complexity reduces bias but increases variance: explain]
+\textbf{1 mark}: A more complex model family contains a larger set of functions it can represent. \\
+\textbf{1 mark}: A larger function set typically contains better approximations to the unknown true function — so the average estimator can be closer to $f$, reducing bias. \\
+\textbf{1 mark}: But a larger function set also means the trained estimator is more sensitive to the particular training sample — small changes in $\mathcal{D}$ pick out different elements of the family, raising variance. \\
+\textbf{1 mark}: Examples: a depth-3 tree (high bias, low variance: coarse but stable), a depth-30 tree (low bias, high variance: detailed but data-sensitive). The total error MSE = Bias$^2$ + Variance + $\sigma^2$ is minimised at an intermediate complexity, not at either extreme.
+\end{exambox}
+
+\begin{exambox}[6 — Distinguish bias, variance, and noise; how do you reduce each?]
+\textbf{1 mark}: \emph{Bias} is the error from the model family being unable to represent the true function. Reduce by using a richer family (more features, deeper trees, larger networks, polynomial inputs). \\
+\textbf{1 mark}: \emph{Variance} is the error from the trained estimator depending sensitively on the training sample. Reduce by constraining capacity (regularisation, depth limits, larger min leaf size — Wks~2/21), by gathering more training data, or by averaging many estimators (ensembling, random forests — Wk~4). \\
+\textbf{1 mark}: \emph{Noise} ($\sigma^2$) is irreducible. No learning algorithm can do better than this floor. The only way to ``reduce'' it is to redesign the data collection pipeline (better features, less noisy measurements). \\
+\textbf{1 mark}: A well-tuned model sits at the bias--variance sweet spot — neither under- nor over-fitted — and its error approaches the noise floor.
+\end{exambox}
+
+\begin{exambox}[7 — How does Random Forest fit into the bias--variance picture? (preview of Wk~4)]
+\textbf{1 mark}: A single fully-grown decision tree is low-bias, high-variance. \\
+\textbf{1 mark}: A random forest trains many such trees on bootstrap samples (and optionally random feature subsets) and averages their predictions. \\
+\textbf{1 mark}: Averaging $M$ independent estimators with variance $V$ reduces the variance of the average to $V/M$ (when independent). The forest is therefore much lower-variance than any individual tree. \\
+\textbf{1 mark}: The average preserves the low bias of each tree (each tree is still expressive enough), so the net effect is low-bias, low-variance — better in both terms than a single tree of any depth.
+\end{exambox}
+
+% =====================================================================
+\section*{Key ideas to carry forward}
+
+\begin{tldrbox}
+\begin{itemize}[leftmargin=*]
+  \item \textbf{Decision trees are general-purpose.} Categorical inputs $\Rightarrow$ one-vs-rest splits. Quantised inputs $\Rightarrow$ thresholds at bin boundaries. Regression outputs $\Rightarrow$ variance reduction + leaf-mean prediction. Same recursive structure throughout.
+  \item \textbf{The bias--variance decomposition} is the universal framing for ``how good is this model?'' Three components: bias$^2$ (model-family wrong), variance (data-sensitivity), noise (irreducible).
+  \item \textbf{The trade-off is the lever}. Increasing capacity decreases bias and increases variance. Sweet spot is intermediate. Past-paper Q1.7 phrasing: \emph{``Increasing the complexity of a model can reduce bias but increase variance''} $=$ True.
+  \item \textbf{Wk~4 attacks variance via ensembling.} Random forests average many high-variance, low-bias trees so that the variance shrinks while the bias stays low.
+  \item \textbf{Wk~21 attacks variance via regularisation.} A penalty term that shrinks weights toward zero adds bias but reduces variance; the regularisation strength $\lambda$ chooses the operating point.
+  \item \textbf{Cross-validation} (touched in Wk~2, owned operationally in Wk~3 spirit) is how you pick the operating point empirically — train on slices, evaluate on held-out slices, choose the hyperparameter setting with lowest validation error.
+\end{itemize}
+\end{tldrbox}
+
+\end{document}

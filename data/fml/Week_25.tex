@@ -1,0 +1,490 @@
+\documentclass[11pt, a4paper]{article}
+\usepackage{fontspec}\setmainfont{Helvetica Neue}\setmonofont{Menlo}
+\usepackage{unicode-math}\setmathfont{STIX Two Math}
+\usepackage[margin=2cm, top=2cm, bottom=2.5cm]{geometry}
+\usepackage{microtype}\usepackage{parskip}
+\setlength{\parskip}{0.6em}\setlength{\parindent}{0pt}
+\usepackage[colorlinks=true, linkcolor=NavyBlue, urlcolor=NavyBlue, citecolor=NavyBlue]{hyperref}
+\usepackage{xcolor}\usepackage[dvipsnames]{xcolor}
+\usepackage{amsmath}\usepackage{booktabs}\usepackage{array}\usepackage{tabularx}
+\usepackage{graphicx}
+\graphicspath{{figures/week25/}}
+\newcommand{\thead}[1]{\textbf{#1}}
+\usepackage{enumitem}
+\setlist[itemize]{leftmargin=1.5em, itemsep=0.2em, topsep=0.3em}
+\setlist[enumerate]{leftmargin=1.5em, itemsep=0.2em, topsep=0.3em}
+\usepackage[most]{tcolorbox}\tcbuselibrary{breakable, skins, theorems}
+\definecolor{defBg}{HTML}{EAF2FB}\definecolor{defBd}{HTML}{1F4E79}
+\definecolor{exBg}{HTML}{F4F4F4}\definecolor{exBd}{HTML}{555555}
+\definecolor{tipBg}{HTML}{E8F5E9}\definecolor{tipBd}{HTML}{2E7D32}
+\definecolor{trapBg}{HTML}{FCE4EC}\definecolor{trapBd}{HTML}{AD1457}
+\definecolor{pitBg}{HTML}{FFF8E1}\definecolor{pitBd}{HTML}{B27600}
+\definecolor{noteBg}{HTML}{F3E5F5}\definecolor{noteBd}{HTML}{6A1B9A}
+\definecolor{tldrBg}{HTML}{E1F5FE}\definecolor{tldrBd}{HTML}{0277BD}
+\newtcolorbox{defbox}[1][]{enhanced, breakable, colback=defBg, colframe=defBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={Definition: #1}}
+\newtcolorbox{exbox}[1][]{enhanced, breakable, colback=exBg, colframe=exBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={Worked example: #1}}
+\newtcolorbox{exambox}[1][]{enhanced, breakable, colback=tipBg, colframe=tipBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={Exam-mode answer #1}}
+\newtcolorbox{trapbox}[1][]{enhanced, breakable, colback=trapBg, colframe=trapBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={MCQ trap #1}}
+\newtcolorbox{pitfallbox}[1][]{enhanced, breakable, colback=pitBg, colframe=pitBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={Pitfall #1}}
+\newtcolorbox{notebox}[1][]{enhanced, breakable, colback=noteBg, colframe=noteBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={Lecturer aside #1}}
+\newtcolorbox{tldrbox}[1][]{enhanced, breakable, colback=tldrBg, colframe=tldrBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={TL;DR #1}}
+\usepackage{titlesec}
+\titleformat{\section}[block]{\Large\bfseries\color{defBd}}{\thesection.}{0.6em}{}
+\titleformat{\subsection}[block]{\large\bfseries\color{defBd!80!black}}{\thesubsection}{0.5em}{}
+\titleformat{\subsubsection}[block]{\normalsize\bfseries}{}{0pt}{}
+\titlespacing*{\section}{0pt}{1.6em}{0.6em}\titlespacing*{\subsection}{0pt}{1.2em}{0.4em}
+\usepackage{fancyhdr}\pagestyle{fancy}\fancyhf{}
+\fancyhead[L]{\small CM52054 — Week 25}\fancyhead[R]{\small Linear SVM}
+\fancyfoot[C]{\small\thepage}\renewcommand{\headrulewidth}{0.3pt}
+\newcommand{\examflag}{\textcolor{tipBd}{\textbf{[EXAM]}}\,}
+\newcommand{\trapflag}{\textcolor{trapBd}{\textbf{[TRAP]}}\,}
+\newcommand{\doflag}{\textcolor{defBd}{\textbf{[DO]}}\,}
+\title{\vspace{-1cm}{\Huge\bfseries Week 25 — Linear Support Vector Machines} \\[0.4em]{\large Maximum-margin hyperplane, the rescaling trick, KKT conditions, support vectors}}
+\author{\large CM52054 Foundational Machine Learning \\[0.2em]\normalsize University of Bath \,$\cdot$\, Dr Rohit Babbar}
+\date{Revision notes}
+\begin{document}\maketitle\thispagestyle{empty}\vspace{1em}
+
+\begin{tldrbox}
+\begin{itemize}[leftmargin=*]
+  \item \textbf{Setup}: binary classification with labels $y_i \in \{-1, +1\}$ (note: \emph{not} $\{0, 1\}$ as in logistic regression — this changes signs throughout).
+  \item \textbf{Separating hyperplane}: any $H(\mathbf{w}, b) = \{\mathbf{x} : \mathbf{w}^\top\mathbf{x} + b = 0\}$ such that $y_i(\mathbf{w}^\top\mathbf{x}_i + b) > 0$ for all training points. Linearly separable data has infinitely many such hyperplanes — \textbf{which one is best?}
+  \item \textbf{SVM's answer}: pick the one that maximises the \textbf{margin} — the perpendicular distance to the closest point of either class.
+  \item \textbf{Canonical rescaling} \doflag{}: scale $\mathbf{w}, b$ so that $y_i(\mathbf{w}^\top\mathbf{x}_i + b) \ge 1$ for all $i$, with equality on the closest points. The hyperplane is unchanged; only the weights are normalised.
+  \item \textbf{Margin formula} \examflag{}: $m = 2/\|\mathbf{w}\|_2$. \emph{Maximising the margin is equivalent to minimising $\|\mathbf{w}\|^2$.}
+  \item \textbf{$\mathbf{w}$ is perpendicular to the hyperplane} \doflag{}: take any $\mathbf{x}_1, \mathbf{x}_2$ on $H$; subtract $\mathbf{w}^\top\mathbf{x}_1 + b = 0$ from $\mathbf{w}^\top\mathbf{x}_2 + b = 0$ to get $\mathbf{w}^\top(\mathbf{x}_1 - \mathbf{x}_2) = 0$. Past paper Q6(a).
+  \item \textbf{The SVM optimisation problem} \doflag{}:
+  \[
+  \min_{\mathbf{w}, b}\;\tfrac{1}{2}\mathbf{w}^\top\mathbf{w} \quad\text{subject to}\quad y_i(\mathbf{w}^\top\mathbf{x}_i + b) \ge 1, \;\; i = 1, \ldots, n.
+  \]
+  Convex (quadratic objective + linear constraints).
+  \item \textbf{Lagrangian} \doflag{}: $L(\mathbf{w}, b, \boldsymbol\mu) = \tfrac{1}{2}\mathbf{w}^\top\mathbf{w} + \sum_i \mu_i(1 - y_i(\mathbf{w}^\top\mathbf{x}_i + b))$ with $\mu_i \ge 0$. Past paper Q6(c).
+  \item \textbf{KKT conditions} \doflag{}: stationarity $\nabla_\theta L = 0$, primal feasibility $g_i \le 0$, dual feasibility $\mu_i \ge 0$, complementary slackness $\mu_i g_i(\theta^*) = 0$. Past paper Q6(d). \textbf{Memorise these.}
+  \item \textbf{Optimal hyperplane is a linear combination of support vectors} \examflag{}: $\mathbf{w}^* = \sum_i \mu_i^* y_i \mathbf{x}_i$. Most $\mu_i^* = 0$ — only the points with $y_i(\mathbf{w}^{*\top}\mathbf{x}_i + b^*) = 1$ (i.e.\ those exactly on $H_+$ or $H_-$) contribute. These are the \textbf{support vectors}.
+  \item \textbf{Hinge loss / soft-margin / 0--1 comparison} $\to$ Wk26.
+\end{itemize}
+\end{tldrbox}
+
+% =====================================================================
+\section{Setup --- the binary classification problem}
+
+\textbf{Data}: $(\mathbf{x}_i, y_i)_{i=1}^n$ with $\mathbf{x}_i \in \mathbb{R}^d$ and $y_i \in \{-1, +1\}$.
+
+\begin{pitfallbox}[: $\{-1, +1\}$ vs $\{0, 1\}$]
+SVMs use $y \in \{-1, +1\}$. Logistic regression (Wk11) used $y \in \{0, 1\}$. The mathematical conventions differ throughout — the SVM constraint $y_i(\mathbf{w}^\top\mathbf{x}_i + b) \ge 1$ has no analogue in logistic regression because there ``$y_i = 0$'' would zero out the constraint. Always check the convention before computing anything.
+\end{pitfallbox}
+
+\textbf{Assumption (for Wk25)}: the data is \textbf{linearly separable} — there exists a hyperplane that puts every $+1$-labelled point on one side and every $-1$-labelled point on the other. Wk26 relaxes this with slack variables.
+
+\textbf{Goal}: among all separating hyperplanes, pick the one that generalises best — operationalised as ``the one furthest from the closest training points,'' i.e.\ the maximum-margin hyperplane.
+
+% =====================================================================
+\section{Separating hyperplanes and canonical rescaling}
+
+\subsection{Defining the hyperplane}
+
+\begin{defbox}[Separating hyperplane]
+$H(\mathbf{w}, b) = \{\mathbf{x}\in\mathbb{R}^d : \mathbf{w}^\top\mathbf{x} + b = 0\}$ separates the training data if
+\[
+y_i(\mathbf{w}^\top\mathbf{x}_i + b) > 0 \quad \forall i.
+\]
+Equivalently: positive-labelled points lie on one side of $H$ and negative-labelled points on the other.
+\end{defbox}
+
+\textbf{Why $y_i(\mathbf{w}^\top\mathbf{x}_i + b)$?} If $\mathbf{w}^\top\mathbf{x}_i + b > 0$ on the $+1$ side, then $y_i \cdot (\text{positive}) = 1\cdot(\text{positive}) > 0$. If $\mathbf{w}^\top\mathbf{x}_i + b < 0$ on the $-1$ side, then $y_i \cdot (\text{negative}) = (-1)\cdot(\text{negative}) > 0$. The product is positive iff the prediction sign matches the true label.
+
+\begin{center}
+
+\footnotesize\textit{Two separating hyperplanes for the same linearly separable dataset (circles = Class 2, squares = Class 1). Panel (a) places the decision boundary very close to the Class 2 points, leaving almost no room on that side; panel (b) tilts the boundary steeply so it cuts through the middle of the gap. Because any separator that correctly classifies every point is technically valid, there are infinitely many such hyperplanes --- the SVM's job is to identify which one is \emph{best}. Intuitively, panel (a) is fragile: a small perturbation of any Class 2 point would cross the boundary. Panel (b) keeps more distance from both classes and is therefore more robust --- this geometric intuition motivates the maximum-margin criterion introduced in \S3.}
+\end{center}
+
+\subsection{Hyperplanes are non-unique}
+
+If $(\mathbf{w}, b)$ separates the data, so does any $(\tilde{\mathbf{w}}, \tilde b) = (\mathbf{w} + \Delta_\mathbf{w}, b + \Delta_b)$ for sufficiently small perturbations. The lecture proves this by setting $|\Delta_b| \le \delta/4$ and choosing $\Delta_\mathbf{w}$ via Cauchy-Schwarz; the details are flagged \emph{non-examinable}.
+
+\textbf{The takeaway}: among the infinitely many separators, the SVM picks the one with the largest margin.
+
+\subsection{Canonical rescaling}
+
+The hyperplane equation $\mathbf{w}^\top\mathbf{x} + b = 0$ is invariant under positive rescaling: replacing $(\mathbf{w}, b)$ with $(c\mathbf{w}, cb)$ for any $c > 0$ gives the same set of points. We use this freedom to normalise.
+
+\begin{defbox}[Canonical form of a separating hyperplane]
+Given any separating hyperplane $H(\mathbf{w}_1, b_1)$, there exists $\delta > 0$ such that
+\[
+y_i(\mathbf{w}_1^\top\mathbf{x}_i + b_1) \ge \delta \quad \forall i.
+\]
+Define $\mathbf{w} = \mathbf{w}_1/\delta$ and $b = b_1/\delta$. Then
+\[
+y_i(\mathbf{w}^\top\mathbf{x}_i + b) \ge 1 \quad \forall i,
+\]
+with equality on the closest points to the hyperplane. The hyperplane $H(\mathbf{w}, b)$ is the same as $H(\mathbf{w}_1, b_1)$, but the weights are now in a canonical form.
+\end{defbox}
+
+\textbf{Why this matters.} The canonical form lets us define the margin without ambiguity — the closest training points sit exactly on the hyperplanes $\mathbf{w}^\top\mathbf{x} + b = +1$ and $\mathbf{w}^\top\mathbf{x} + b = -1$.
+
+\begin{notebox}[: under the constraint, $\mathbf{w}^\top\mathbf{x}_i + b$ can never be $0$]
+A purely algebraic consequence. Since $y_i \in \{-1, +1\}$, $|y_i| = 1$, so taking the modulus of the
+canonical constraint $y_i(\mathbf{w}^\top\mathbf{x}_i + b) \ge 1$ gives
+\[
+|y_i|\cdot|\mathbf{w}^\top\mathbf{x}_i + b| \ge 1 \;\Longrightarrow\; |\mathbf{w}^\top\mathbf{x}_i + b| \ge 1.
+\]
+The raw score has magnitude \emph{at least} 1, so it is algebraically impossible for it to equal $0$
+— no training point can sit on the decision hyperplane $H$. (The geometric reading — every point
+kept strictly outside the margin band — is the \emph{consequence} of this algebra, not a separate
+argument.) This is also why a $\{0,1\}$ label breaks everything: $y_i = 0$ collapses the left side to
+$0$, and $0 \ge 1$ is impossible — see the pitfall in \S1.
+\end{notebox}
+
+% =====================================================================
+\section{Margin of separation}
+
+\subsection{$\mathbf{w}$ is perpendicular to the hyperplane}
+
+\examflag{}\textbf{Past paper Q6(a)} asks for this proof.
+
+\begin{exbox}[\doflag{}Claim: $\mathbf{w}$ is perpendicular to $H(\mathbf{w}, b)$]
+Take any two points $\mathbf{x}_1, \mathbf{x}_2$ on the hyperplane:
+\[
+\mathbf{w}^\top\mathbf{x}_1 + b = 0, \qquad \mathbf{w}^\top\mathbf{x}_2 + b = 0.
+\]
+Subtract:
+\[
+\mathbf{w}^\top(\mathbf{x}_1 - \mathbf{x}_2) = 0.
+\]
+The vector $(\mathbf{x}_1 - \mathbf{x}_2)$ lies \emph{within} the hyperplane (it connects two points of $H$). The dot product with $\mathbf{w}$ is zero, so $\mathbf{w}$ is \textbf{perpendicular} to every direction within the hyperplane — i.e.\ $\mathbf{w}$ is the normal vector.
+\end{exbox}
+
+\textbf{Geometric reading.} The vector $\mathbf{w}$ points perpendicular to $H$, indicating which side is the positive class.
+
+\begin{center}
+
+\footnotesize\textit{The full geometric picture of the SVM margin. The solid central line is the decision hyperplane $\mathbf{w}^\top\mathbf{x} + b = 0$; the two dashed parallel lines are $H_+ : \mathbf{w}^\top\mathbf{x} + b = +1$ (Class 2 side) and $H_- : \mathbf{w}^\top\mathbf{x} + b = -1$ (Class 1 side). The vector $\mathbf{w}$ is drawn explicitly, pointing perpendicular to all three lines --- confirming the claim proved in \S3.1. The double-headed arrow labelled $m$ is the margin: the perpendicular distance between $H_+$ and $H_-$, which equals $2/\|\mathbf{w}\|$ after canonical rescaling. Circles lie above $H_+$ (Class 2) and squares lie below $H_-$ (Class 1); no training point crosses either dashed line. The SVM optimisation minimises $\|\mathbf{w}\|^2$, which is equivalent to maximising this gap.}
+\end{center}
+
+\subsection{The two parallel hyperplanes}
+
+Define
+\[
+H_+(\mathbf{w}, b) = \{\mathbf{x} : \mathbf{w}^\top\mathbf{x} + b = +1\}, \qquad
+H_-(\mathbf{w}, b) = \{\mathbf{x} : \mathbf{w}^\top\mathbf{x} + b = -1\}.
+\]
+These are parallel to $H$ (same $\mathbf{w}$, different intercepts). After canonical rescaling, the closest training points to $H$ lie exactly on $H_+$ or $H_-$.
+
+\subsection{Margin = $2 / \|\mathbf{w}\|_2$}
+
+\examflag{}\textbf{Past paper Q6(b)}.
+
+\begin{exbox}[\doflag{}Distance between $H_+$ and $H_-$]
+Pick any $\mathbf{z}_1 \in H_+$ and $\mathbf{z}_2 \in H_-$. The shortest distance between the parallel hyperplanes is the distance along the perpendicular (i.e.\ along $\mathbf{w}$). Write
+\[
+\mathbf{z}_1 - \mathbf{z}_2 = \lambda \mathbf{w} \quad \text{for some } \lambda > 0,
+\]
+since the perpendicular direction is $\mathbf{w}$. Use $\mathbf{z}_1 \in H_+$:
+\[
+\mathbf{w}^\top\mathbf{z}_1 + b = 1
+\;\Longrightarrow\;
+\mathbf{w}^\top(\mathbf{z}_2 + \lambda\mathbf{w}) + b = 1
+\;\Longrightarrow\;
+\underbrace{\mathbf{w}^\top\mathbf{z}_2 + b}_{=-1\text{ since }\mathbf{z}_2\in H_-} + \lambda\mathbf{w}^\top\mathbf{w} = 1.
+\]
+Solving for $\lambda$:
+\[
+-1 + \lambda\|\mathbf{w}\|^2 = 1 \;\Longrightarrow\; \lambda = \frac{2}{\|\mathbf{w}\|^2}.
+\]
+The margin is the magnitude of $\mathbf{z}_1 - \mathbf{z}_2$:
+\[
+\boxed{\;m = \|\mathbf{z}_1 - \mathbf{z}_2\| = |\lambda|\,\|\mathbf{w}\| = \frac{2}{\|\mathbf{w}\|^2}\cdot\|\mathbf{w}\| = \frac{2}{\|\mathbf{w}\|_2}.\;}
+\]
+\end{exbox}
+
+\textbf{Headline:} maximising the margin $m = 2/\|\mathbf{w}\|$ is equivalent to minimising $\|\mathbf{w}\|$, and equivalently minimising $\tfrac{1}{2}\|\mathbf{w}\|^2 = \tfrac{1}{2}\mathbf{w}^\top\mathbf{w}$ (the half and the square are conventions that make the gradient cleaner).
+
+\textbf{Two named quantities.} The lecture distinguishes the \textbf{functional margin} of a point — the raw signed quantity $y_i(\mathbf{w}^\top\mathbf{x}_i + b)$, which is positive iff the point is correctly classified — from the \textbf{geometric margin}, the \emph{actual perpendicular distance} from a point on $H_+$ (or $H_-$) to the decision hyperplane $H$, namely $1/\|\mathbf{w}\|$ (the half-margin). The full margin between $H_+$ and $H_-$ is twice this, $2/\|\mathbf{w}\|$. The functional margin depends on the scaling of $(\mathbf{w}, b)$; the geometric margin does not.
+
+% =====================================================================
+\section{The SVM optimisation problem}
+
+\subsection{Statement}
+
+\begin{defbox}[Hard-margin SVM problem]
+\[
+\min_{\mathbf{w}, b}\;\frac{1}{2}\mathbf{w}^\top\mathbf{w}
+\quad
+\text{subject to}\quad
+y_i(\mathbf{w}^\top\mathbf{x}_i + b) \ge 1, \quad i = 1, 2, \ldots, n.
+\]
+\end{defbox}
+
+The objective $\tfrac{1}{2}\mathbf{w}^\top\mathbf{w}$ is convex (quadratic in $\mathbf{w}$, positive semi-definite Hessian $\mathbf{I}$). Each constraint is linear in $(\mathbf{w}, b)$. So the problem is a \textbf{convex quadratic program (QP)} — it has a unique optimum and standard solvers handle it efficiently.
+
+\begin{notebox}[: a linear SVM \emph{is} the last layer of a deep network]
+The lecturer's recurring framing: a linear SVM is exactly the final linear layer of a deep network — the classifier sitting just before the softmax in a Transformer (or any deep classification pipeline). A whole deep network is an \textbf{end-to-end non-linear, non-convex} optimisation: stacked layers and non-linearities make the loss surface non-convex, so it needs SGD/Adam plus learning-rate tuning and other machinery. Strip away every hidden layer and keep only that last linear layer in isolation, and you get the SVM — a \textbf{convex quadratic} problem, where any local minimum \emph{is} the global minimum. None of the deep-learning optimisation machinery is needed; a QP solver suffices.
+\end{notebox}
+
+\subsection{Convex problem in canonical form}
+
+\begin{defbox}[Convex optimisation problem (canonical form)]
+\[
+\min_{\theta} f(\theta) \quad \text{subject to} \quad g_i(\theta) \le 0, \;\; i = 1, \ldots, n,
+\]
+where $f$ and each $g_i$ are convex functions of $\theta$.
+\end{defbox}
+
+For the SVM problem: $\theta = (\mathbf{w}, b)$, $f(\mathbf{w}, b) = \tfrac{1}{2}\mathbf{w}^\top\mathbf{w}$, and $g_i(\mathbf{w}, b) = 1 - y_i(\mathbf{w}^\top\mathbf{x}_i + b) \le 0$. (The original constraint $y_i(\cdots) \ge 1$ is rearranged to put it in $\le 0$ form.)
+
+% =====================================================================
+\section{The Lagrangian}
+
+\examflag{}\textbf{Past paper Q6(c).}
+
+\subsection{General Lagrangian}
+
+\begin{defbox}[Lagrangian]
+For a constrained optimisation problem $\min f(\theta)$ s.t.\ $g_i(\theta) \le 0$, the \textbf{Lagrangian} is
+\[
+L(\theta, \boldsymbol\mu) = f(\theta) + \sum_{i=1}^n \mu_i\,g_i(\theta), \qquad \mu_i \ge 0.
+\]
+Each constraint gets its own Lagrange multiplier $\mu_i \ge 0$. The Lagrangian rolls the constraints into the objective.
+\end{defbox}
+
+\begin{notebox}[: why $\mu_i \ge 0$ --- three readings]
+\begin{itemize}
+  \item \textbf{Algebraic (penalty).} The optimiser minimises $L = f + \sum_i\mu_i g_i$. For the term
+  $\mu_i g_i$ to \emph{punish} a violation ($g_i > 0$) by raising $L$, the multiplier must be
+  positive — a negative $\mu_i$ would \emph{reward} breaking the constraint.
+  \item \textbf{Geometric (normal force).} At an active constraint the objective pushes the solution
+  toward the forbidden region and the constraint ``wall'' pushes back. A wall can only push, never
+  pull — so the force $\mu_i$ is non-negative.
+  \item \textbf{Economic (shadow price).} $\mu_i$ is the rate at which the optimal $f$ \emph{worsens}
+  when the constraint is tightened. Tightening an active constraint can only make the optimum worse
+  (or leave it unchanged), so this price is $\ge 0$. An inactive constraint has price $0$ — exactly
+  what complementary slackness ($\mu_i = 0$) enforces.
+\end{itemize}
+\end{notebox}
+
+\subsection{Lagrangian for SVM}
+
+For the SVM problem with $g_i = 1 - y_i(\mathbf{w}^\top\mathbf{x}_i + b)$:
+\[
+\boxed{\;L(\mathbf{w}, b, \boldsymbol\mu) = \frac{1}{2}\mathbf{w}^\top\mathbf{w} + \sum_{i=1}^n \mu_i\big(1 - y_i(\mathbf{w}^\top\mathbf{x}_i + b)\big), \qquad \mu_i \ge 0.\;}
+\]
+
+% =====================================================================
+\section{KKT conditions}
+
+\examflag{}\textbf{Past paper Q6(d).}
+
+\subsection{General KKT conditions}
+
+\begin{defbox}[KKT conditions]
+For a convex problem $\min f(\theta)$ subject to $g_i(\theta) \le 0$, $\theta^*$ is an optimal solution iff there exist Lagrange multipliers $\boldsymbol\mu^*$ such that:
+\begin{itemize}
+  \item \textbf{(Stationarity)} $\nabla_\theta L(\theta, \boldsymbol\mu)\big|_{\theta^*, \boldsymbol\mu^*} = 0$.
+  \item \textbf{(Primal feasibility)} $g_i(\theta^*) \le 0$ for all $i$.
+  \item \textbf{(Dual feasibility)} $\mu_i^* \ge 0$ for all $i$.
+  \item \textbf{(Complementary slackness)} $\mu_i^* \cdot g_i(\theta^*) = 0$ for all $i$.
+\end{itemize}
+\end{defbox}
+
+\textbf{Reading the conditions:}
+\begin{itemize}
+  \item Stationarity: at the optimum, the Lagrangian's gradient w.r.t.\ $\theta$ is zero.
+  \item Primal feasibility: the original constraints are satisfied.
+  \item Dual feasibility: the multipliers are non-negative.
+  \item Complementary slackness: for each $i$, either $\mu_i^* = 0$ (the constraint is inactive — multiplier doesn't contribute) or $g_i(\theta^*) = 0$ (the constraint is active — the inequality holds with equality). Both can hold simultaneously, but they cannot both be strict.
+\end{itemize}
+
+\subsection{KKT for SVM}
+
+Apply the four KKT conditions to the SVM Lagrangian.
+
+\textbf{C1 — Stationarity in $\mathbf{w}$.}
+\[
+\nabla_\mathbf{w} L = \mathbf{w} - \sum_{i=1}^n \mu_i y_i \mathbf{x}_i = 0
+\;\Longrightarrow\;
+\boxed{\;\mathbf{w}^* = \sum_{i=1}^n \mu_i^* y_i \mathbf{x}_i.\;}
+\]
+\textbf{The optimal hyperplane is a linear combination of the input data points}, weighted by signed multipliers.
+
+\textbf{C2 — Stationarity in $b$.}
+\[
+\frac{\partial L}{\partial b} = -\sum_{i=1}^n \mu_i y_i = 0
+\;\Longrightarrow\;
+\boxed{\;\sum_{i=1}^n \mu_i^* y_i = 0.\;}
+\]
+
+\textbf{C3 — Primal feasibility.} $y_i(\mathbf{w}^{*\top}\mathbf{x}_i + b^*) \ge 1$ for all $i$.
+
+\textbf{C4 — Dual feasibility.} $\mu_i^* \ge 0$ for all $i$.
+
+\textbf{C5 — Complementary slackness.} $\mu_i^*(1 - y_i(\mathbf{w}^{*\top}\mathbf{x}_i + b^*)) = 0$ for all $i$.
+
+\textbf{Interpretation of C5.}
+\begin{itemize}
+  \item If $1 - y_i(\mathbf{w}^{*\top}\mathbf{x}_i + b^*) = 0$ (point lies exactly on $H_+$ or $H_-$), then $\mu_i^*$ \emph{can} be positive.
+  \item If $1 - y_i(\mathbf{w}^{*\top}\mathbf{x}_i + b^*) < 0$ (point lies strictly inside its half-plane), then $\mu_i^*$ \emph{must} be zero — the constraint is inactive and the corresponding training point doesn't influence the optimum.
+\end{itemize}
+
+\textbf{C5 \emph{is} what makes SVM sparse.} Read the implication chain end-to-end. Stationarity (C2) gives $\mathbf{w}^* = \sum_i \mu_i^* y_i \mathbf{x}_i$. Complementary slackness (C5) forces $\mu_i^* = 0$ for every point strictly inside its half-plane. So those points contribute \emph{nothing} to the sum: $\mathbf{w}^*$ is a linear combination of \emph{only} the boundary points (those with $y_i(\mathbf{w}^{*\top}\mathbf{x}_i + b^*) = 1$). Sparsity is not a bonus property of SVM — it is the direct algebraic consequence of one KKT line. If asked on the exam ``why is the SVM solution sparse?'', the answer is ``complementary slackness zeros $\mu_i$ for every non-margin point, and stationarity expresses $\mathbf{w}^*$ as $\sum \mu_i^* y_i \mathbf{x}_i$ — so non-margin points drop out of the sum.''
+
+% =====================================================================
+\section{Support vectors and the optimal hyperplane}
+
+\subsection{The support vector set}
+
+\begin{defbox}[Support vectors]
+\[
+\mathcal{S} = \big\{i : y_i(\mathbf{w}^{*\top}\mathbf{x}_i + b^*) = 1\big\}.
+\]
+The set of training indices whose points lie exactly on $H_+$ or $H_-$ at the optimum. By complementary slackness (C5), $\mu_i^* = 0$ for $i \notin \mathcal{S}$.
+\end{defbox}
+
+\trapflag{}\textbf{In practice} the equality $y_i(\mathbf{w}^{*\top}\mathbf{x}_i + b^*) = 1$ is never satisfied exactly on a computer — floating-point arithmetic yields values like $1.032$ rather than $1$. Support vectors are therefore identified to within a small numerical \emph{tolerance} ($|y_i(\mathbf{w}^{*\top}\mathbf{x}_i + b^*) - 1| < \varepsilon$), not by exact equality.
+
+\begin{center}
+
+\footnotesize\textit{Visualising support vectors and the maximum-margin separator. Panel (a) shows one of the infinitely many valid separating hyperplanes --- the two dotted lines (corresponding to $H_+$ and $H_-$) are close to several points on both sides, indicating a small margin. Panel (b) shows the \emph{optimal} separator: the dotted margin lines have been pushed as far apart as possible, and the cluster of points that now touch $H_+$ or $H_-$ are labelled ``Support Vectors.'' These are precisely the set $\mathcal{S}$ from the definition above --- the training points for which $y_i(\mathbf{w}^{*\top}\mathbf{x}_i + b^*) = 1$ --- and by complementary slackness they are the \emph{only} points whose Lagrange multipliers $\mu_i^*$ can be non-zero. All other training points (those strictly inside their half-plane) have $\mu_i^* = 0$ and contribute nothing to $\mathbf{w}^*$.}
+\end{center}
+
+\textbf{Practical consequence.} The optimal hyperplane simplifies:
+\[
+\boxed{\;\mathbf{w}^* = \sum_{i \in \mathcal{S}} \mu_i^* y_i \mathbf{x}_i, \qquad b^* = y_{i_0} - \mathbf{w}^{*\top}\mathbf{x}_{i_0} \;\text{for some }i_0 \in \mathcal{S}.\;}
+\]
+The optimal hyperplane depends \emph{only} on the support vectors. Removing any non-support training point leaves the optimum unchanged.
+
+\subsection{Why this matters}
+
+\textbf{Sparsity.} Most $\mu_i^*$ are zero. Only the support vectors — typically a small fraction of the training set — define the model. This makes the solution \emph{sparse} (analogous to but different from L1/lasso sparsity in Wk21).
+
+\textbf{Robustness.} The optimal hyperplane is determined by the most challenging examples (those right at the boundary). Adding more easily-classified points doesn't change the model.
+
+\textbf{Memory at test time.} Only support vectors need to be stored — non-support training points can be discarded after training.
+
+\textbf{Forward link (Wk26).} The kernel trick exploits exactly this structure: at test time, predictions are a function of $\mathbf{w}^{*\top}\mathbf{x}_{\text{new}}$, which expands to $\sum_{i\in\mathcal{S}}\mu_i^* y_i \mathbf{x}_i^\top\mathbf{x}_{\text{new}}$ — a sum of inner products. Replace inner products by kernels and SVM becomes non-linear without ever computing the feature map explicitly.
+
+% =====================================================================
+\section{Putting it together}
+
+\textbf{Algorithm (conceptual).}
+\begin{enumerate}
+  \item Solve the convex QP $\min_{\mathbf{w},b}\tfrac{1}{2}\|\mathbf{w}\|^2$ s.t.\ $y_i(\mathbf{w}^\top\mathbf{x}_i + b) \ge 1$ — typically via a QP solver or via the dual formulation.
+  \item Identify support vectors $\mathcal{S} = \{i : y_i(\mathbf{w}^{*\top}\mathbf{x}_i + b^*) = 1\}$.
+  \item Predict for a new point: $\hat y = \text{sign}(\mathbf{w}^{*\top}\mathbf{x}_{\text{new}} + b^*)$.
+\end{enumerate}
+
+\textbf{Why convex?} Convexity guarantees a unique optimal hyperplane (no local minima), and KKT conditions are both necessary and sufficient for optimality. It is also what makes the QP \emph{efficiently} solvable — without convexity you would have to brute-force search over candidate classifiers (feasible only in low dimensions with few points), whereas convexity lets a QP solver exploit the structure directly. Compare to logistic regression (Wk11), which is also convex; and to neural networks, which are not.
+
+\textbf{More than two classes.} The SVM above is binary, but it extends to multi-class problems via \textbf{one-vs-rest}: a $K$-class problem (e.g.\ $K = 10$) is converted into $K$ binary classifiers, the $k$-th treating class $k$ as positive and all other classes as negative. At prediction time the $K$ scores $\mathbf{w}_k^{*\top}\mathbf{x} + b_k^*$ are evaluated and aggregated (e.g.\ predict the class with the largest score).
+
+% =====================================================================
+\section{Exam-mode answers (past paper Q6 anchored)}
+
+\begin{exambox}[{\doflag{}(a) For $\mathbf{x}_1, \mathbf{x}_2 \in H(\mathbf{w}, b)$, show $\mathbf{w}$ is perpendicular to $\mathbf{x}_1 - \mathbf{x}_2$.}]
+\textit{$\mathbf{x}_1, \mathbf{x}_2$ on $H$ means $\mathbf{w}^\top\mathbf{x}_1 + b = 0$ and $\mathbf{w}^\top\mathbf{x}_2 + b = 0$. Subtracting: $\mathbf{w}^\top\mathbf{x}_1 - \mathbf{w}^\top\mathbf{x}_2 = 0$, i.e.\ $\mathbf{w}^\top(\mathbf{x}_1 - \mathbf{x}_2) = 0$. The dot product is zero, so $\mathbf{w}$ is perpendicular to $\mathbf{x}_1 - \mathbf{x}_2$. (2 marks)}
+\end{exambox}
+
+\begin{exambox}[{\doflag{}(b) Show the shortest distance between $H_+$ and $H_-$ is $2/\|\mathbf{w}\|_2$.}]
+\textit{Pick $\mathbf{z}_1 \in H_+$, $\mathbf{z}_2 \in H_-$. Since the hyperplanes are parallel and $\mathbf{w}$ is the normal to both, the shortest path is along $\mathbf{w}$: write $\mathbf{z}_1 - \mathbf{z}_2 = \lambda\mathbf{w}$ for some $\lambda > 0$.}\\[0.3em]
+\textit{Use $\mathbf{z}_1 \in H_+$: $\mathbf{w}^\top\mathbf{z}_1 + b = 1$. Substitute $\mathbf{z}_1 = \mathbf{z}_2 + \lambda\mathbf{w}$:}
+\[
+\mathbf{w}^\top(\mathbf{z}_2 + \lambda\mathbf{w}) + b = 1
+\;\Longrightarrow\;
+(\mathbf{w}^\top\mathbf{z}_2 + b) + \lambda\mathbf{w}^\top\mathbf{w} = 1.
+\]
+\textit{Since $\mathbf{z}_2 \in H_-$, $\mathbf{w}^\top\mathbf{z}_2 + b = -1$. So $-1 + \lambda\|\mathbf{w}\|^2 = 1$, giving $\lambda = 2/\|\mathbf{w}\|^2$.}\\[0.3em]
+\textit{The distance is $\|\mathbf{z}_1 - \mathbf{z}_2\| = |\lambda|\|\mathbf{w}\| = (2/\|\mathbf{w}\|^2)\|\mathbf{w}\| = 2/\|\mathbf{w}\|_2$. (4 marks)}
+\end{exambox}
+
+\begin{exambox}[{\doflag{}(c) For the convex problem $\min f(\theta)$ s.t.\ $g_i(\theta) \le 0$ for $i=1,\ldots,n$, write the Lagrangian.}]
+\textit{$L(\theta, \boldsymbol\mu) = f(\theta) + \sum_{i=1}^n \mu_i g_i(\theta)$, where $\boldsymbol\mu = (\mu_1, \ldots, \mu_n)$ and $\mu_i \ge 0$ for all $i$. (2 marks)}
+\end{exambox}
+
+\begin{exambox}[{\doflag{}(d) State the KKT conditions for an optimal solution $\theta^*$ to the convex problem.}]
+\textit{$\theta^*$ is an optimal solution iff there exist Lagrange multipliers $\boldsymbol\mu^* \ge \mathbf{0}$ such that:}
+\begin{itemize}
+  \item \textit{Stationarity: $\nabla_\theta L(\theta, \boldsymbol\mu)\big|_{\theta^*, \boldsymbol\mu^*} = \mathbf{0}$.}
+  \item \textit{Primal feasibility: $g_i(\theta^*) \le 0$ for all $i = 1, \ldots, n$.}
+  \item \textit{Dual feasibility: $\mu_i^* \ge 0$ for all $i$.}
+  \item \textit{Complementary slackness: $\mu_i^* \cdot g_i(\theta^*) = 0$ for all $i$. (4 marks total — one per condition.)}
+\end{itemize}
+\end{exambox}
+
+\begin{exambox}[{Concept: State the SVM optimisation problem and explain why solving it gives the maximum-margin separating hyperplane.}]
+\textit{$\min_{\mathbf{w}, b} \tfrac{1}{2}\mathbf{w}^\top\mathbf{w}$ s.t.\ $y_i(\mathbf{w}^\top\mathbf{x}_i + b) \ge 1$ for $i = 1, \ldots, n$. The constraints enforce separation with at least unit margin (after canonical rescaling); the objective minimises $\|\mathbf{w}\|^2$, equivalently $\|\mathbf{w}\|$, equivalently maximises the margin $m = 2/\|\mathbf{w}\|$. So the solution is the separator with the largest margin to the nearest training point.}
+\end{exambox}
+
+\begin{exambox}[{\examflag{}Concept: What is a support vector? Why does the optimal hyperplane depend only on the support vectors?}]
+\textit{A \textbf{support vector} is a training point $\mathbf{x}_i$ that lies exactly on either $H_+$ or $H_-$ at the optimum, i.e.\ $y_i(\mathbf{w}^{*\top}\mathbf{x}_i + b^*) = 1$. By complementary slackness (KKT C5), only support vectors can have $\mu_i^* > 0$; non-support vectors have $\mu_i^* = 0$. The KKT stationarity condition gives $\mathbf{w}^* = \sum_i \mu_i^* y_i \mathbf{x}_i$, which simplifies to $\mathbf{w}^* = \sum_{i \in \mathcal{S}} \mu_i^* y_i \mathbf{x}_i$ — a sum over support vectors only. Removing any non-support training point leaves the optimum unchanged. The model is sparse in training points, which matters for efficient prediction and for the kernel trick (Wk26).}
+\end{exambox}
+
+\begin{exambox}[{Concept: Why is the SVM optimisation problem a convex problem?}]
+\textit{The objective $\tfrac{1}{2}\mathbf{w}^\top\mathbf{w}$ is convex in $\mathbf{w}$ (quadratic with PSD Hessian $\mathbf{I}$). Each constraint $1 - y_i(\mathbf{w}^\top\mathbf{x}_i + b) \le 0$ is linear in $(\mathbf{w}, b)$, hence convex. A minimisation problem with a convex objective and convex constraints is a convex problem; in the SVM case it is specifically a convex quadratic program. Convexity guarantees a unique optimum and that KKT conditions are both necessary and sufficient for it.}
+\end{exambox}
+
+% =====================================================================
+\section*{Key equations cheat sheet}
+\addcontentsline{toc}{section}{Key equations cheat sheet}
+
+\begin{tabularx}{\linewidth}{@{}lX@{}}
+\toprule
+\thead{Object} & \thead{Formula} \\
+\midrule
+Label convention            & $y_i \in \{-1, +1\}$ \\
+Separating hyperplane       & $H(\mathbf{w}, b) = \{\mathbf{x} : \mathbf{w}^\top\mathbf{x} + b = 0\}$ \\
+Separation condition        & $y_i(\mathbf{w}^\top\mathbf{x}_i + b) > 0\,\;\forall i$ \\
+Canonical form (rescaled)   & $y_i(\mathbf{w}^\top\mathbf{x}_i + b) \ge 1\,\;\forall i$ \\
+Two parallel hyperplanes    & $H_\pm = \{\mathbf{x} : \mathbf{w}^\top\mathbf{x} + b = \pm 1\}$ \\
+Margin                      & $m = 2/\|\mathbf{w}\|_2$ \\
+Maximise margin $\equiv$    & minimise $\tfrac{1}{2}\mathbf{w}^\top\mathbf{w}$ \\
+SVM problem                 & $\min_{\mathbf{w}, b} \tfrac{1}{2}\mathbf{w}^\top\mathbf{w}$ s.t.\ $y_i(\mathbf{w}^\top\mathbf{x}_i + b) \ge 1$ \\
+Convex form                 & $\min f(\theta)$ s.t.\ $g_i(\theta) \le 0$, $i = 1, \ldots, n$ \\
+Lagrangian                  & $L = f(\theta) + \sum_i \mu_i g_i(\theta)$, $\mu_i \ge 0$ \\
+KKT — stationarity          & $\nabla_\theta L = 0$ \\
+KKT — primal feasibility    & $g_i(\theta^*) \le 0$ \\
+KKT — dual feasibility      & $\mu_i^* \ge 0$ \\
+KKT — complementary slackness & $\mu_i^* g_i(\theta^*) = 0$ \\
+Optimal $\mathbf{w}^*$       & $\mathbf{w}^* = \sum_i \mu_i^* y_i \mathbf{x}_i$ (sum over support vectors only) \\
+Bias $b^*$                  & $b^* = y_{i_0} - \mathbf{w}^{*\top}\mathbf{x}_{i_0}$ for some $i_0 \in \mathcal{S}$ \\
+Prediction                  & $\hat y(\mathbf{x}) = \mathrm{sign}(\mathbf{w}^{*\top}\mathbf{x} + b^*)$ \\
+\bottomrule
+\end{tabularx}
+
+% =====================================================================
+\section*{Pitfalls and traps consolidated}
+\addcontentsline{toc}{section}{Pitfalls and traps consolidated}
+
+\begin{itemize}
+  \item \textbf{$y \in \{-1, +1\}$.} Different from logistic regression's $\{0, 1\}$. Keep conventions clear.
+  \item \textbf{Canonical rescaling preserves the hyperplane.} $(\mathbf{w}, b)$ and $(c\mathbf{w}, cb)$ define the same set; we choose the scaling so the closest points sit on $\mathbf{w}^\top\mathbf{x} + b = \pm 1$.
+  \item \textbf{$\mathbf{w}$ is the normal to $H$, not a point in $H$.} Don't draw $\mathbf{w}$ as if it lies on the hyperplane.
+  \item \textbf{Margin is $2/\|\mathbf{w}\|$, not $1/\|\mathbf{w}\|$.} The ``2'' comes from the distance \emph{between} $H_+$ and $H_-$; ``half the margin'' (from $H$ to either side) is $1/\|\mathbf{w}\|$. Past papers ask for the full margin.
+  \item \textbf{Don't forget ``for all $i$'' in KKT conditions.} The conditions hold for every constraint individually, not just in aggregate.
+  \item \textbf{Complementary slackness is per-constraint.} Each $\mu_i^* g_i(\theta^*) = 0$ separately. ``$\mu_i^* = 0$ for some $i$ implies $g_i = 0$ for all $i$'' is wrong.
+  \item \textbf{Support vectors are training points, not directions.} The set $\mathcal{S}$ contains \emph{indices} of training points lying on $H_+$ or $H_-$.
+  \item \textbf{Hard-margin SVM requires linear separability.} Real data is rarely separable; Wk26's soft-margin SVM relaxes the constraint with slack variables $\xi_i$, which leads to the hinge loss.
+  \item \textbf{The factor $\tfrac{1}{2}$ in $\tfrac{1}{2}\mathbf{w}^\top\mathbf{w}$ is convention.} It cancels with the 2 from differentiation. Drop it and the optimum is the same.
+  \item \textbf{Many separating hyperplanes exist.} The lecture's perturbation argument shows you can wiggle $(\mathbf{w}, b)$ within bounds and still separate. The SVM picks the maximum-margin one; the proof of non-uniqueness (Wk25 §2) is non-examinable.
+\end{itemize}
+
+% =====================================================================
+\section*{Self-check questions}
+\addcontentsline{toc}{section}{Self-check questions}
+
+\begin{enumerate}
+  \item What label convention does an SVM use? How does this differ from logistic regression?
+  \item Define a separating hyperplane and the separation condition $y_i(\mathbf{w}^\top\mathbf{x}_i + b) > 0$.
+  \item Show that any separating hyperplane can be rescaled into a canonical form $y_i(\mathbf{w}^\top\mathbf{x}_i + b) \ge 1$.
+  \item Prove that $\mathbf{w}$ is perpendicular to $H(\mathbf{w}, b)$ for any two points $\mathbf{x}_1, \mathbf{x}_2 \in H$. (Past paper Q6(a).)
+  \item Show that the distance between $H_+$ and $H_-$ is $2/\|\mathbf{w}\|_2$. Use $\mathbf{z}_1 - \mathbf{z}_2 = \lambda\mathbf{w}$. (Past paper Q6(b).)
+  \item State the SVM optimisation problem and explain why minimising $\|\mathbf{w}\|^2$ maximises the margin.
+  \item Why is the SVM problem convex? Identify the convex objective and convex constraints.
+  \item Write the Lagrangian for a general convex problem $\min f(\theta)$ s.t.\ $g_i \le 0$. (Past paper Q6(c).)
+  \item State the four KKT conditions and explain what each enforces. (Past paper Q6(d).)
+  \item Apply the KKT conditions to the SVM problem; derive (a) $\mathbf{w}^* = \sum_i \mu_i^* y_i \mathbf{x}_i$, (b) $\sum_i \mu_i^* y_i = 0$.
+  \item Define a support vector. Explain why $\mu_i^* = 0$ for non-support vectors.
+  \item Why does the optimal hyperplane depend only on the support vectors?
+  \item How is $b^*$ recovered from the support vectors after $\mathbf{w}^*$ is found?
+  \item True or false: ``Adding more training points always changes the SVM optimum.'' Justify.
+  \item Forward link: how does the kernel trick (Wk26) exploit the form $\mathbf{w}^* = \sum_i \mu_i^* y_i \mathbf{x}_i$?
+\end{enumerate}
+
+\end{document}

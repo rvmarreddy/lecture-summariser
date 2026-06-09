@@ -1,0 +1,468 @@
+\documentclass[11pt, a4paper]{article}
+\usepackage{fontspec}\setmainfont{Helvetica Neue}\setmonofont{Menlo}
+\usepackage{unicode-math}\setmathfont{STIX Two Math}
+\usepackage[margin=2cm, top=2cm, bottom=2.5cm]{geometry}
+\usepackage{microtype}\usepackage{parskip}
+\setlength{\parskip}{0.6em}\setlength{\parindent}{0pt}
+\usepackage[colorlinks=true, linkcolor=NavyBlue, urlcolor=NavyBlue, citecolor=NavyBlue]{hyperref}
+\usepackage{xcolor}\usepackage[dvipsnames]{xcolor}
+\usepackage{amsmath}\usepackage{booktabs}\usepackage{array}\usepackage{tabularx}
+\usepackage{graphicx}
+\graphicspath{{figures/week19/}}
+\newcommand{\thead}[1]{\textbf{#1}}
+\usepackage{enumitem}
+\setlist[itemize]{leftmargin=1.5em, itemsep=0.2em, topsep=0.3em}
+\setlist[enumerate]{leftmargin=1.5em, itemsep=0.2em, topsep=0.3em}
+\usepackage[most]{tcolorbox}\tcbuselibrary{breakable, skins, theorems}
+\definecolor{defBg}{HTML}{EAF2FB}\definecolor{defBd}{HTML}{1F4E79}
+\definecolor{exBg}{HTML}{F4F4F4}\definecolor{exBd}{HTML}{555555}
+\definecolor{tipBg}{HTML}{E8F5E9}\definecolor{tipBd}{HTML}{2E7D32}
+\definecolor{trapBg}{HTML}{FCE4EC}\definecolor{trapBd}{HTML}{AD1457}
+\definecolor{pitBg}{HTML}{FFF8E1}\definecolor{pitBd}{HTML}{B27600}
+\definecolor{noteBg}{HTML}{F3E5F5}\definecolor{noteBd}{HTML}{6A1B9A}
+\definecolor{tldrBg}{HTML}{E1F5FE}\definecolor{tldrBd}{HTML}{0277BD}
+\newtcolorbox{defbox}[1][]{enhanced, breakable, colback=defBg, colframe=defBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={Definition: #1}}
+\newtcolorbox{exbox}[1][]{enhanced, breakable, colback=exBg, colframe=exBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={Worked example: #1}}
+\newtcolorbox{exambox}[1][]{enhanced, breakable, colback=tipBg, colframe=tipBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={Exam-mode answer #1}}
+\newtcolorbox{trapbox}[1][]{enhanced, breakable, colback=trapBg, colframe=trapBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={MCQ trap #1}}
+\newtcolorbox{pitfallbox}[1][]{enhanced, breakable, colback=pitBg, colframe=pitBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={Pitfall #1}}
+\newtcolorbox{notebox}[1][]{enhanced, breakable, colback=noteBg, colframe=noteBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={Lecturer aside #1}}
+\newtcolorbox{tldrbox}[1][]{enhanced, breakable, colback=tldrBg, colframe=tldrBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={TL;DR #1}}
+\usepackage{titlesec}
+\titleformat{\section}[block]{\Large\bfseries\color{defBd}}{\thesection.}{0.6em}{}
+\titleformat{\subsection}[block]{\large\bfseries\color{defBd!80!black}}{\thesubsection}{0.5em}{}
+\titleformat{\subsubsection}[block]{\normalsize\bfseries}{}{0pt}{}
+\titlespacing*{\section}{0pt}{1.6em}{0.6em}\titlespacing*{\subsection}{0pt}{1.2em}{0.4em}
+\usepackage{fancyhdr}\pagestyle{fancy}\fancyhf{}
+\fancyhead[L]{\small CM52054 — Week 19}\fancyhead[R]{\small Unsupervised Learning}
+\fancyfoot[C]{\small\thepage}\renewcommand{\headrulewidth}{0.3pt}
+\newcommand{\examflag}{\textcolor{tipBd}{\textbf{[EXAM]}}\,}
+\newcommand{\trapflag}{\textcolor{trapBd}{\textbf{[TRAP]}}\,}
+\newcommand{\doflag}{\textcolor{defBd}{\textbf{[DO]}}\,}
+\title{\vspace{-1cm}{\Huge\bfseries Week 19 — Unsupervised Learning} \\[0.4em]{\large Clustering, K-means, hierarchical clustering, evaluating clusters}}
+\author{\large CM52054 Foundational Machine Learning \\[0.2em]\normalsize University of Bath \,$\cdot$\, Dr Wenbin Li}
+\date{Revision notes}
+\begin{document}\maketitle\thispagestyle{empty}\vspace{1em}
+
+\begin{tldrbox}
+\begin{itemize}[leftmargin=*]
+  \item \textbf{Unsupervised learning} learns structure from unlabelled data $D = \{\mathbf{x}_1, \ldots, \mathbf{x}_N\}$ — no $y_i$. The dominant tasks are \textbf{clustering}, dimensionality reduction, density estimation.
+  \item \textbf{Cluster}: a collection of similar samples, less similar to samples in other clusters according to some criterion. ``Similar'' is operationalised by a distance (Euclidean / $L_2$ is the default; $L_1$ also common).
+  \item Four families of clustering algorithms:
+  \begin{itemize}
+    \item \textbf{Centroid-based} — K-means.
+    \item \textbf{Hierarchical} — agglomerative (bottom-up) and divisive (top-down).
+    \item \textbf{Density-based} — DBSCAN. \emph{Optional, not in exam.}
+    \item \textbf{Distribution-based} — GMM/EM. \emph{Optional, not in exam.}
+  \end{itemize}
+  \item \textbf{K-means algorithm}: pick $K$ random centroids; repeat until stable: assign each point to nearest centroid, move each centroid to the mean of its assigned points. Guaranteed to converge in finite iterations; gives a Voronoi partition of input space.
+  \item \textbf{K-means complexity}: $O(KNM)$ per iteration for $N$ points in $M$ dimensions assigned to $K$ clusters.
+  \item \textbf{K-means failure modes} \examflag{}: (i) outliers pull centroids; (ii) clusters of very different size/density; (iii) need to specify $K$ in advance; (iv) result depends on random initialisation; (v) doesn't scale well in $M$. Past paper Q2(3) tests exactly this list.
+  \item \textbf{Hierarchical clustering}: builds a tree of nested clusters. \textbf{Agglomerative} (bottom-up) merges the two closest clusters at each step; \textbf{divisive} (top-down) starts from one cluster and recursively splits. Cut the tree at any level to obtain a flat clustering of arbitrary $K$.
+  \item \textbf{What makes a clustering good?} \textbf{Low intra-cluster distance} (points within a cluster are close to each other) and \textbf{high inter-cluster distance} (different clusters are far apart).
+  \item \examflag{}Q2 of the past paper tests K-means specifically (its disadvantages); Q1 (T/F) and Q2 also touch unsupervised learning conceptually. The lecture's K-means failure list \emph{is} the exam answer here.
+\end{itemize}
+\end{tldrbox}
+
+% =====================================================================
+\section{Supervised vs unsupervised}
+
+The unit so far (Wks 1--11) has been entirely \textbf{supervised}: every data point comes with a label $y_i$.
+\begin{itemize}
+  \item Regression — Wk7--10. Real-valued labels.
+  \item Classification — Wk2 (Decision Trees), Wk4 (Random Forests), Wk11 (Logistic Regression). Discrete labels.
+\end{itemize}
+
+\textbf{Unsupervised learning} drops the labels. The dataset is $D = \{\mathbf{x}_1, \ldots, \mathbf{x}_N\}$ — input only. The task is to find structure in the data without being told what structure to look for.
+
+\begin{defbox}[Unsupervised learning]
+A learning paradigm in which the training data consists of inputs $\mathbf{x}_i$ only, with no corresponding outputs $y_i$. The model attempts to detect underlying structure (e.g.\ groups of similar samples, low-dimensional embeddings, density estimates) directly from the data.
+\end{defbox}
+
+\textbf{Why we care.} Real data is mostly unlabelled. Labels are expensive (require human annotation), often noisy, and often unavailable. Unsupervised learning is what you reach for when (a) you have lots of data but no labels, or (b) you want to discover structure rather than predict a known target.
+
+\textbf{Common unsupervised tasks.} Clustering (today's focus), dimensionality reduction (PCA, autoencoders — beyond this unit), density estimation, anomaly detection, self-organising maps, hidden Markov models. The lecture concentrates on clustering.
+
+% =====================================================================
+\section{Clustering}
+
+\subsection{What is a cluster?}
+
+\begin{defbox}[Cluster]
+A collection of data samples that are ``similar'' to each other and ``less similar'' to samples in other clusters, according to some criterion. The criterion is operationalised by a distance function on the input space.
+\end{defbox}
+
+\begin{center}
+
+\footnotesize\textit{The core idea of clustering made visual. The same unlabelled data points are shown assigned to three clusters, each enclosed by an orange dashed boundary. No labels were given to the algorithm --- the groups emerge purely from proximity in the input space. Notice that the left cluster is sparse and the right cluster is dense, illustrating that clusters can differ in size and shape. This picture is the answer to ``what does unsupervised structure look like?''}
+\end{center}
+
+\textbf{Distance choices.}
+\begin{itemize}
+  \item $L_2$ / Euclidean: $\|\mathbf{x}-\mathbf{c}\| = \sqrt{\sum_j(x_j - c_j)^2}$. The default; pairs naturally with K-means (see the box below).
+  \item $L_1$ / Manhattan: $\sum_j|x_j - c_j|$. Robust to outliers (sums absolute differences instead of squared).
+\end{itemize}
+
+\begin{notebox}[: why $L_2$ ``pairs naturally'' with K-means]
+This is not an arbitrary pairing --- the mean-update step \emph{is} the $L_2$ minimiser. K-means minimises the within-cluster sum of \textbf{squared} $L_2$ distances, $\sum_k\sum_{\mathbf{x}\in C_k}\|\mathbf{x}-\mathbf{c}_k\|^2$. Squared $L_2$ is a sum of squares, so its gradient with respect to a centroid is \emph{linear}: $\nabla_{\mathbf{c}_k}\sum_{\mathbf{x}\in C_k}\|\mathbf{x}-\mathbf{c}_k\|^2 = -2\sum_{\mathbf{x}\in C_k}(\mathbf{x}-\mathbf{c}_k)$. Set it to zero and solve: $\mathbf{c}_k = \frac{1}{|C_k|}\sum_{\mathbf{x}\in C_k}\mathbf{x}$. \textbf{The single point that minimises the summed squared $L_2$ distance to a group of points is exactly their mean} --- which is precisely what the centroid update step computes. So the ``move to the mean'' rule is not a heuristic: it is the closed-form solution of the $L_2$ objective.
+
+If you used $L_1$ (Manhattan) distance instead, the minimiser of the summed distance would be the \textbf{median}, not the mean. The resulting algorithm --- assign to nearest centroid, then move each centroid to the coordinate-wise median --- is a different method called \textbf{K-medians}. So K-means' specific mean-update mechanism is what makes it the Euclidean algorithm.
+\end{notebox}
+
+\textbf{Applications.} Image segmentation (see below), market segmentation (cluster customers by purchase behaviour), data compression (replace each point by its cluster centre — analogous to vector quantisation), data anonymisation / privacy (replace records by cluster summaries to break individual identifiability), missing-data imputation (use cluster mean for missing fields).
+
+\textbf{Image segmentation — the feature model.} The slide's worked application treats \emph{each pixel as one data point} $\mathbf{x}_i$, so $D = \{\mathbf{x}_1, \ldots, \mathbf{x}_N\}$ with $N$ the number of pixels. Each pixel's feature vector combines two attribute groups: (a) its \textbf{RGB colour values} (red, green, blue) and (b) its \textbf{location} (row index and column index in the image). Clustering then groups pixels that are similar in colour and position. After clustering, each cluster's \textbf{mean colour} is computed and painted back onto all its pixels; the recoloured image reveals edges and separates foreground from background (the assumption being that foreground and background pixels differ in colour).
+
+\subsection{Four families of clustering algorithms}
+
+\begin{tabularx}{\linewidth}{@{}lXX@{}}
+\toprule
+\thead{Family} & \thead{How it groups} & \thead{Representative} \\
+\midrule
+Centroid-based   & each cluster has a centre; assign each point to nearest centre & K-means \\
+Hierarchical     & build a tree of nested clusters; cut tree to choose granularity & agglomerative / divisive \\
+Density-based    & clusters $=$ regions of high point density separated by low-density valleys & DBSCAN \emph{(optional)} \\
+Distribution-based & clusters $=$ probability distributions; learn mixture weights and parameters & GMM / EM \emph{(optional)} \\
+\bottomrule
+\end{tabularx}
+
+\begin{notebox}[: optional content]
+DBSCAN and GMM/EM appear in the lecture but are flagged ``Optional'' (slide deck section ``Other methods''). Following the unit's convention (slide 2 of Wk10), optional content is excluded from the exam. Recognise the names; do not learn the algorithms in detail.
+\end{notebox}
+
+% =====================================================================
+\section{K-means}
+
+\subsection{The intuition}
+
+You have $N$ unlabelled points and want to partition them into $K$ groups. K-means' answer: pick $K$ ``centroids'' (group centres), assign each point to its nearest centroid, update each centroid to the mean of its assigned points, and repeat. The two steps alternate until nothing changes.
+
+\subsection{Pseudocode}
+
+\begin{exbox}[K-means clustering]
+\textbf{Inputs.} Data $D = \{\mathbf{x}_1, \ldots, \mathbf{x}_N\} \subset \mathbb{R}^M$; number of clusters $K$.\\[0.3em]
+\textbf{1. Initialisation.} Pick $K$ random points from $D$ as initial centroids $\{\mathbf{c}_1, \ldots, \mathbf{c}_K\}$. Initialise $K$ empty clusters $\{C_1, \ldots, C_K\}$.\\[0.2em]
+\textbf{2. Assign each point to nearest centroid.} For $i = 1, \ldots, N$:
+\[
+\mathrm{ind}_i = \arg\min_{k\in\{1,\ldots,K\}}\|\mathbf{x}_i - \mathbf{c}_k\|^2,
+\]
+\quad then add $\mathbf{x}_i$ to $C_{\mathrm{ind}_i}$.\\[0.2em]
+\textbf{3. Update each centroid to the mean of its cluster.} For $k = 1, \ldots, K$:
+\[
+\mathbf{c}_k = \frac{1}{|C_k|} \sum_{\mathbf{x}\in C_k} \mathbf{x}.
+\]
+\textbf{4. Convergence check.} If centroids unchanged from previous iteration, stop. Otherwise, return to Step 2.\\[0.2em]
+\textbf{Outputs.} Final centroids $\{\mathbf{c}_1, \ldots, \mathbf{c}_K\}$ and clusters $\{C_1, \ldots, C_K\}$.
+\end{exbox}
+
+\textbf{The pseudocode in plain English.} Read step-by-step, stripped of notation:
+\begin{enumerate}
+  \item \textbf{Initialisation.} Randomly pick $K$ \emph{actual data points} to serve as the starting centroids --- think of them as ``team captains'' chosen at random from the crowd.
+  \item \textbf{Assignment.} For every data point, measure its squared distance to all $K$ centroids and put it on the team of the \emph{nearest} one. The $\arg\min$ in the formula just means ``return the \emph{index} $k$ of the closest centroid'' --- not the distance itself, the label of the winner.
+  \item \textbf{Update.} Recompute each centroid as the \emph{average coordinate} of all the points currently on its team --- the captain walks to the middle of its members.
+  \item \textbf{Convergence.} If no centroid moved this round, stop. Otherwise, wipe the team assignments clean and go back to step 2.
+\end{enumerate}
+
+\textbf{Practical termination conditions.} ``Centroids unchanged'' is the idealised stopping rule; in practice the lecturer gives two standard conditions used instead: (i) a \textbf{maximum iteration count} — cap the loop at, e.g., 100 iterations and stop regardless; (ii) a \textbf{small movement threshold} — stop once the change in centroids (equivalently, every point's distance to its centre) falls below a small preset number. Either fires before exact convergence, which matters because the unchanged-centroids test may take many iterations to satisfy exactly.
+
+\textbf{Why it converges.} K-means minimises the within-cluster sum of squares
+\[
+J(\mathbf{c}_1, \ldots, \mathbf{c}_K, \{C_k\}) \;=\; \sum_{k=1}^K \sum_{\mathbf{x}\in C_k} \|\mathbf{x} - \mathbf{c}_k\|^2.
+\]
+Think of $J$ as a \textbf{score that can only go down}. A lower $J$ means tighter clusters (every point sits closer to its centroid). The proof of convergence is that \emph{both} steps of the loop are downhill:
+\begin{itemize}
+  \item \textbf{Assignment step.} Each point moves to its closer centroid. Moving a point to a nearer centroid can only shrink that point's contribution to $J$ --- so this step lowers $J$ or leaves it unchanged.
+  \item \textbf{Update step.} Each centroid moves to the mean of its cluster, which (from the box above) is the single point that minimises the summed squared distance \emph{for that group}. So this step also lowers $J$ or leaves it unchanged.
+\end{itemize}
+Every iteration is therefore a step downhill. It cannot fall forever, for two reasons: (i) $J$ is \textbf{bounded below by $0$} (a sum of squared distances is never negative), and (ii) there are only \textbf{finitely many} ways ($K^N$) to assign $N$ points to $K$ clusters. A monotonically decreasing sequence that is bounded below and drawn from a finite set must stop. Therefore K-means terminates in finitely many iterations.
+
+\begin{notebox}[: the ``bumpy valley'' picture]
+$J$ never increasing is exactly walking downhill in a bumpy valley: every footstep takes you to ground at least as low as where you stood. You cannot descend below the valley floor, so eventually you reach the bottom of a bowl and stop. The catch (next paragraph) is that a bumpy valley has \emph{many} bowls --- which one you land in depends on where you started.
+\end{notebox}
+
+\textbf{Catch:} K-means converges to a \emph{local} minimum of $J$, not the global one. Different random initialisations give different results — the initial centroid positions are very important and routinely lead to different final clusterings.
+
+\textbf{Best-of-N.} The named standard fix for bad initialisation is \textbf{best of $N$}: run K-means $N$ times (e.g.\ $N = 10$, $20$, $100$) with a different random initialisation each time; for each run, compute the summed point-to-centroid distance $\sum_i \|\mathbf{x}_i - \mathbf{c}(\mathbf{x}_i)\|$; then \textbf{select the run with the minimum} summed distance as the output. It is cheap because K-means itself is fast — running it $N$ times is still far cheaper than heavier alternatives, and is widely used in industry for exactly this reason.
+
+\begin{center}
+
+\footnotesize\textit{The converged state of K-means on a two-cluster toy ($K=2$). \textbf{Red} points and their \textbf{crossed-circle centroid} form one cluster; \textbf{blue} points and their centroid form the other. The algorithm has stopped because moving either centroid to the mean of its current assigned points would produce no change --- the termination condition. Notice how the two clusters map cleanly onto the two natural groupings of the raw data: assign-then-update has found the right partition without any labels.}
+\end{center}
+
+\subsection{K-means and the Voronoi partition}
+
+After convergence, the input space is partitioned into $K$ \textbf{Voronoi cells} — point $\mathbf{x}$ belongs to cell $k$ iff $\mathbf{c}_k$ is the nearest centroid. The Voronoi boundaries are linear hyperplanes (perpendicular bisectors of pairs of centroids).
+
+\begin{center}
+
+\footnotesize\textit{A real Voronoi partition produced by centroid-based clustering on a 2D dataset with $K=4$. Each coloured region is one Voronoi cell; the \textbf{filled marker} at its centre is the centroid. Data points (open markers in the same colour) are scattered throughout their cell. The black lines are the Voronoi boundaries --- each is the perpendicular bisector of a pair of centroids. Every future point presented to this model is assigned to the nearest centroid in $O(K)$ distance evaluations, making prediction fast at test time. Image credit: developers.google.com.}
+\end{center}
+
+\subsection{Complexity}
+
+For each iteration:
+\begin{itemize}
+  \item Assignment: for each of $N$ points, compute distance to each of $K$ centroids in $M$ dimensions, find the smallest. Total: $O(KNM)$.
+  \item Update: average the points in each cluster. Total: $O(NM)$ (sum then divide).
+\end{itemize}
+The dominant cost is $O(KNM)$ per iteration. The number of iterations is typically small (10s to 100s) in practice.
+
+\subsection{Advantages}
+
+\begin{itemize}
+  \item \textbf{Guaranteed to converge} in a finite number of iterations.
+  \item \textbf{Simple to implement.} Two alternating steps; very few hyperparameters ($K$ and the random seed).
+  \item \textbf{Scales well in $N$.} Each iteration is linear in the number of samples.
+  \item \textbf{Adaptive to new data.} A new point can be assigned to its nearest centroid without re-running the whole algorithm.
+\end{itemize}
+
+\subsection{Disadvantages — examinable}
+
+\examflag{}Past paper Q2(3) is the K-means disadvantages MCQ. The full list:
+
+\begin{itemize}
+  \item \textbf{Need $K$ in advance.} K-means doesn't choose the number of clusters for you; you must specify it. Choosing $K$ wrong gives bad clusters.
+  \item \textbf{Non-deterministic.} Result depends on random initialisation. Different seeds give different clusterings.
+  \item \textbf{Sensitive to outliers.} Squared $L_2$ distance amplifies outliers. A single outlier far from any cluster can drag a centroid out of its proper region. (Lecture's ``confused by the outliers'' example.)
+  \item \textbf{Struggles on varying density / size clusters.} K-means assumes roughly spherical, equal-density clusters. Two real clusters of very different size or shape get mis-grouped.
+  \item \textbf{Doesn't scale well in $M$ (dimensions).} Distance computations cost $O(M)$ per pair; in high dimensions, distances become uninformative (the ``curse of dimensionality'' — all points become roughly equidistant).
+\end{itemize}
+
+\examflag{}Past paper Q2(3) marks all four of (a) hard to handle outliers, (b) poor on varying density/size, (c) need $K$ in advance, (d) not scalable for varying-size datasets — \emph{all four} are correct. The marker accepts any subset that does not include incorrect distractors.
+
+\subsection{Distance metric matters}
+
+K-means by default uses $L_2$ (Euclidean). $L_1$ (Manhattan) variants exist (sometimes called \emph{K-medians}) and are less sensitive to outliers because they don't square the residuals. The right choice depends on the data: $L_2$ for continuous, normally-distributed features; $L_1$ when robust to outliers matters.
+
+\begin{pitfallbox}[: $\arg\min_k \|\mathbf{x} - \mathbf{c}_k\|$ vs $\arg\min_k \|\mathbf{x} - \mathbf{c}_k\|^2$]
+The squared and unsquared distances give the same $\arg\min$ (squaring is monotone on non-negatives), so the K-means assignment step can use either. The squared form is cheaper (no square root) and is what most implementations actually use.
+\end{pitfallbox}
+
+\begin{center}
+
+\footnotesize\textit{How the K-means evaluation objective is constructed. \textbf{Left column}: each data point $\mathbf{x}_i$ has been assigned to a centroid (e.g.\ $\mathbf{x}_1, \mathbf{x}_2, \mathbf{x}_3 \to \mathbf{c}_1$). \textbf{Middle column}: each assignment is turned into a distance $\|\mathbf{x}_i - \mathbf{c}_k\|$. \textbf{Right}: all distances are summed to give either the $L_1$ objective $\sum_i \|\mathbf{x}_i - \mathbf{c}(\mathbf{x}_i)\|$ or the squared $L_2$ objective $\sum_i \|\mathbf{x}_i - \mathbf{c}(\mathbf{x}_i)\|^2$. The two cluster diagrams at the bottom illustrate that splitting one cluster (right) reduces the total distances compared to a single large cluster (left) --- the \emph{minimum achievable} value of this objective keeps falling as $K$ grows (reaching zero when every point is its own cluster), so it always prefers more clusters and cannot by itself indicate the right $K$. That is what motivates the elbow method (\S6).}
+\end{center}
+
+% =====================================================================
+\section{Hierarchical clustering}
+
+\subsection{The two strategies}
+
+Hierarchical methods build a \textbf{tree} of clusters (called a \textbf{dendrogram}). Cutting the tree at a particular level yields a flat clustering with $K$ clusters of any chosen $K$ — including $K$ chosen \emph{after} you see the data, unlike K-means.
+
+\begin{defbox}[Agglomerative (bottom-up) clustering]
+Start with each data point as its own singleton cluster. At each step, merge the two clusters with the smallest distance between them. Continue until everything is one cluster (or a stopping criterion fires).
+\end{defbox}
+
+\begin{defbox}[Divisive (top-down) clustering]
+Start with all points in one cluster. At each step, split the cluster with the highest internal dissimilarity into two. Continue until each point is its own singleton (or a stopping criterion fires). The slides name the split criterion explicitly: split according to \textbf{average dissimilarity} — a distance-based measurement — so the most heterogeneous cluster (largest average pairwise distance among its members) is the one chosen to be divided.
+\end{defbox}
+
+\begin{center}
+
+\footnotesize\textit{The structure of hierarchical clustering shown simultaneously as raw data (left) and as a \textbf{dendrogram} (right). In the raw data, six points \{a, b, c, d, e, f\} are scattered with \{b, c\} close, \{d, e\} close, and \{a\} isolated. The dendrogram reads the same information as a tree: each leaf is one data point; each internal node is a cluster merge event. The green downward arrow (\textbf{Agglomerative}) shows the bottom-up direction --- singletons join at the bottom and the tree is built upward to the root. The green upward arrow (\textbf{Divisive}) shows the opposite top-down direction. Cutting the tree horizontally at any level yields a flat clustering with a chosen $K$ --- no need to specify $K$ before running.}
+\end{center}
+
+\begin{tabularx}{\linewidth}{@{}lXX@{}}
+\toprule
+& \thead{Agglomerative (bottom-up)} & \thead{Divisive (top-down)} \\
+\midrule
+Start state    & $N$ singleton clusters & one cluster of size $N$ \\
+Each step      & merge two closest      & split one cluster \\
+End state      & one cluster            & $N$ singletons \\
+Computational cost & cheaper in practice; works greedily on local distances & expensive — must consider all possible splits at each level \\
+View of structure & local, builds up    & global, sees overall structure first \\
+\bottomrule
+\end{tabularx}
+
+\textbf{Practical default}: agglomerative is standard; divisive is conceptually appealing but harder to compute well at scale.
+
+\subsection{Centroid linkage clustering (a concrete agglomerative method)}
+
+The lecture slides also call this \textbf{nearest-neighbour clustering}. \emph{Mind that name:} in standard ML usage ``nearest-neighbour clustering'' is a synonym for \textbf{single-linkage} clustering --- merge the two clusters whose closest pair of members is nearest --- which is a \emph{different} linkage rule from centroid linkage (see the variants below). Reproduce the lecturer's term if an exam question uses it, but do not treat the two methods as equivalent.
+
+\begin{exbox}[Centroid linkage clustering]
+\textbf{1.} Treat each point as a singleton cluster — its own centroid.\\[0.2em]
+\textbf{2.} Find the two clusters with the smallest distance between their centroids; merge them. Update the merged cluster's centroid to the mean of its members.\\[0.2em]
+\textbf{3.} Repeat step 2 until one cluster remains, or stop early when a desired number of clusters is reached.\\[0.2em]
+\textbf{Output.} A nested sequence of clusterings (the dendrogram).
+\end{exbox}
+
+\textbf{Linkage variants.} ``Linkage'' refers to how cluster-to-cluster distance is computed:
+\begin{itemize}
+  \item \textbf{Single linkage}: distance $=$ minimum pairwise distance between members. Produces ``chains.''
+  \item \textbf{Complete linkage}: distance $=$ maximum pairwise distance. Produces compact clusters.
+  \item \textbf{Average linkage}: distance $=$ mean pairwise distance.
+  \item \textbf{Centroid linkage}: distance $=$ between centroids. The lecture's choice.
+\end{itemize}
+
+\subsection{The chaining problem}
+
+\begin{pitfallbox}[: chaining in single-linkage / nearest-neighbour clustering]
+Single-linkage — what the lecturer calls \textbf{nearest-neighbour clustering} — merges only on the \emph{closest pair} of members, so a cluster can grow link-by-link with no global control over its shape: each new point is absorbed because it is near \emph{one} existing member, not because it fits the cluster as a whole. The cluster \textbf{chains} outward and, in extreme cases, can curl round to form a ring, after which the partition no longer reflects the true clusters. Because the growth is purely local, there is also no natural place to stop it.
+\end{pitfallbox}
+
+\textbf{Mitigations for chaining.} The lecture gives three:
+\begin{itemize}
+  \item \textbf{Prior knowledge / semi-supervised guide points.} Supply a few known points from each intended cluster; these guide the growth of the nearest-neighbour merges so the chain follows the true structure.
+  \item \textbf{Best-of-$N$ random starts.} Run the clustering $N$ times with different random starting points and keep the best — the same best-of-$N$ idea used for K-means initialisation.
+  \item \textbf{Manually-set start points.} When the data is dense with no clear gaps, place the starting points by hand so they cover the data well — e.g.\ polygon-corner / convex-hull seeding: fit a polygon around all the data and take, from each corner, the nearest data point as a start. This spreads the seeds across the whole region rather than clustering them in one spot.
+\end{itemize}
+
+% =====================================================================
+\section{Evaluating a clustering}
+
+Without ground-truth labels, ``how good is this clustering?'' is itself a research question. The lecture gives the standard intuition.
+
+\begin{defbox}[Good clustering — informal]
+A good clustering has \textbf{low intra-cluster distance} (points in the same cluster are close) and \textbf{high inter-cluster distance} (different clusters are far apart). Both at once.
+\end{defbox}
+
+\begin{center}
+
+\footnotesize\textit{The two-criterion quality test made visual. \textbf{Green arrows} point from each data point (yellow) to its cluster centroid (blue) --- these are the \textbf{intra-cluster distances}, which should be short (tight clusters). The \textbf{red dashed line} crosses from one cluster to another --- this is the \textbf{inter-cluster distance}, which should be long (well-separated clusters). A good clustering minimises the green arrows while maximising the red one. The left diagram highlights just one cluster; the right shows all three simultaneously, letting you compare their tightness and separation at a glance.}
+\end{center}
+
+Many concrete metrics formalise these intuitions:
+\begin{itemize}
+  \item \textbf{Within-cluster sum of squares} (WCSS / inertia) $= \sum_k \sum_{\mathbf{x}\in C_k} \|\mathbf{x} - \mathbf{c}_k\|^2$. K-means' own objective. Lower is better.
+  \item \textbf{Silhouette score}: combines intra- and inter-cluster distances per point. Range $[-1, +1]$; higher is better. (Formula below.)
+  \item \textbf{Davies-Bouldin index}: ratio of intra-cluster dispersion to inter-cluster separation; lower is better. (Formula below.)
+\end{itemize}
+
+\begin{defbox}[Silhouette score]
+Computed \textbf{per point}. For a data point, let
+\begin{itemize}
+  \item $a = $ its average distance to the \emph{other points in its own cluster} (intra-cluster --- how well it fits where it is);
+  \item $b = $ its average distance to the points of the \emph{nearest neighbouring cluster} (inter-cluster --- how well it would fit in the best alternative).
+\end{itemize}
+Then the point's silhouette is
+\[
+s = \frac{b - a}{\max(a, b)}.
+\]
+\textbf{Range $[-1, +1]$; higher is better.} You want $b \gg a$ (much closer to its own cluster than to any other), which pushes $s$ towards $+1$. $s \approx 0$ means the point sits on a boundary; $s < 0$ means it is \emph{closer} to a neighbouring cluster than its own --- a sign of mis-assignment. The overall silhouette score is the mean of $s$ over all points.
+\end{defbox}
+
+\begin{defbox}[Davies-Bouldin index]
+A whole-clustering score built from the worst-case overlap of each cluster with its neighbours:
+\[
+\mathrm{DB} = \frac{1}{K}\sum_{i=1}^{K}\;\max_{j\neq i}\;\frac{S_i + S_j}{M_{ij}},
+\]
+where $S_i$ is the intra-cluster dispersion of cluster $i$ (its average spread, e.g.\ mean distance of members to centroid $\mathbf{c}_i$), $M_{ij}$ is the distance between the centroids of clusters $i$ and $j$, and $K$ is the number of clusters. \textbf{Lower is better}: you want low dispersion $S$ (tight clusters) in the numerator and large centroid separation $M$ (well-separated clusters) in the denominator, so each ratio is small. \emph{Mnemonic}: for every cluster, find its \emph{worst} (most overlapping) neighbour --- the largest $(\text{intra}+\text{intra})/\text{inter}$ ratio --- then average those worst cases over all clusters.
+\end{defbox}
+
+For exam purposes, the verbal intuition (low intra, high inter) is the safe answer; specific metric names and their formulas can earn additional marks.
+
+\textbf{Choosing $K$ for K-means --- the elbow method.} Run K-means for $K = 1, 2, 3, \ldots$ and plot the within-cluster sum of squares (WCSS) against $K$. The shape of this curve tells you a good $K$:
+\begin{itemize}
+  \item At small $K$, the curve \textbf{drops steeply}: each new cluster you allow captures a genuine natural grouping in the data, so WCSS falls sharply.
+  \item At some point the curve \textbf{bends into a gentle slope}. That bend is the \textbf{``elbow''}, and the $K$ at the bend is the recommended choice.
+  \item Beyond the elbow, extra clusters only \emph{slice up already-tight clusters} rather than separating real structure, so each additional $K$ buys only a small WCSS reduction --- diminishing returns.
+\end{itemize}
+
+\begin{pitfallbox}[: WCSS alone cannot pick $K$]
+WCSS \emph{always} keeps falling as $K$ rises --- it reaches exactly $0$ when every point is its own cluster (zero distance to its own centroid). So ``minimise WCSS'' would absurdly recommend $K = N$. WCSS by itself gives no answer; the \textbf{elbow} is the heuristic that reads a sensible $K$ off the \emph{shape} of the curve, not its minimum value.
+\end{pitfallbox}
+
+% =====================================================================
+\section{What's optional (and skipped)}
+
+The slides flag the following as ``Other methods, optional, not examinable'':
+
+\begin{itemize}
+  \item \textbf{DBSCAN} (Density-Based Spatial Clustering of Applications with Noise). Defines clusters as density-connected regions. Handles arbitrary shapes and outliers naturally. Recognise the name.
+  \item \textbf{GMM / EM} (Gaussian Mixture Models with Expectation-Maximisation). Models data as a weighted mixture of Gaussian distributions. Recognise the name; the EM algorithm is taught in the next-year Bayesian ML course (CM50268).
+  \item \textbf{Semi-supervised learning.} Uses a small amount of labelled data to bootstrap clustering on a much larger unlabelled set. Conceptually important; not in this exam.
+\end{itemize}
+
+% =====================================================================
+\section{Exam-mode answers}
+
+\begin{exambox}[{(MCQ): What are the disadvantages of the K-means algorithm? (mark all that apply)}]
+\textit{All four standard distractors are \textbf{correct disadvantages}: (a) it is hard to handle outliers — the squared $L_2$ objective amplifies them; (b) it can perform poorly on datasets with varying density or size — K-means assumes spherical, equal-density clusters; (c) the number of clusters $K$ needs to be chosen in advance — no automatic mechanism; (d) it is not scalable for datasets with different sizes — sensitive to dimensional scaling and curse of dimensionality. Tick all four. (2 marks) (Past paper Q2(3))}
+\end{exambox}
+
+\begin{exambox}[{Concept: Distinguish supervised and unsupervised learning, with one canonical task each.}]
+\textit{Supervised learning uses labelled data $\{(\mathbf{x}_i, y_i)\}$ to predict $y_{\text{new}}$ for unseen $\mathbf{x}_{\text{new}}$. Canonical tasks: regression (real-valued $y$) and classification (discrete $y$). Unsupervised learning uses unlabelled data $\{\mathbf{x}_i\}$ only and discovers structure: clustering (group similar samples), dimensionality reduction (compact representation), density estimation. Examples: linear regression (Wk8) is supervised; K-means is unsupervised.}
+\end{exambox}
+
+\begin{exambox}[{\doflag{}Concept: Write the K-means algorithm.}]
+\textit{\textbf{1. Initialisation.} Pick $K$ random points as initial centroids.}\\
+\textit{\textbf{2. Assignment step.} For each $\mathbf{x}_i$, assign to cluster $C_{\mathrm{ind}_i}$ where $\mathrm{ind}_i = \arg\min_k \|\mathbf{x}_i - \mathbf{c}_k\|^2$.}\\
+\textit{\textbf{3. Update step.} For each cluster $C_k$, recompute $\mathbf{c}_k = (1/|C_k|)\sum_{\mathbf{x}\in C_k}\mathbf{x}$.}\\
+\textit{\textbf{4.} Repeat 2--3 until centroids stop changing.}\\[0.2em]
+\textit{Each iteration costs $O(KNM)$. Termination is guaranteed in finite iterations because $J = \sum_k\sum_{\mathbf{x}\in C_k}\|\mathbf{x}-\mathbf{c}_k\|^2$ is bounded below and never increases.}
+\end{exambox}
+
+\begin{exambox}[{Concept: What makes a clustering good?}]
+\textit{Two properties simultaneously: (i) \textbf{low intra-cluster distance} — points within a cluster are close to each other, indicating the cluster is tight; (ii) \textbf{high inter-cluster distance} — distinct clusters are well-separated. Concrete metrics that formalise this: within-cluster sum of squares (lower better), silhouette score (higher better), Davies-Bouldin index (lower better).}
+\end{exambox}
+
+\begin{exambox}[{Concept: Compare agglomerative and divisive hierarchical clustering.}]
+\textit{Both build a tree (dendrogram) of nested clusters and let you choose $K$ after the fact by cutting the tree. \textbf{Agglomerative (bottom-up)} starts from $N$ singleton clusters and merges the two closest at each step; cheaper computationally because it works greedily on local distances. \textbf{Divisive (top-down)} starts from one big cluster and recursively splits the most heterogeneous cluster; expensive, but each split decision uses a global view of the data. Default in practice: agglomerative.}
+\end{exambox}
+
+\begin{exambox}[{Concept: Why does K-means struggle with outliers, and how would you mitigate?}]
+\textit{K-means' update step replaces each centroid with the \emph{mean} of its cluster, which is sensitive to extreme values: a single far-away outlier pulls the centroid towards it, distorting the cluster's representation. Mitigations: (i) use $L_1$ distance (K-medians) — the median is robust to outliers; (ii) detect and remove outliers as a preprocessing step; (iii) use density-based clustering (DBSCAN) which treats low-density points as noise rather than including them.}
+\end{exambox}
+
+% =====================================================================
+\section*{Key equations cheat sheet}
+\addcontentsline{toc}{section}{Key equations cheat sheet}
+
+\begin{tabularx}{\linewidth}{@{}lX@{}}
+\toprule
+\thead{Object} & \thead{Formula / fact} \\
+\midrule
+Unsupervised dataset       & $D = \{\mathbf{x}_1, \ldots, \mathbf{x}_N\}$ — input only, no labels \\
+$L_2$ distance            & $\|\mathbf{x}-\mathbf{c}\| = \sqrt{\sum_j (x_j - c_j)^2}$ \\
+$L_1$ distance            & $\sum_j |x_j - c_j|$ \\
+K-means assignment        & $\mathrm{ind}_i = \arg\min_k \|\mathbf{x}_i - \mathbf{c}_k\|^2$ \\
+K-means centroid update   & $\mathbf{c}_k = (1/|C_k|)\sum_{\mathbf{x}\in C_k}\mathbf{x}$ \\
+K-means objective         & $J = \sum_k \sum_{\mathbf{x}\in C_k}\|\mathbf{x}-\mathbf{c}_k\|^2$ \\
+K-means complexity (per iteration) & $O(KNM)$ \\
+Good clustering           & low intra-cluster distance, high inter-cluster distance \\
+Agglomerative direction   & bottom-up (singletons $\to$ one cluster) \\
+Divisive direction        & top-down (one cluster $\to$ singletons) \\
+\bottomrule
+\end{tabularx}
+
+% =====================================================================
+\section*{Pitfalls and traps consolidated}
+\addcontentsline{toc}{section}{Pitfalls and traps consolidated}
+
+\begin{itemize}
+  \item \textbf{K-means converges, but to a \emph{local} minimum.} Run multiple initialisations and take the best (smallest $J$).
+  \item \textbf{$K$ is a hyperparameter, not learned.} Use the elbow method, silhouette analysis, or domain knowledge to choose.
+  \item \textbf{K-means assumes spherical clusters.} Data with elongated, non-convex, or wildly unequal-size clusters is poorly served. Hierarchical or DBSCAN may do better.
+  \item \trapflag{}\textbf{Past paper Q2(3) MCQ on K-means disadvantages.} \emph{All four} listed disadvantages are correct (handles outliers poorly, varying density/size, $K$ in advance, scalability across sizes). Don't talk yourself out of any.
+  \item \textbf{Squared vs unsquared distance in assignment.} Same $\arg\min$. Squared is faster (no $\sqrt{\cdot}$).
+  \item \textbf{Centroid linkage $\ne$ K-means.} Both compute centroids, but K-means is partitional (no hierarchy) and centroid linkage is hierarchical (builds a tree).
+  \item \textbf{Distance choice changes the clustering.} $L_2$ and $L_1$ give different results on the same data; the choice should reflect what ``similar'' means in the domain.
+  \item \textbf{High-dimensional data.} In high $M$, all distances become similar (curse of dimensionality). Pre-process with PCA or feature selection before clustering.
+  \item \textbf{Don't memorise DBSCAN or GMM details.} Recognise the names — the algorithms themselves are flagged optional / out-of-scope.
+\end{itemize}
+
+% =====================================================================
+\section*{Self-check questions}
+\addcontentsline{toc}{section}{Self-check questions}
+
+\begin{enumerate}
+  \item Define unsupervised learning. List three common unsupervised tasks beyond clustering.
+  \item Define a cluster. Why does the definition depend on a choice of distance metric?
+  \item Name the four families of clustering algorithms covered in the lecture and one representative of each. Mark which are examinable.
+  \item Write the K-means algorithm in 4--5 numbered steps.
+  \item Why is K-means guaranteed to terminate in finitely many iterations? Cite the bounded-below objective and the finite assignment space.
+  \item State the per-iteration computational complexity of K-means in terms of $K$, $N$, $M$.
+  \item List four advantages of K-means and four disadvantages. Match the disadvantages to the past paper Q2(3) options.
+  \item Explain why K-means is sensitive to outliers. Give one mitigation strategy.
+  \item Compare agglomerative and divisive hierarchical clustering on (a) starting state, (b) per-step operation, (c) computational cost, (d) view of data structure.
+  \item Describe centroid linkage clustering as a concrete agglomerative procedure.
+  \item State the qualitative criterion for a good clustering (intra/inter distance). Name two metrics that formalise it.
+  \item Briefly describe the elbow method for choosing $K$ in K-means.
+  \item True or false: K-means is deterministic. Justify.
+  \item Forward-link: how does the supervised/unsupervised distinction relate to Wk20's parametric/non-parametric distinction? (Answer: orthogonal — both supervised and unsupervised methods can be parametric or non-parametric.)
+  \item A practitioner reports K-means produces unstable clusterings on their data. List three plausible causes and one diagnostic for each.
+\end{enumerate}
+
+\end{document}

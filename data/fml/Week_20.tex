@@ -1,0 +1,434 @@
+\documentclass[11pt, a4paper]{article}
+\usepackage{fontspec}\setmainfont{Helvetica Neue}\setmonofont{Menlo}
+\usepackage{unicode-math}\setmathfont{STIX Two Math}
+\usepackage[margin=2cm, top=2cm, bottom=2.5cm]{geometry}
+\usepackage{microtype}\usepackage{parskip}
+\setlength{\parskip}{0.6em}\setlength{\parindent}{0pt}
+\usepackage[colorlinks=true, linkcolor=NavyBlue, urlcolor=NavyBlue, citecolor=NavyBlue]{hyperref}
+\usepackage{xcolor}\usepackage[dvipsnames]{xcolor}
+\usepackage{amsmath}\usepackage{booktabs}\usepackage{array}\usepackage{tabularx}
+\usepackage{graphicx}
+\graphicspath{{figures/week20/}}
+\newcommand{\thead}[1]{\textbf{#1}}
+\usepackage{enumitem}
+\setlist[itemize]{leftmargin=1.5em, itemsep=0.2em, topsep=0.3em}
+\setlist[enumerate]{leftmargin=1.5em, itemsep=0.2em, topsep=0.3em}
+\usepackage[most]{tcolorbox}\tcbuselibrary{breakable, skins, theorems}
+\definecolor{defBg}{HTML}{EAF2FB}\definecolor{defBd}{HTML}{1F4E79}
+\definecolor{exBg}{HTML}{F4F4F4}\definecolor{exBd}{HTML}{555555}
+\definecolor{tipBg}{HTML}{E8F5E9}\definecolor{tipBd}{HTML}{2E7D32}
+\definecolor{trapBg}{HTML}{FCE4EC}\definecolor{trapBd}{HTML}{AD1457}
+\definecolor{pitBg}{HTML}{FFF8E1}\definecolor{pitBd}{HTML}{B27600}
+\definecolor{noteBg}{HTML}{F3E5F5}\definecolor{noteBd}{HTML}{6A1B9A}
+\definecolor{tldrBg}{HTML}{E1F5FE}\definecolor{tldrBd}{HTML}{0277BD}
+\newtcolorbox{defbox}[1][]{enhanced, breakable, colback=defBg, colframe=defBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={Definition: #1}}
+\newtcolorbox{exbox}[1][]{enhanced, breakable, colback=exBg, colframe=exBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={Worked example: #1}}
+\newtcolorbox{exambox}[1][]{enhanced, breakable, colback=tipBg, colframe=tipBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={Exam-mode answer #1}}
+\newtcolorbox{trapbox}[1][]{enhanced, breakable, colback=trapBg, colframe=trapBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={MCQ trap #1}}
+\newtcolorbox{pitfallbox}[1][]{enhanced, breakable, colback=pitBg, colframe=pitBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={Pitfall #1}}
+\newtcolorbox{notebox}[1][]{enhanced, breakable, colback=noteBg, colframe=noteBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={Lecturer aside #1}}
+\newtcolorbox{tldrbox}[1][]{enhanced, breakable, colback=tldrBg, colframe=tldrBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={TL;DR #1}}
+\usepackage{titlesec}
+\titleformat{\section}[block]{\Large\bfseries\color{defBd}}{\thesection.}{0.6em}{}
+\titleformat{\subsection}[block]{\large\bfseries\color{defBd!80!black}}{\thesubsection}{0.5em}{}
+\titleformat{\subsubsection}[block]{\normalsize\bfseries}{}{0pt}{}
+\titlespacing*{\section}{0pt}{1.6em}{0.6em}\titlespacing*{\subsection}{0pt}{1.2em}{0.4em}
+\usepackage{fancyhdr}\pagestyle{fancy}\fancyhf{}
+\fancyhead[L]{\small CM52054 — Week 20}\fancyhead[R]{\small Parametric \& Non-parametric}
+\fancyfoot[C]{\small\thepage}\renewcommand{\headrulewidth}{0.3pt}
+\newcommand{\examflag}{\textcolor{tipBd}{\textbf{[EXAM]}}\,}
+\newcommand{\trapflag}{\textcolor{trapBd}{\textbf{[TRAP]}}\,}
+\newcommand{\doflag}{\textcolor{defBd}{\textbf{[DO]}}\,}
+\title{\vspace{-1cm}{\Huge\bfseries Week 20 — Parametric \& Non-parametric Approximations} \\[0.4em]{\large What ``parametric'' actually means; KDE; trade-offs and example methods on each side}}
+\author{\large CM52054 Foundational Machine Learning \\[0.2em]\normalsize University of Bath \,$\cdot$\, Dr Wenbin Li}
+\date{Revision notes}
+\begin{document}\maketitle\thispagestyle{empty}\vspace{1em}
+
+\begin{tldrbox}
+\begin{itemize}[leftmargin=*]
+  \item This week introduces a \emph{taxonomy} of ML methods, orthogonal to the supervised/unsupervised split (Wk19): \textbf{parametric} vs \textbf{non-parametric}.
+  \item \textbf{Parametric methods} assume a specific functional form and a \emph{fixed, finite} number of parameters. Examples: linear regression (Wk8), Bayesian linear regression (Wk10), logistic regression (Wk11), perceptron / MLP, MCMC, Laplace approximation.
+  \item \textbf{Non-parametric methods} make no (or weak) distributional assumptions; the \emph{number of parameters scales with the training set}. Examples: KDE, K-Nearest Neighbours, SVM (forward link to Wk25), Gaussian Processes \emph{(optional)}.
+  \item \textbf{Parametric pros}: faster to train, smaller training set OK, robust to imperfect fit. \textbf{Cons}: constrained to chosen functional form, requires distributional assumptions, hard for highly complex problems.
+  \item \textbf{Non-parametric pros} \examflag{}: capable of fitting many functional forms, no/weak assumptions, can give higher-performance models. \textbf{Cons}: requires more training data, slower, more prone to overfitting.
+  \item \textbf{Past paper Q2(4)}: non-parametric is (a) capable of fitting many functional forms — \textbf{TRUE}; (b) likely to overfit — \textbf{TRUE}; (c) fast to converge — \textbf{FALSE}; (d) requires small datasets — \textbf{FALSE}. The first two are correct; the last two are exam traps.
+  \item \textbf{Kernel Density Estimation (KDE)} is the canonical non-parametric example: estimate the density of input data by placing a smooth kernel at each sample and summing. Formula:
+  \[
+  \bar f_h(x) = \frac{1}{Nh}\sum_{i=1}^N G\!\left(\frac{x-x_i}{h}\right),
+  \]
+  where $h$ is the bandwidth and $G$ is a kernel (e.g.\ Gaussian).
+  \item \textbf{Laplace approximation} is the canonical parametric example: approximate a target distribution $P^*(\theta)$ by a known form $Q^*(\theta)$ — typically a Gaussian centred at the mode with curvature given by the Hessian.
+  \item \textbf{Optional}: Gaussian Processes (slides 25--28). Not examinable; recognise the name.
+\end{itemize}
+\end{tldrbox}
+
+% =====================================================================
+\section{The taxonomy}
+
+Wk19 introduced the supervised/unsupervised split: do you have labels or not? Wk20 introduces a different, orthogonal split: how does the model's complexity scale with the data?
+
+\begin{itemize}
+  \item \textbf{Parametric models} commit to a fixed functional form (linear, Gaussian, sigmoid, polynomial of degree 3, etc.) before seeing the data, and only the parameters of that form are estimated. The number of parameters does not grow with $N$.
+  \item \textbf{Non-parametric models} let the model's complexity grow with the data — adding more samples enables a richer model. They typically make minimal distributional assumptions.
+\end{itemize}
+
+\textbf{Cross-cutting} with Wk19's split:
+
+\begin{tabularx}{\linewidth}{@{}lXX@{}}
+\toprule
+                          & \thead{Parametric}                                  & \thead{Non-parametric} \\
+\midrule
+Supervised                & linear / Bayesian / logistic regression; MLP; Naive Bayes & K-Nearest Neighbours; kernel SVM; Gaussian Processes \\
+Unsupervised              & Gaussian Mixture Models                                  & Kernel Density Estimation; hierarchical clustering \\
+\bottomrule
+\end{tabularx}
+
+The two splits are orthogonal — the same task can be tackled by parametric or non-parametric methods, supervised or unsupervised. Choose by the data and problem.
+
+% =====================================================================
+\section{Parametric modelling}
+
+\subsection{Definition and intuition}
+
+\begin{defbox}[Parametric model]
+A model that (i) assumes a specific functional form of the relationship between inputs and outputs (or of the data distribution), and (ii) is fully specified by a \emph{fixed, finite} set of parameters. Training reduces to estimating those parameters from the data.
+\end{defbox}
+
+\textbf{Examples already covered.}
+\begin{itemize}
+  \item \textbf{Linear regression} (Wk8): functional form $f(\mathbf{x}) = \mathbf{w}^\top\mathbf{x}$; parameters $\mathbf{w}\in\mathbb{R}^M$. Total parameters: $M$ — does not depend on $N$.
+  \item \textbf{Bayesian linear regression} (Wk10): same model + Gaussian prior; parameters $\mathbf{w}$ and $\sigma^2$.
+  \item \textbf{Logistic regression} (Wk11): $f(\mathbf{x}) = \sigma(\mathbf{w}^\top\mathbf{x})$; parameters $\mathbf{w}$.
+  \item \textbf{Perceptron / MLP} — finite layer-wise weight matrices.
+  \item \textbf{MCMC and Laplace approximation} — both can be cast as parametric inference because they target a parametric form for the posterior or its mode.
+\end{itemize}
+
+\subsection{Pros and cons}
+
+\textbf{Pros:}
+\begin{itemize}
+  \item \textbf{Faster.} Training is parameter estimation — usually a closed-form formula, gradient-based optimisation, or a small number of iterations.
+  \item \textbf{Smaller training set OK.} You don't need many samples to estimate a few parameters; the inductive bias of the functional form does the heavy lifting.
+  \item \textbf{Robust to imperfect fit.} Because the model can't perfectly fit arbitrary data anyway, it's less prone to overfit. Simpler models generalise better.
+\end{itemize}
+
+\textbf{Cons:}
+\begin{itemize}
+  \item \textbf{Highly constrained.} If the true relationship isn't linear (or whatever form you assumed), the model can't capture it. Garbage-in-functional-form, garbage-out.
+  \item \textbf{Strong distributional assumptions.} The model's correctness depends on the data actually following the assumed form.
+  \item \textbf{Difficult for complex problems.} Real-world phenomena rarely fit a clean low-parameter form.
+\end{itemize}
+
+\subsection{Laplace approximation — the parametric exemplar}
+
+The lecture's parametric example is the \textbf{Laplace approximation}. It targets a hard problem: given an unwieldy ``target'' distribution $P^*(\theta)$ that you can evaluate but not sample from analytically, find a tractable distribution $Q^*(\theta)$ that approximates it.
+
+\begin{defbox}[Laplace approximation]
+A method for approximating an arbitrary distribution $P^*(\theta)$ by a Gaussian $Q^*(\theta)$ centred at the \textbf{mode} of $P^*$ — the point $\theta_*$ that maximises $P^*(\theta)$ — with a width set by how sharply the density falls off (its curvature) around that mode. ``Pretend the log-density is locally a downward parabola at its mode; that's a Gaussian.''
+\end{defbox}
+
+\examflag{}\textbf{Scope.} The lecturer states you are \emph{only} required to understand the \emph{principle} of the Laplace approximation — not the maths, computations, or procedures. So know the intuition (fit a Gaussian at the mode) and why it is parametric; the curvature/Hessian machinery is non-examinable.
+
+\textbf{Why it's parametric.} Once you choose ``Gaussian'' as the approximating family, the approximation is fully described by a fixed handful of parameters (a mean and a spread). Number of parameters does not grow with the data.
+
+\begin{center}
+
+\footnotesize\textit{The same target distribution $P^*(\theta)$ (blue, shaded) approximated by two methods. The \textbf{red Laplace} curve is a Gaussian centred at the mode of $P^*$ --- note how it is slightly narrower and left-shifted relative to the target's heavy right tail. The \textbf{green Variational Inference} curve is a Gaussian fitted by KL-divergence minimisation, which pulls the approximation rightward to cover more of the tail mass. Both are parametric approximations (each is described by just a mean and variance), but the Laplace method commits to the mode, while VI can trade off coverage of tails against fit at the peak. The gap between the red curve and the blue target is the price paid for the parametric Gaussian assumption.}
+\end{center}
+
+\textbf{Limitations.} The three weaknesses all stem from forcing a single symmetric Gaussian onto the target:
+\begin{itemize}
+  \item \textbf{Multimodal targets.} A ``mode'' is a peak; a multimodal density has several (a two-humped camel). Laplace fits one Gaussian, so it locks onto a single peak and ignores the rest of the probability mass.
+  \item \textbf{Heavy-tailed or skewed targets.} A Gaussian is perfectly symmetric with fast-decaying tails. It cannot bend to a lopsided (skewed) density and underestimates the mass in a long/heavy tail.
+  \item \textbf{Only as good as the local Hessian at the mode.} Laplace is ``nearsighted'': it finds the mode, measures the curvature \emph{at that single point}, and draws the whole Gaussian from that local steepness — ignoring the global shape. A sharp peak on an otherwise wide distribution yields a Gaussian that is far too narrow.
+\end{itemize}
+
+\begin{notebox}[: KL divergence and Variational Inference]
+\textbf{KL (Kullback--Leibler) divergence} is a number measuring the mismatch between two distributions: $0$ if they match exactly, larger the worse the approximation. It is the ``penalty score'' for how badly a guess $Q^*$ fits a target $P^*$.
+
+\textbf{Variational Inference (VI)} is a more general approximation strategy: it picks $Q^*$ by \emph{minimising the KL divergence} to $P^*$ — i.e.\ KL is the measuring stick, VI is the search that drives it down. Two advantages over Laplace: (i) VI fits the \emph{whole shape}, not just the curvature at the mode (it will shift to cover a heavy tail); (ii) VI is \emph{not restricted to Gaussians} — it can use a skewed family if the target is skewed. Laplace is the special, mode-anchored, Gaussian-only case.
+\end{notebox}
+
+% =====================================================================
+\section{Non-parametric modelling}
+
+\subsection{Definition}
+
+\begin{defbox}[Non-parametric model]
+A model that does not commit to a fixed functional form before seeing the data; instead, the model's complexity (and effectively its number of parameters) \emph{grows with the size of the training set}. Typically makes no, or only weak, distributional assumptions.
+\end{defbox}
+
+\textbf{``Non-parametric'' is a misleading name} — these models often have many parameters. The point is that the parameter count is not bounded in advance: it scales with $N$.
+
+\textbf{Canonical examples (will recur in this unit).}
+\begin{itemize}
+  \item \textbf{Kernel Density Estimation (KDE)} — Wk20 §4 below.
+  \item \textbf{K-Nearest Neighbours} — store all training data; predict by majority vote of $k$ nearest training neighbours. Effectively, the ``parameters'' are the entire training set.
+  \item \textbf{Support Vector Machines} (Wks 25--26): the support vectors that define the decision boundary scale with data.
+  \item \textbf{Gaussian Processes} — Wk20 §6, optional.
+\end{itemize}
+
+\subsection{K-Nearest Neighbours --- a non-parametric exemplar}
+
+\begin{defbox}[K-Nearest Neighbours (KNN)]
+A supervised algorithm (classification or regression). A \textbf{lazy learner}: training does \emph{no} computation --- it simply memorises the entire training set. To predict for a new point $\mathbf{x}$: (1) compute the distance from $\mathbf{x}$ to every stored training point (usually Euclidean); (2) take the $k$ nearest; (3) \textbf{classification} --- majority vote of their labels; \textbf{regression} --- average of their values.
+\end{defbox}
+
+\textbf{Why it is non-parametric.} KNN never compresses the data into a fixed equation; the ``model'' literally \emph{is} the training set. With $N$ training points prediction references $N$ points; the model's size grows exactly with the data --- the defining property of non-parametric.
+
+\begin{trapbox}[: the $k$ in KNN is a hyperparameter, not a parameter --- and KNN $\ne$ K-means]
+\textbf{Parameters} are internal values the model \emph{learns} from data (e.g.\ the weights $\mathbf{w}$ in regression). \textbf{Hyperparameters} are external settings \emph{you} fix before training (e.g.\ $k$ in KNN, the bandwidth $h$ in KDE). The parametric/non-parametric label depends only on \emph{parameters} --- so ``non-parametric'' does not mean ``no settings to choose.''
+
+Do not confuse \textbf{KNN} (supervised; $k$ = number of neighbours to vote) with \textbf{K-means} (Wk19; unsupervised clustering; $K$ = number of clusters, chosen in advance e.g.\ by the elbow method). Different algorithms, different $k$.
+\end{trapbox}
+
+\subsection{Pros and cons}
+
+\textbf{Pros (past paper Q2(4) tests these):}
+\begin{itemize}
+  \item \examflag{}\textbf{Flexibility.} Capable of fitting a large number of functional forms — including ones you couldn't have specified in advance.
+  \item \textbf{Power / no assumptions.} Don't need to know what distribution the data follows.
+  \item \textbf{Performance.} On hard problems with abundant data, non-parametric methods often outperform parametric counterparts.
+\end{itemize}
+
+\textbf{Cons (also past paper relevant):}
+\begin{itemize}
+  \item \examflag{}\textbf{More data required.} Without strong prior structure, you need many samples to estimate the function reliably.
+  \item \textbf{Slower.} Many parameters to estimate; often $O(N^2)$ or $O(N^3)$ training.
+  \item \examflag{}\textbf{Overfitting risk.} Higher capacity means more potential to fit noise. Regularisation, cross-validation, smoothing parameters all become important.
+  \item \textbf{Less interpretable.} A trained KDE or SVM gives you a function value but no compact formula explaining why.
+\end{itemize}
+
+\examflag{}\textbf{Past paper Q2(4) decoded:}
+\begin{itemize}
+  \item (a) ``Capable of fitting a large number of functional forms.'' \textbf{TRUE} (the headline benefit).
+  \item (b) ``Likely to overfit the training data.'' \textbf{TRUE} (the headline cost).
+  \item (c) ``Often fast to converge.'' \textbf{FALSE} — non-parametric is typically slow.
+  \item (d) ``Often requires small datasets.'' \textbf{FALSE} — the opposite is true.
+\end{itemize}
+
+% =====================================================================
+\section{Kernel Density Estimation — the non-parametric exemplar}
+
+\subsection{Setup}
+
+You have $N$ data points $\{x_1, \ldots, x_N\}$ drawn from an unknown distribution. You want to estimate the density $p(x)$ at any test point.
+
+\textbf{Histogram first.} A naive estimate:
+\begin{enumerate}
+  \item Divide the input space into bins of width $h$.
+  \item Count how many of $\{x_i\}$ fall in each bin.
+  \item Divide each count by $N\cdot h$ to make it a density.
+\end{enumerate}
+This works but is rough — the estimate is piecewise constant, jumps at bin edges, and depends sensitively on bin placement. KDE is the smooth-kernel generalisation.
+
+\begin{center}
+
+\footnotesize\textit{A normalised histogram for the 6-sample toy (red dots: $\{-2.1, -1.3, -0.4, 1.9, 5.1, 6.2\}$) with bin width $h = 2$. The $y$-axis shows \emph{density} (count divided by $N \cdot h$ so total area $= 1$). The staircase shape captures the rough proportions of the data but is piecewise constant and sensitive to where the bin boundaries fall. This is the ``histogram density at $x$'' from the CDF formula above --- each bar height equals $\bar f_h(x)$ for test points $x$ inside that bin. KDE replaces the hard bin edges with smooth, overlapping kernels to eliminate the discontinuities.}
+\end{center}
+
+\subsection{From CDF to KDE}
+
+The density at $x$ is the derivative of the cumulative distribution function $F$:
+\[
+f(x) \;=\; \lim_{h\to 0}\frac{F(x+h) - F(x-h)}{2h}.
+\]
+With finite $N$ and fixed bandwidth $h$, replace $F$ by the empirical proportion of samples in $[x-h, x+h]$:
+\[
+\bar f_h(x) \;=\; \frac{1}{2h}\cdot\frac{\#\{x_i \in [x-h, x+h]\}}{N}.
+\]
+Here $h$ is the \emph{half-width} — a symmetric limit either side of $x$ — so the actual \textbf{bin width} is $w = 2h$ (set $h=1$ and the bin spans width $2$). This is the histogram density at $x$.
+
+\textbf{Smooth it.} Replace the hard ``in or out of $[x-h, x+h]$'' indicator with a smooth weight that decays with distance from $x$. The smooth weighting function is the \textbf{kernel}:
+
+\begin{defbox}[Kernel Density Estimation (KDE)]
+For data $\{x_1, \ldots, x_N\}$, bandwidth $h>0$, and kernel $G$:
+\[
+\bar f_h(x) \;=\; \frac{1}{Nh}\sum_{i=1}^N G\!\left(\frac{x-x_i}{h}\right).
+\]
+The estimate at any $x$ is a weighted sum of kernels centred at each training sample.
+\end{defbox}
+
+\begin{center}
+
+\footnotesize\textit{A large-sample motivation for KDE. The yellow histogram bars estimate $P^*(\theta)$ (the bimodal density labelled at lower-left) from 10{,}000 samples; note the rough, stepped shape caused by discrete bin boundaries. The smooth blue curve is the true $P^*(\theta)$, shown for comparison. The key observation: the histogram is already a reasonable estimator of shape --- KDE is what you get when you replace the hard bin boundaries with overlapping smooth kernels, eliminating the staircase artefacts and yielding a differentiable density estimate.}
+\end{center}
+
+\textbf{Common kernels.}
+\begin{itemize}
+  \item \textbf{Gaussian}: $G(u) = (2\pi)^{-1/2}\exp(-u^2/2)$. Standard.
+  \item \textbf{Uniform / box}: $G(u) = \tfrac{1}{2}\mathbf{1}\{|u|\le 1\}$. Recovers the histogram.
+  \item \textbf{Epanechnikov}: $G(u) = \tfrac{3}{4}(1-u^2)\mathbf{1}\{|u|\le 1\}$. Optimal in mean-squared-error sense.
+\end{itemize}
+
+\textbf{Why it's non-parametric.} The KDE has $N$ ``terms'' — one per training sample — and the bandwidth $h$. Increase $N$ and the model gains capacity. The training set effectively \emph{is} the model.
+
+\begin{center}
+
+\footnotesize\textit{The key transition from histogram to KDE, side by side on the same 6-sample data. \textbf{Left}: the normalised histogram (blue bars) --- piecewise constant, bin-boundary-sensitive, no density between sample clusters. \textbf{Right}: the KDE estimate (solid blue curve) obtained by replacing each hard bin with a smooth Gaussian kernel centred on each sample (individual kernels shown as red dashed bumps). The solid blue curve is their sum, normalised to integrate to 1. Notice how the KDE captures the two clusters and the gap between them smoothly, whereas the histogram misrepresents the between-cluster region depending on bin placement. The bandwidth $h$ controls how wide the red dashed bumps are --- narrower kernels give a spikier blue curve; wider kernels give a smoother one.}
+\end{center}
+
+\subsection{Bandwidth $h$ — the bias-variance knob}
+
+\textbf{What $h$ controls.} $h$ is \emph{not} the number of points summed over (that is $N$). It sets the \emph{width} of each individual kernel bump: small $h$ $\Rightarrow$ tall, narrow, spiky bumps; large $h$ $\Rightarrow$ wide, flat bumps.
+
+\textbf{Why $h$ cannot just be fixed at $1$.} Two reasons:
+\begin{itemize}
+  \item \textbf{Data scale.} $h=1$ locks every bump to one unit of the $x$-axis. If the data spans $0.1$--$0.5$, unit-wide bumps smear everything into one flat lump; if it spans $1000$--$5000$, unit-wide bumps never overlap, leaving disconnected spikes. $h$ rescales the kernels to the data's units.
+  \item \textbf{Bias-variance knob.} Small $h$: bumps barely overlap $\Rightarrow$ jagged estimate, fits every cluster (high variance, overfit). Large $h$: bumps overlap heavily $\Rightarrow$ over-smoothed estimate (high bias, underfit).
+\end{itemize}
+
+\textbf{$h$ appears twice in the formula, doing two jobs.} In $G\!\left(\tfrac{x-x_i}{h}\right)$, $h$ is a \emph{distance scaler} — large $h$ shrinks apparent distances so far points still get weight (wide bump). In the prefactor $\tfrac{1}{Nh}$, $h$ \emph{renormalises} — wide bumps add area, so dividing by $h$ squashes the height back down to keep total area $=1$ (the $N$ averages the sum).
+
+\begin{notebox}[: choosing $h$ --- standard deviation is close but not enough]
+A natural guess is $h=\sigma$ (the data's standard deviation), which captures the data \emph{scale} --- but it ignores sample size $N$. More data should give a \emph{narrower} bandwidth (finer detail). \textbf{Silverman's rule of thumb} (Gaussian kernel) corrects for this: $h \approx 1.06\,\sigma\,N^{-1/5}$ --- the $\sigma$ sets the scale, the $N^{-1/5}$ factor shrinks $h$ as data grows. For unusual (skewed, multi-peaked) data, rules of thumb fail and $h$ is chosen by cross-validation instead.
+\end{notebox}
+
+\begin{trapbox}[: the bandwidth $h$ is a hyperparameter, not a parameter]
+KDE never \emph{learns} $h$ from the data --- the formula has no mechanism to. You set $h$ externally (Silverman's rule or cross-validation) before the estimate is drawn, and it controls model complexity exactly like tree depth or a regularisation strength. The KDE's ``parameters'' are the training points themselves; $h$ is the hyperparameter that says how to draw the curve through them. This is the bias-variance trade-off (Wk3) in a non-parametric setting.
+\end{trapbox}
+
+\subsection{Worked KDE in 1D}
+
+\begin{exbox}[KDE on 6 samples]
+Samples: $\{-2.1, -1.3, -0.4, 1.9, 5.1, 6.2\}$. Bandwidth $h = 2$. Kernel $G$ = uniform box on $[-1, 1]$.\\[0.3em]
+\textbf{Step 1.} For test point $x$, count how many $x_i$ satisfy $|x - x_i| \le h$.\\
+\textbf{Step 2.} Plug into the formula. Each in-window sample contributes the box-kernel value $G = \tfrac{1}{2}$, so $\bar f_h(x) = (\text{count})\cdot\dfrac{1}{Nh}\cdot\dfrac{1}{2} = (\text{count})/(6\cdot 2\cdot 2)$ (the box kernel is scaled to integrate to 1 over $[-1,1]$).\\[0.3em]
+For $x = 0$: $|0 - (-2.1)| = 2.1 > h$, $|0-(-1.3)| = 1.3 \le h$, $|0-(-0.4)| = 0.4 \le h$, $|0-1.9| = 1.9 \le h$, others $> h$. Count $= 3$. So $\bar f_2(0) \approx 3/(6\cdot 2 \cdot 2) = 1/8 = 0.125$.\\[0.3em]
+\textbf{Interval-counting at $x = -1$ (with $h = 1$, $N = 6$).} Using the histogram-CDF form $\bar f_h(x) = \frac{1}{2h}\cdot\frac{\#\{x_i\in[x-h,x+h]\}}{N}$: the interval is $[-2, 0]$, and two samples — $-1.3$ and $-0.4$ — fall inside, so the count is $2$. Hence $\bar f_1(-1) = 2/(2\cdot 1\cdot 6) = 2/12 = 1/6$.\\[0.3em]
+With a Gaussian kernel, every $x_i$ contributes a smooth bump centred at $x_i$ with width $h$; the estimate at $x$ is the sum of those bumps.
+\end{exbox}
+
+\subsection{KDE in higher dimensions}
+
+In $M$ dimensions, the kernel becomes multivariate and the bandwidth becomes a matrix $\mathbf{H}$ (typically diagonal). The formula generalises:
+\[
+\bar f(\mathbf{x}) = \frac{1}{N|\mathbf{H}|^{1/2}}\sum_{i=1}^N G\!\left(\mathbf{H}^{-1/2}(\mathbf{x}-\mathbf{x}_i)\right).
+\]
+\textbf{Curse of dimensionality.} KDE's quality degrades sharply with $M$. To keep the \emph{same density of points} (same spacing) as dimensions grow, the required sample size scales as $k^M$: if $k$ points cover a 1-D line, a 2-D square needs $k^2$, a 3-D cube $k^3$, an $M$-D space $k^M$ --- \textbf{exponential in $M$}. A fixed-bandwidth kernel window is a line segment in 1-D, a small disc in 2-D, a small ball in 3-D; as $M$ grows that window's volume shrinks to a negligible fraction of the space, so it captures few or zero neighbours and KDE outputs near-zero everywhere unless $N$ grows exponentially too. This is the central reason non-parametric methods need ``a lot of data,'' and why practical KDE is limited to small $M$.
+
+% =====================================================================
+\section{Parametric vs non-parametric — the decision tree}
+
+\textbf{When parametric makes sense.}
+\begin{itemize}
+  \item Sample size is small.
+  \item You have strong prior knowledge about the form of the relationship.
+  \item Interpretation matters (you want to point to a coefficient).
+  \item Speed matters at training and inference.
+\end{itemize}
+
+\textbf{When non-parametric makes sense.}
+\begin{itemize}
+  \item Sample size is large.
+  \item You have no clear prior on functional form.
+  \item Performance matters more than interpretability.
+  \item Inference speed is OK to be slow (or you can amortise compute, e.g.\ pre-compute kernels).
+\end{itemize}
+
+\textbf{Hybrid approaches.} Many modern methods blur the line:
+\begin{itemize}
+  \item \textbf{Random Forests} (Wk4): each tree is parametric (fixed depth), but the forest as a whole grows with the data — quasi-non-parametric.
+  \item \textbf{Deep neural networks}: technically parametric (fixed architecture), but with millions of parameters and growing-with-compute trends, they behave like non-parametric methods at scale.
+\end{itemize}
+
+% =====================================================================
+\section{What's optional (and skipped)}
+
+\textbf{Gaussian Processes} (slides 25--28). A GP is a distribution over functions: every finite set of input points has a joint Gaussian distribution over function values, with mean function $\mu(\mathbf{x})$ and covariance function (kernel) $K(\mathbf{x},\mathbf{x}')$. Given training data, posterior inference is closed-form and gives uncertainty estimates. Non-parametric (the kernel matrix is $N\times N$ — grows with data). Detailed treatment is in CM50268 (Bayesian ML); the slide deck flags it as optional and not examinable. Recognise the name.
+
+\begin{center}
+
+\footnotesize\textit{(Optional) Three GP classification decision boundaries on the same spiral dataset, each using a different kernel. \textbf{Top-left}: Squared Exponential (RBF) kernel --- produces a smooth, locally flexible boundary that wraps around both spiral arms. \textbf{Top-right}: Linear kernel --- produces a near-linear boundary (only a gentle curve), correctly classified points are shown as blue/red dots; this kernel is too constrained to capture the spiral. \textbf{Bottom}: Combined kernel --- the product or sum of the two, inheriting both local flexibility and global linear structure, yielding a spiral-following boundary nearly as good as the RBF alone. The colour gradient from deep-blue to deep-red shows the GP's posterior class probability, not just a hard boundary --- a key advantage of GPs over discriminative classifiers. Kernel choice is the primary design decision in GP modelling.}
+\end{center}
+
+% =====================================================================
+\section{Exam-mode answers}
+
+\begin{exambox}[{(MCQ): Which of the following are correct for non-parametric modelling? (mark all that apply)}]
+\textit{Correct: \textbf{(a)} capable of fitting a large number of functional forms — TRUE; \textbf{(b)} likely to overfit the training data — TRUE.}\\[0.3em]
+\textit{Trap distractors: (c) often fast to converge — FALSE, non-parametric is typically slow because the model size grows with the data; (d) often requires small datasets — FALSE, the opposite is true. (2 marks) (Past paper Q2(4))}
+\end{exambox}
+
+\begin{exambox}[{Concept: Distinguish parametric and non-parametric modelling.}]
+\textit{\textbf{Parametric.} Assumes a specific functional form (linear, Gaussian, sigmoid, etc.) and is fully specified by a fixed, finite set of parameters that don't depend on $N$. Examples: linear regression, logistic regression. Pros: fast, robust to small data. Cons: constrained to chosen form; assumptions may not hold.}\\[0.3em]
+\textit{\textbf{Non-parametric.} Makes no/weak distributional assumptions; the model's parameter count grows with the training set. Examples: KDE, kNN, kernel SVM. Pros: flexibility, no functional-form commitment, often higher performance. Cons: slow, data-hungry, prone to overfitting.}
+\end{exambox}
+
+\begin{exambox}[{Concept: Give one parametric and one non-parametric example, with the canonical formula for each.}]
+\textit{\textbf{Parametric — linear regression.} $f(\mathbf{x}) = \mathbf{w}^\top\mathbf{x}$ with closed-form solution $\mathbf{w}_* = (\mathbf{X}^\top\mathbf{X})^{-1}\mathbf{X}^\top\mathbf{y}$. Number of parameters $= M$, fixed.}\\[0.3em]
+\textit{\textbf{Non-parametric — Kernel Density Estimation.} $\bar f_h(x) = (1/Nh)\sum_{i=1}^N G((x-x_i)/h)$. Number of ``parameters'' = $N$, growing with the training set.}
+\end{exambox}
+
+\begin{exambox}[{Concept: When does non-parametric outperform parametric and vice versa?}]
+\textit{Non-parametric tends to win when the training set is large, the true relationship is complex / non-linear, no good prior on functional form is available, and prediction speed isn't critical. Parametric tends to win when the training set is small, you have strong domain knowledge encoded in the chosen form, interpretability of parameters matters, or fast inference is required. The two are not mutually exclusive — Random Forests and deep nets sit in the hybrid middle.}
+\end{exambox}
+
+\begin{exambox}[{\doflag{}Concept: Write the KDE formula and explain each term.}]
+\textit{$\bar f_h(x) = (1/Nh)\sum_{i=1}^N G((x-x_i)/h)$. Terms:}\\[0.2em]
+\textit{\quad — $N$: the number of training samples;}\\
+\textit{\quad — $h$: the bandwidth (smoothing parameter); too small $\Rightarrow$ wiggly/overfit, too large $\Rightarrow$ over-smoothed/underfit;}\\
+\textit{\quad — $G$: the kernel — a smooth, non-negative function integrating to 1 (e.g.\ Gaussian);}\\
+\textit{\quad — $x_i$: training samples;}\\
+\textit{\quad — Each term contributes a kernel ``bump'' at $x_i$, scaled by $h$. The estimate at $x$ is the sum of these bumps, normalised so the total integrates to 1.}
+\end{exambox}
+
+\begin{exambox}[{Concept: Why does KDE need more data in higher dimensions?}]
+\textit{The curse of dimensionality. In $M$ dimensions, a kernel of fixed bandwidth captures a volume that shrinks as a fraction of any reasonable region (since most of the volume of a high-dim ball lies near its surface). To maintain a stable density estimate at a point, you need a sample size that grows roughly exponentially with $M$. Practical KDE is limited to small $M$ ($\le 5$--$10$) without dimensionality reduction.}
+\end{exambox}
+
+% =====================================================================
+\section*{Key equations cheat sheet}
+\addcontentsline{toc}{section}{Key equations cheat sheet}
+
+\begin{tabularx}{\linewidth}{@{}lX@{}}
+\toprule
+\thead{Object} & \thead{Formula / fact} \\
+\midrule
+Parametric model       & fixed functional form; \#parameters bounded, independent of $N$ \\
+Non-parametric model   & no/weak distributional assumption; \#parameters scales with $N$ \\
+KDE estimator          & $\bar f_h(x) = (1/Nh)\sum_{i=1}^N G((x-x_i)/h)$ \\
+Common kernels         & Gaussian, uniform/box, Epanechnikov \\
+Bandwidth $h$          & smoothing parameter; bias-variance knob \\
+Laplace approximation  & fit a Gaussian $Q^*(\theta)$ at the mode of the target $P^*$ (principle only — maths non-examinable) \\
+Parametric examples    & linear / Bayesian / logistic regression; perceptron, MLP; MCMC; Laplace approx. \\
+Non-parametric examples & KDE; K-Nearest Neighbours; SVM; Gaussian Processes (optional) \\
+\bottomrule
+\end{tabularx}
+
+% =====================================================================
+\section*{Pitfalls and traps consolidated}
+\addcontentsline{toc}{section}{Pitfalls and traps consolidated}
+
+\begin{itemize}
+  \item \trapflag{}\textbf{``Non-parametric'' does not mean ``no parameters.''} It means the parameter count is not bounded in advance. Past paper trap.
+  \item \trapflag{}\textbf{Past paper Q2(4) MCQ.} Non-parametric \emph{is} flexible and \emph{is} prone to overfitting (a, b correct). It is not fast and does not need small datasets (c, d are traps).
+  \item \textbf{KDE bandwidth tuning.} Wrong $h$ kills the model regardless of how many samples you have. Cross-validate or use rules-of-thumb.
+  \item \textbf{Parametric methods can still overfit.} A high-degree polynomial regression has a fixed parameter count but can be wildly overfit. ``Parametric'' $\ne$ ``simple.''
+  \item \textbf{Random Forests and deep nets are the awkward middle.} They have a fixed architecture (parametric) but enormous capacity. Don't be tripped up by an MCQ asking ``which is non-parametric''; the canonical answer is from the slide list (KDE, kNN, SVM, GP).
+  \item \textbf{Gaussian Processes are optional.} Recognise the name and the slogan ``distribution over functions''; do not memorise the kernel design.
+\end{itemize}
+
+% =====================================================================
+\section*{Self-check questions}
+\addcontentsline{toc}{section}{Self-check questions}
+
+\begin{enumerate}
+  \item Define a parametric model. Define a non-parametric model. Explain how the parameter count scales with $N$ in each.
+  \item List three parametric methods and three non-parametric methods, drawing on weeks already covered.
+  \item State three pros and three cons of parametric modelling.
+  \item State three pros and three cons of non-parametric modelling.
+  \item Past paper Q2(4): which of (a) flexibility, (b) overfitting risk, (c) fast convergence, (d) small dataset are TRUE for non-parametric? Justify each.
+  \item Define Kernel Density Estimation. Write down the formula and explain each term.
+  \item Explain how the KDE bandwidth $h$ controls the bias-variance trade-off.
+  \item Compare the histogram and KDE as density estimators. What does smoothing the kernel buy you?
+  \item Define the Laplace approximation. What family does it approximate the target distribution by, and how are its parameters chosen?
+  \item Why is the Laplace approximation considered a parametric method? Why is KDE considered non-parametric?
+  \item Explain the curse of dimensionality in the context of non-parametric density estimation.
+  \item Forward-link to Wk25--26: SVM is described in this lecture as non-parametric. Why? (Answer: support vectors that define the hyperplane scale with the data.)
+  \item True or false: ``a logistic regression model with millions of features is a non-parametric method.'' Justify.
+  \item Why do we need to be careful about overfitting more for non-parametric than parametric methods?
+  \item A practitioner is fitting a 1D probability density to 30 data points and considering KDE with a Gaussian kernel. What two hyperparameters do they need to choose, and how would you advise them?
+\end{enumerate}
+
+\end{document}

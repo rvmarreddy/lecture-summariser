@@ -1,0 +1,699 @@
+\documentclass[11pt, a4paper]{article}
+
+\usepackage{fontspec}
+\setmainfont{Helvetica Neue}
+\setmonofont{Menlo}
+\usepackage{unicode-math}
+\setmathfont{STIX Two Math}
+
+\usepackage[margin=2cm, top=2cm, bottom=2.5cm]{geometry}
+\usepackage{microtype}
+\usepackage{parskip}
+\setlength{\parskip}{0.6em}
+\setlength{\parindent}{0pt}
+
+\usepackage[colorlinks=true, linkcolor=NavyBlue, urlcolor=NavyBlue, citecolor=NavyBlue]{hyperref}
+\usepackage{xcolor}
+\usepackage[dvipsnames]{xcolor}
+
+\usepackage{amsmath}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{tabularx}
+\newcommand{\thead}[1]{\textbf{#1}}
+
+% --- Graphics ---
+\usepackage{graphicx}
+\graphicspath{{figures/week26/}}
+
+\usepackage{enumitem}
+\setlist[itemize]{leftmargin=1.5em, itemsep=0.2em, topsep=0.3em}
+\setlist[enumerate]{leftmargin=1.5em, itemsep=0.2em, topsep=0.3em}
+
+\usepackage[most]{tcolorbox}
+\tcbuselibrary{breakable, skins, theorems}
+
+\definecolor{defBg}{HTML}{EAF2FB}
+\definecolor{defBd}{HTML}{1F4E79}
+\definecolor{exBg}{HTML}{F4F4F4}
+\definecolor{exBd}{HTML}{555555}
+\definecolor{tipBg}{HTML}{E8F5E9}
+\definecolor{tipBd}{HTML}{2E7D32}
+\definecolor{trapBg}{HTML}{FCE4EC}
+\definecolor{trapBd}{HTML}{AD1457}
+\definecolor{pitBg}{HTML}{FFF8E1}
+\definecolor{pitBd}{HTML}{B27600}
+\definecolor{noteBg}{HTML}{F3E5F5}
+\definecolor{noteBd}{HTML}{6A1B9A}
+\definecolor{tldrBg}{HTML}{E1F5FE}
+\definecolor{tldrBd}{HTML}{0277BD}
+
+\newtcolorbox{defbox}[1][]{enhanced, breakable, colback=defBg, colframe=defBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={Definition: #1}}
+\newtcolorbox{exbox}[1][]{enhanced, breakable, colback=exBg, colframe=exBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={Worked example: #1}}
+\newtcolorbox{exambox}[1][]{enhanced, breakable, colback=tipBg, colframe=tipBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={Exam-mode answer #1}}
+\newtcolorbox{trapbox}[1][]{enhanced, breakable, colback=trapBg, colframe=trapBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={MCQ trap #1}}
+\newtcolorbox{pitfallbox}[1][]{enhanced, breakable, colback=pitBg, colframe=pitBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={Pitfall #1}}
+\newtcolorbox{notebox}[1][]{enhanced, breakable, colback=noteBg, colframe=noteBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={Lecturer aside #1}}
+\newtcolorbox{tldrbox}[1][]{enhanced, breakable, colback=tldrBg, colframe=tldrBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={TL;DR #1}}
+
+\usepackage{titlesec}
+\titleformat{\section}[block]{\Large\bfseries\color{defBd}}{\thesection.}{0.6em}{}
+\titleformat{\subsection}[block]{\large\bfseries\color{defBd!80!black}}{\thesubsection}{0.5em}{}
+\titleformat{\subsubsection}[block]{\normalsize\bfseries}{}{0pt}{}
+\titlespacing*{\section}{0pt}{1.6em}{0.6em}
+\titlespacing*{\subsection}{0pt}{1.2em}{0.4em}
+
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small CM52078 — Week 8}
+\fancyhead[R]{\small Predicate (First-Order) Logic}
+\fancyfoot[C]{\small\thepage}
+\renewcommand{\headrulewidth}{0.3pt}
+
+\newcommand{\examflag}{\textcolor{tipBd}{\textbf{[EXAM]}}\,}
+\newcommand{\trapflag}{\textcolor{trapBd}{\textbf{[TRAP]}}\,}
+\newcommand{\doflag}{\textcolor{defBd}{\textbf{[DO]}}\,}
+
+\title{\vspace{-1cm}{\Huge\bfseries Week 8 — Logical Reasoning: Predicate Logic} \\[0.4em]{\large Constants, predicates, functions, quantifiers, models, Prolog}}
+\author{\large CM52078 Classical Artificial Intelligence \\[0.2em]\normalsize University of Bath}
+\date{Revision notes}
+
+\begin{document}
+
+\maketitle
+\thispagestyle{empty}
+
+\vspace{1em}
+
+\begin{tldrbox}
+\begin{itemize}[leftmargin=*]
+  \item \textbf{Predicate logic} (a.k.a.\ \emph{first-order logic}, FOL) extends propositional logic by ``splitting the atom'': atomic sentences are now built from \textbf{objects} and \textbf{relations}, not single propositions.
+  \item Three building blocks: \textbf{constants} (named objects, $Ben$, $Wumpus$), \textbf{predicates} (relations on terms, $Lecturer(x)$, $In(x, y)$), \textbf{functions} (objects from objects, $Child(Wumpus)$).
+  \item A \textbf{term} is recursively defined: a constant, a variable, or a function applied to terms. Atomic sentences are predicates applied to terms, or term-equality.
+  \item \textbf{Quantifiers}: $\forall$ (``for all'') and $\exists$ (``there exists''). They bind variables. Order matters when they nest — $\forall x \exists y$ is not the same as $\exists y \forall x$.
+  \item \textbf{Translation templates}: $\forall$ pairs with $\rightarrow$, $\exists$ pairs with $\land$. Mixing these up flips the meaning entirely.
+  \item \textbf{Models in predicate logic} are richer: a set of objects, relations between them, plus an \textbf{interpretation} mapping constants/predicates/functions to those objects/relations.
+  \item Truth: atomic sentences true when interpretation matches the model. $\forall$-sentences true if every variable assignment makes the body true; $\exists$-sentences true if some assignment does.
+  \item Predicate logic is far more \textbf{expressive} than propositional logic. The Wumpus rule ``a square is breezy iff a neighbour has a pit'' fits in one sentence, vs.\ 16 separate sentences in propositional.
+  \item \textbf{Prolog} is a programming language built directly on predicate logic. You declare facts/rules; the runtime answers queries by inference. Foundational ``classical AI'' tool from the 1970s--80s.
+\end{itemize}
+\end{tldrbox}
+
+% =====================================================================
+\section{Why we need to go beyond propositional logic}
+
+Propositional logic last week gave us atomic sentences and connectives. It works, but it's not very \emph{expressive} — many natural ideas don't fit.
+
+Three sentences that propositional logic can't usefully handle:
+
+\begin{itemize}
+  \item \textit{``Ben teaches the AI Unit.''} \quad Best you can do: $P$. No internal structure.
+  \item \textit{``All students enjoy the AI Unit.''} \quad ``All'' is not a connective. The best workaround is a giant conjunction $E_1 \land E_2 \land \dots \land E_n$ over named students — clumsy and not equivalent in meaning.
+  \item \textit{``Some students have not filled in the unit feedback.''} \quad Same problem: ``some'' isn't expressible.
+\end{itemize}
+
+The fix: \textbf{split the atom.} Stop treating sentences like ``Ben is a lecturer'' as single propositional symbols. Instead, expose their internal structure: an object (Ben) plus a property (is a lecturer).
+
+\begin{notebox}[: ``predicate logic'' = ``first-order logic'']
+The lecture and most courses use these terms interchangeably. ``First-order'' refers to the fact that quantifiers range over \emph{individuals} (objects), not over predicates themselves. Higher-order logics let you quantify over predicates, but those aren't on the syllabus.
+\end{notebox}
+
+\subsection{What predicate logic adds, in one sentence}
+
+Propositional logic has atoms and connectives. Predicate logic adds:
+\begin{enumerate}
+  \item \textbf{Internal structure to atoms}: objects, predicates, functions.
+  \item \textbf{Quantifiers}: $\forall$ and $\exists$ to talk about ``all'' and ``some.''
+\end{enumerate}
+
+That's the entire conceptual leap. Everything else is plumbing.
+
+% =====================================================================
+\section{Splitting the atom: objects and relations}
+
+\subsection{The grammatical analogy}
+
+Take ``Ben is a lecturer.'' Grammatically: subject (Ben) + predicate (is a lecturer). Take ``Ben teaches the AI Unit.'' Subject + verb + object — really a binary relation \emph{Teaches} between two things.
+
+The lesson: atomic sentences in natural language already have structure. We mirror that in predicate logic.
+
+\begin{center}
+\begin{tabular}{@{}p{4.5cm}p{4cm}p{5.5cm}@{}}
+\toprule
+\thead{Sentence} & \thead{Object(s)} & \thead{Relation} \\
+\midrule
+Ben is a lecturer.       & Ben                  & ``\dots is a lecturer'' \\
+Ben teaches the AI Unit. & Ben, the AI Unit     & ``\dots teaches \dots'' \\
+The Wumpus is in $(1,2)$. & The Wumpus, $(1,2)$ & ``\dots is in \dots'' \\
+3 is between 1 and 5.    & 3, 1, 5              & ``\dots is between \dots and \dots'' (ternary) \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\subsection{Constants and predicates}
+
+\begin{defbox}[Constants and predicates]
+\textbf{Constants} are names for specific objects. Examples: $Ben$, $Wumpus$, $Square_{1,2}$, $1$, $2$, $3$. By convention written with capital letters or specific names.\\[0.3em]
+\textbf{Predicates} are named relations on terms. Examples: $Lecturer(x)$ (``$x$ is a lecturer''), $In(x, y)$ (``$x$ is in $y$''). By convention also capitalised. The number of arguments a predicate takes is its \textbf{arity}.
+\end{defbox}
+
+To make a sentence, fill predicate slots with terms:
+
+\begin{itemize}
+  \item $Lecturer(Ben)$ = ``Ben is a lecturer.''
+  \item $In(Wumpus, Square_{1,2})$ = ``The Wumpus is in $(1,2)$.''
+  \item $In(Square_{1,2}, Wumpus)$ = ``Square $(1,2)$ is in the Wumpus'' — \emph{nonsensical, but syntactically valid}; argument order matters.
+  \item $Between(3, 1, 5)$ = ``3 is between 1 and 5'' (a ternary predicate).
+\end{itemize}
+
+\begin{trapbox}[: argument order matters]
+$In(x, y)$ is \textbf{not} the same as $In(y, x)$ in general. Predicate logic doesn't assume relations are symmetric. ``Wumpus in Square'' makes sense; ``Square in Wumpus'' does not, but the logic happily writes both. \textbf{Watch the variable order in past-paper questions} — particularly with relations like $\mathit{Sister}$, $\mathit{Father}$, $\mathit{Loves}$.
+\end{trapbox}
+
+\subsection{Functions: building complex objects}
+
+\begin{defbox}[Function]
+A symbol that takes one or more terms and returns another \textbf{object} (term). \emph{Not} a sentence. Has fixed arity.\\[0.3em]
+Examples: $Child(x)$ = ``the child of $x$''; $Between(\mathit{Point}_A, \mathit{Point}_B)$ = ``the point between $A$ and $B$''; $Plus(x, y)$ = ``$x + y$''.
+\end{defbox}
+
+Functions let you talk about objects you don't have constants for. ``The child of the Wumpus is in $(1,2)$'' becomes:
+\[
+In(Child(Wumpus), Square_{1,2}).
+\]
+Functions can nest: $Child(Child(Wumpus))$ = the Wumpus's grandchild. $Plus(Plus(1, 2), 3)$ = $1 + 2 + 3 = 6$.
+
+\begin{notebox}[: function vs predicate]
+A predicate \emph{returns a sentence} (truth value). A function \emph{returns an object} (which can then be plugged into another predicate or function). Same syntax (Name followed by parenthesised arguments), different role.\\[0.3em]
+\textbf{How to tell them apart in a question.} Predicates appear at the top level of a sentence (or inside connectives/quantifiers); functions appear as arguments to predicates or other functions, never standing alone as a sentence.
+\end{notebox}
+
+\subsection{Variables}
+
+A \textbf{variable} is a placeholder symbol like $x, y, z$. Standalone, $Lecturer(x)$ doesn't have a definite truth value because $x$ isn't fixed. Variables become useful inside quantifiers, which we'll see below.
+
+\subsection{Terms (recursive definition)}
+
+\begin{defbox}[Term]
+A \textbf{term} is one of:
+\begin{itemize}[itemsep=0pt, topsep=0pt]
+  \item A \textbf{constant} (e.g., $Ben$, $Wumpus$, $Square_{1,2}$).
+  \item A \textbf{variable} (e.g., $x$, $y$, $z$ — placeholders to be bound by quantifiers).
+  \item A \textbf{function} applied to the right number of terms (e.g., $Child(Wumpus)$, $Between(Child(Bob), Mary)$).
+\end{itemize}
+This is a recursive definition: terms can be built from terms.
+\end{defbox}
+
+The recursion is what gives predicate logic its expressive power. You can refer to ``the child of the lecturer who teaches the AI unit'' if you have the right functions and predicates, no matter how nested.
+
+% =====================================================================
+\section{Atomic sentences and connectives}
+
+\subsection{Atomic sentences in predicate logic}
+
+\begin{defbox}[Atomic sentence (predicate logic)]
+An atomic sentence is one of:
+\begin{itemize}[itemsep=0pt, topsep=0pt]
+  \item A \textbf{0-ary predicate}: $True$, $False$ (constants of the language).
+  \item A predicate applied to terms: $Lecturer(Wumpus)$, $In(Ben, Square_{1,2})$.
+  \item A \textbf{term equality}: $Ben = Child(Wumpus)$.
+\end{itemize}
+\end{defbox}
+
+Equality $=$ is treated as a special, built-in binary predicate: $Term = Term$ is true exactly when both terms refer to the same object.
+
+\subsection{Connectives}
+
+The same five propositional connectives apply: $\neg, \land, \lor, \rightarrow, \leftrightarrow$. Combine atomic sentences with them as before.
+
+\begin{exbox}[A complex predicate-logic sentence]
+\textit{``If Ben is a lecturer and Ben is the child of the Wumpus, then the child of the Wumpus is a lecturer.''}
+\[
+\bigl(Lecturer(Ben) \land (Ben = Child(Wumpus))\bigr) \rightarrow Lecturer(Child(Wumpus)).
+\]
+\end{exbox}
+
+This is a textbook valid argument: substituting equals for equals (sometimes called ``Leibniz's law'' in philosophy) gives a tautology.
+
+% =====================================================================
+\section{Quantifiers}
+
+To express ``all'' and ``some,'' propositional logic gives up. Predicate logic introduces \textbf{quantifiers}.
+
+\subsection{\texorpdfstring{Universal quantifier $\forall$}{Universal quantifier (forall)}}
+
+\begin{defbox}[\texorpdfstring{Universal quantifier $\forall$}{Universal quantifier (forall)}]
+$\forall x \, \phi(x)$ means ``for every value of $x$, $\phi(x)$ is true.'' English: ``for all,'' ``every,'' ``each.''
+\end{defbox}
+
+\textit{``All students enjoy the AI Unit''} translates to:
+\[
+\forall x \bigl(Student(x) \rightarrow Enjoys(x, AIUnit)\bigr).
+\]
+
+\textbf{Note the implication.} The natural-sounding ``$\forall x \, Student(x) \land Enjoys(x, AIUnit)$'' is wrong — it would mean ``everything is a student and everything enjoys the AI unit,'' which is much stronger (it claims every object in the universe is a student). The standard pattern with $\forall$ is \emph{implication}: ``for everything, if it's a student, then it enjoys.''
+
+\subsection{\texorpdfstring{Existential quantifier $\exists$}{Existential quantifier (exists)}}
+
+\begin{defbox}[\texorpdfstring{Existential quantifier $\exists$}{Existential quantifier (exists)}]
+$\exists x \, \phi(x)$ means ``for at least one value of $x$, $\phi(x)$ is true.'' English: ``there exists,'' ``some,'' ``at least one.''
+\end{defbox}
+
+\textit{``Some students have not filled in the unit feedback''}:
+\[
+\exists x \bigl(Student(x) \land \neg FilledIn(x, UnitFeedback)\bigr).
+\]
+
+\textbf{Note the conjunction.} The pattern with $\exists$ is typically \emph{conjunction}: ``there exists something that is a student AND has the property.'' Using implication with $\exists$ is almost always wrong (it gives a vacuously-true reading: ``there exists something — possibly a unicorn — such that if it's a student, then it hasn't filled in feedback'' — that's true even if no students exist, because the implication is vacuously true for any non-student unicorn).
+
+\begin{trapbox}[: $\forall$ pairs with $\rightarrow$, $\exists$ pairs with $\land$]
+This is the most common predicate-logic translation mistake. Memorise the templates:
+\[
+\text{All } A \text{ are } B: \quad \forall x \, (A(x) \rightarrow B(x)).
+\]
+\[
+\text{Some } A \text{ is } B: \quad \exists x \, (A(x) \land B(x)).
+\]
+Mixing them up flips the meaning. Mix-up examples:
+\begin{itemize}[leftmargin=*, itemsep=0pt, topsep=0pt]
+  \item ``$\forall x \, (A(x) \land B(x))$'' = ``everything is both A and B'' — way too strong.
+  \item ``$\exists x \, (A(x) \rightarrow B(x))$'' = ``there's something that, if it's A, is also B'' — vacuously satisfied by any non-A object.
+\end{itemize}
+\end{trapbox}
+
+\subsection{Quantifier scope and binding}
+
+\begin{defbox}[Free vs bound variables]
+A variable $x$ is \textbf{bound} if it occurs inside the scope of a quantifier $\forall x$ or $\exists x$. Otherwise it's \textbf{free}.\\[0.3em]
+A sentence with no free variables is called a \textbf{closed sentence} or \textbf{statement}. Only closed sentences have a determinate truth value.
+\end{defbox}
+
+\textbf{Example.} In $\forall x \, (Student(x) \rightarrow Enjoys(x, y))$, $x$ is bound (by the $\forall$), but $y$ is free. The truth value depends on what $y$ refers to.
+
+\textbf{Example with both.} $(\forall x \, Student(x)) \land Enjoys(x, AIUnit)$. The first $x$ is bound; the second is free (the $\forall$'s scope ended at the closing parenthesis). \textbf{This is sloppy notation but legal.} Always parenthesise quantifier scopes carefully.
+
+\subsection{Nested quantifiers}
+
+The order of quantifiers matters when they nest. The famous ``loves'' quiz illustrates:
+
+\begin{exbox}[Quiz: which English sentence matches which logical form?]
+$Loves(x, y)$ means ``$x$ loves $y$.''\\[0.3em]
+\begin{tabular}{@{}lll@{}}
+\toprule
+\thead{Logical form} & \thead{English} \\
+\midrule
+A: $\forall x \exists y \, Loves(x, y)$           & ``Everybody loves somebody.'' \\
+B: $\exists x \forall y \, Loves(x, y)$           & ``There is somebody who loves everybody.'' \\
+C: $\forall y \exists x \, Loves(x, y)$           & ``Everybody is loved by somebody.'' \\
+D: $\exists y \forall x \, Loves(x, y)$           & ``There is somebody who is loved by everybody.'' \\
+\bottomrule
+\end{tabular}
+\end{exbox}
+
+\textbf{Reading recipe:} read left to right, naming the variable, then the quantifier, then the body. ``For all $x$, there exists $y$, such that $x$ loves $y$'' = for every person $x$, you can find someone they love. Strong claim about $x$, weak about $y$.
+
+\begin{pitfallbox}[: $\forall \exists$ vs $\exists \forall$]
+$\forall x \exists y$ allows $y$ to depend on $x$ (different people can have different loved-ones). $\exists y \forall x$ demands a single $y$ that works for every $x$ (one person loves everybody). The first is much weaker and almost always implied by the second, but \emph{not the other way around}. Practice this until it's automatic.\\[0.3em]
+\textbf{Concrete example.} ``Everyone has a parent'' is $\forall x \exists y \, Parent(y, x)$ — true. ``There is someone who is everyone's parent'' is $\exists y \forall x \, Parent(y, x)$ — false (no one parented themselves, etc.). Same predicate, different meaning.
+\end{pitfallbox}
+
+\begin{exbox}[Formal counterexample to $\forall x \exists y \Rightarrow \exists y \forall x$]
+Take the universe $\{a, b\}$ and the relation $Loves = \{(a,b),\, (b,a)\}$ — each loves the other, neither loves themselves.\\[0.3em]
+\textbf{Check $\forall x \exists y \, Loves(x,y)$.} For $x = a$: pick $y = b$, and $(a,b) \in Loves$. \checkmark{} For $x = b$: pick $y = a$, and $(b,a) \in Loves$. \checkmark{} Sentence is \textbf{true}. Crucially, the witness $y$ \emph{depended on} $x$: a different $y$ was needed for each.\\[0.3em]
+\textbf{Check $\exists y \forall x \, Loves(x,y)$.} Try $y = a$: need $Loves(a,a)$ \emph{and} $Loves(b,a)$. The first is missing — $(a,a) \notin Loves$. Fails. Try $y = b$: need $Loves(a,b)$ and $Loves(b,b)$. The second is missing. Fails. No fixed $y$ works for all $x$. Sentence is \textbf{false}.\\[0.3em]
+\textbf{The other direction holds.} If $\exists y \forall x \, P(x,y)$ is true, fix the witness $y_0$. Then for every $x$, $P(x, y_0)$ is true, so $\exists y \, P(x,y)$ holds — universally over $x$. Hence $\forall x \exists y \, P(x,y)$. The implication $\exists y \forall x \Rightarrow \forall x \exists y$ is therefore valid in every model. The reverse implication, as just shown, is not.
+\end{exbox}
+
+\subsection{Quantifier equivalences}
+
+Useful facts about quantifiers (analogous to De Morgan in propositional logic):
+\begin{itemize}
+  \item $\neg \forall x \, \phi(x) \;\equiv\; \exists x \, \neg \phi(x)$. ``Not all are $\phi$'' iff ``some are not $\phi$.''
+  \item $\neg \exists x \, \phi(x) \;\equiv\; \forall x \, \neg \phi(x)$. ``No $\phi$ exists'' iff ``everything is non-$\phi$.''
+  \item $\forall x \forall y \, \phi(x, y) \;\equiv\; \forall y \forall x \, \phi(x, y)$. Same-quantifier swaps are free.
+  \item $\exists x \exists y \, \phi(x, y) \;\equiv\; \exists y \exists x \, \phi(x, y)$.
+  \item $\forall x \, \phi(x) \;\equiv\; \neg \exists x \, \neg \phi(x)$. (Universal expressed via existential.)
+  \item $\exists x \, \phi(x) \;\equiv\; \neg \forall x \, \neg \phi(x)$. (Existential expressed via universal.)
+\end{itemize}
+
+% =====================================================================
+\section{Sentences and grammar}
+
+\subsection{The full grammar (Backus-Naur Form)}
+
+\begin{defbox}[Sentence in predicate logic]
+A \textbf{Sentence} is one of:
+\begin{itemize}[itemsep=0pt, topsep=0pt]
+  \item An \textbf{AtomicSentence} (defined above).
+  \item $\neg$Sentence \quad | \quad Sentence $\land$ Sentence \quad | \quad Sentence $\lor$ Sentence \quad | \quad Sentence $\rightarrow$ Sentence \quad | \quad Sentence $\leftrightarrow$ Sentence
+  \item $\forall$Variable \,Sentence \quad | \quad $\exists$Variable \,Sentence
+\end{itemize}
+\end{defbox}
+
+This is recursive (Sentence appears in its own definition) — that's what lets sentences nest arbitrarily deep. The notation style is \textbf{Backus-Naur Form (BNF)}, a standard way of writing grammars.
+
+% =====================================================================
+\section{Models, interpretations, and truth}
+
+\subsection{Models in predicate logic}
+
+In propositional logic, a model is just a truth-value assignment to atoms. Predicate logic needs more.
+
+\begin{defbox}[Model and interpretation]
+A predicate-logic model has \textbf{two} components:
+\begin{itemize}[itemsep=0pt, topsep=0pt]
+  \item A \textbf{universe of discourse}: a set of objects, plus relations and functions on them.
+  \item An \textbf{interpretation}: a mapping from constants to objects, predicates to set-theoretic relations, and functions to set-theoretic functions.
+\end{itemize}
+\end{defbox}
+
+\begin{exbox}[A small model]
+\textbf{Universe:} two objects, drawn as two circles, with one arrow between them.\\[0.3em]
+\textbf{Interpretation 1:} constants $Alice$ and $Mary$ each map to one of the two objects; the predicate $Sister(\cdot,\cdot)$ maps to the arrow relation. Then $Sister(Alice, Mary)$ is true if the arrow goes from Alice's object to Mary's.\\[0.3em]
+\textbf{Interpretation 2:} swap which object is $Alice$ and which is $Mary$. Then $Sister(Alice, Mary)$'s truth value flips.
+\end{exbox}
+
+\begin{center}
+
+\footnotesize\textit{The two layers of a predicate-logic model. The big circle is the \emph{universe of discourse}; the two blue dots inside are the bare \emph{objects}; the arrow between them is a \emph{relation} in the world. None of this is logic yet — it is just a structure. The \emph{interpretation} (right) adds the labels: the constant ``Alice'' is pinned to one dot, ``Mary'' to the other, and the predicate symbol ``Sister'' is pinned to the arrow relation. The key point: the left picture and right picture are the \textbf{same model}; the labelling is a separate choice, and a sentence's truth depends on both.}
+\end{center}
+
+The same syntactic sentence can be true under one interpretation and false under another. Truth is now \emph{relative to a model and an interpretation}.
+
+\subsection{Truth for atomic sentences}
+
+\begin{defbox}[Atomic-sentence truth]
+$Predicate(t_1, \dots, t_n)$ is \textbf{true} under a model + interpretation iff the tuple $(\text{interp}(t_1), \dots, \text{interp}(t_n))$ is in the relation that $Predicate$ maps to.\\[0.3em]
+$Term_1 = Term_2$ is \textbf{true} iff both terms map to the same object.
+\end{defbox}
+
+\begin{center}
+
+\footnotesize\textit{One model, two interpretations — and the truth of $Sister(Alice, Mary)$ flips. Both pictures show the identical world: two objects, one arrow. In the top picture the ``Sister'' arrow runs from the Alice-dot to the Mary-dot, so the ordered pair $(\text{Alice}, \text{Mary})$ lies in the relation and $Sister(Alice, Mary)$ is \textbf{true}. In the bottom picture the labels Alice and Mary are swapped, so the arrow now runs Mary$\to$Alice; the pair $(\text{Alice}, \text{Mary})$ is no longer in the relation and the same sentence is \textbf{false}. This is the atomic-truth rule in action: check whether the interpreted argument-tuple sits inside the interpreted relation — and remember the arrow's direction is what makes $Sister$ non-symmetric.}
+\end{center}
+
+\subsection{Truth for connectives}
+
+Use the same propositional truth tables. $\phi \land \psi$ is true iff both $\phi$ and $\psi$ are true (under the same model + interpretation), and so on.
+
+\subsection{Truth for quantifiers}
+
+\begin{defbox}[Quantifier truth]
+$\forall x \, \phi(x)$ is true iff for \emph{every} object $o$ in the universe, $\phi$ becomes true when $x$ is interpreted as $o$.\\[0.3em]
+$\exists x \, \phi(x)$ is true iff for \emph{some} object $o$ in the universe, $\phi$ becomes true when $x$ is interpreted as $o$.
+\end{defbox}
+
+Think of $\forall$ as a big conjunction over the universe (``$\phi(o_1) \land \phi(o_2) \land \dots$'') and $\exists$ as a big disjunction (``$\phi(o_1) \lor \phi(o_2) \lor \dots$'').
+
+\begin{center}
+
+\footnotesize\textit{Evaluating quantified sentences by sweeping the variable over every object. Take $\forall x\,(x = Alice \lor x = Mary)$: you test $x = $ each dot in turn — both dots satisfy the body, so the $\forall$ holds. Now $\exists x\,Sister(Mary, x)$: you need just one dot $x$ with a Sister-arrow \emph{leaving} the Mary-dot. In the top model no arrow leaves Mary, so no witness exists and the $\exists$ is \textbf{false}; in the bottom model the arrow points away from Mary, so a witness exists and it is \textbf{true}. The recipe: $\forall$ = every assignment must pass; $\exists$ = at least one assignment must pass.}
+\end{center}
+
+\begin{exbox}[Worked truth check]
+\textbf{Model:} two objects in the universe, no relations.\\[0.3em]
+$\forall x \, (x = Alice \lor x = Mary)$.
+\begin{itemize}[leftmargin=*, itemsep=0pt, topsep=0pt]
+  \item If $Alice$ and $Mary$ map to the two objects: every value of $x$ is either Alice or Mary $\to$ \textbf{true}.
+  \item If a third unnamed object exists: assigning $x$ to that object gives $x \neq Alice$ AND $x \neq Mary$, breaking the disjunction $\to$ \textbf{false}.
+\end{itemize}
+The truth depends on whether constants exhaust the universe.
+\end{exbox}
+
+\begin{exbox}[Quiz: truth of various quantified sentences in a Sister model]
+\textbf{Setup:} two objects, one arrow Alice $\to$ Mary labelled Sister.\\[0.3em]
+\begin{itemize}[leftmargin=*, itemsep=0pt, topsep=0pt]
+  \item $Sister(Alice, Mary)$ — \textbf{true} (matches the arrow).
+  \item $Sister(Mary, Alice)$ — \textbf{false} (arrow direction matters).
+  \item $\exists x \, Sister(Alice, x)$ — \textbf{true} ($x = Mary$ works).
+  \item $\forall x \, (x = Alice \lor x = Mary)$ — \textbf{true} (universe has only these two).
+  \item $\forall x \exists y \, Sister(x, y)$ — \textbf{false} (no sister-arrow originates at Mary).
+  \item $\exists x \forall y \, Sister(x, y)$ — \textbf{false} (no one is the sister of every object including themselves).
+\end{itemize}
+\end{exbox}
+
+% =====================================================================
+\section{Predicate logic is far more expressive}
+
+The biggest practical payoff: predicate logic lets you write \emph{compact} rules that propositional logic only handles by enumeration.
+
+\subsection{Wumpus rules in propositional vs predicate logic}
+
+\textbf{Propositional logic:} the rule ``a square is breezy iff a neighbour has a pit'' must be repeated for every square individually:
+\[
+B_{1,1} \leftrightarrow (P_{1,2} \lor P_{2,1}), \quad B_{2,1} \leftrightarrow (P_{1,1} \lor P_{2,2} \lor P_{3,1}), \quad \dots
+\]
+For a 4$\times$4 grid, that's 16 sentences, each unique to its square. The rules of the game alone require dozens of sentences.
+
+\textbf{Predicate logic:} one sentence captures the rule for all squares simultaneously:
+\[
+\forall s \, \bigl(Breezy(s) \leftrightarrow \exists r \, (Adjacent(r, s) \land Pit(r))\bigr).
+\]
+\textit{For every square $s$, $s$ is breezy iff there exists a square $r$ adjacent to $s$ that contains a pit.}
+
+\textbf{The whole Wumpus rulebook fits in a handful of sentences} in predicate logic, vs.\ dozens or hundreds in propositional. Strictly more expressive, and vastly more compact.
+
+\begin{center}
+
+\footnotesize\textit{The expressiveness gap, side by side. The breeziness rule ``a room is breezy iff a neighbour has a pit'' is one English sentence, but propositional logic must hard-code it square by square: $B_{1,1}\Leftrightarrow(P_{1,2}\lor P_{2,1})$, $B_{2,1}\Leftrightarrow(P_{1,1}\lor P_{2,2}\lor P_{3,1})$, and so on — 16 distinct sentences for the 4$\times$4 grid, each naming its own square and neighbours. The yellow box shows first-order logic collapsing all of them into the single quantified sentence $\forall s\,(Breezy(s)\Leftrightarrow\exists r\,(Adjacent(r,s)\land Pit(r)))$. The universal $s$ replaces enumeration over squares; the existential $r$ replaces the explicit disjunction over neighbours. Image credit: Russell \& Norvig, AIMA.}
+\end{center}
+
+\subsection{Why this matters}
+
+Knowledge bases over realistic domains (medical records, legal codes, biology taxonomies) have millions of objects. Propositional encodings of universal rules would be intractable. Predicate logic keeps them at a humanly-readable size and lets a reasoning engine do the rest.
+
+% =====================================================================
+\section{Resolution and reasoning in predicate logic}
+
+The lecturer skipped the formal resolution algorithm for predicate logic — it's covered in textbooks but not on this exam. The conceptual picture:
+
+\begin{itemize}
+  \item Same idea as propositional resolution: convert to CNF, apply a generalised resolution rule until you get the empty clause.
+  \item Extra wrinkle: \textbf{unification} — to cancel literals like $P(x)$ and $\neg P(Bob)$, you need to bind $x$ to $Bob$. This binding step is the heart of predicate-logic resolution.
+  \item Extra wrinkle: \textbf{Skolemisation} — to convert quantified sentences to CNF, $\exists$ quantifiers are replaced by Skolem functions/constants. Beyond exam scope but worth knowing.
+  \item Sound and complete (Robinson, 1965); the foundation of automated theorem proving.
+\end{itemize}
+
+\examflag{}For this exam: \textbf{translate sentences between English and predicate logic}, and \textbf{determine truth values of simple predicate-logic sentences in given models}. You will not be asked to perform predicate-logic resolution.
+
+% =====================================================================
+\section{Prolog: programming with predicate logic}
+
+\subsection{What Prolog is}
+
+\begin{defbox}[Prolog]
+A \textbf{logic programming} language built on predicate logic. You declare facts and rules in a knowledge base; the runtime answers queries by automated inference. Created in France, 1972; rose to prominence as the centrepiece of Japan's \emph{Fifth Generation Computer Systems} project in the 1980s.
+\end{defbox}
+
+In Prolog you don't write step-by-step procedures. You write things like:
+
+\begin{exbox}[Prolog-style facts and a query]
+\begin{verbatim}
+% Facts
+parent(bob, alice).
+parent(alice, john).
+parent(john, mary).
+
+% Rules (the :- is logical implication, read right-to-left)
+ancestor(X, Y) :- parent(X, Y).
+ancestor(X, Y) :- parent(X, Z), ancestor(Z, Y).
+
+% Queries
+?- ancestor(bob, john).      % runtime answers: yes
+?- ancestor(bob, mary).      % runtime answers: yes
+?- ancestor(X, mary).        % runtime answers: X = john; X = alice; X = bob.
+\end{verbatim}
+\textit{Notice the recursive definition of ancestor: an ancestor is either a direct parent, or a parent of an ancestor.}
+\end{exbox}
+
+The lecturer's example:
+\begin{verbatim}
+?- concatenate([bob, alice], [john, mary], L).
+L = [bob, alice, john, mary].
+\end{verbatim}
+
+Or with both arguments unknown:
+\begin{verbatim}
+?- concatenate(X, Y, [bob, alice, john, mary]).
+X = []; Y = [bob, alice, john, mary]
+X = [bob]; Y = [alice, john, mary]
+X = [bob, alice]; Y = [john, mary]
+... (Prolog enumerates every assignment that satisfies the query)
+\end{verbatim}
+
+\begin{center}
+
+\footnotesize\textit{The lecturer's actual Prolog session, and the key thing to notice about logic programming. The first query gives \texttt{concatenate} two known lists and asks for the result — ordinary forward use. The second query is the striking one: it fixes only the \emph{output} list and leaves both inputs as variables \texttt{X}, \texttt{Y}. Prolog does not run a procedure ``backwards''; it treats the query as a goal and, via SLD resolution plus backtracking, finds \emph{every} pair $(X, Y)$ that satisfies it — here all five ways to split a 4-element list. The final \texttt{false} marks the point where backtracking has exhausted the solutions. This is declarative programming: you state the relation, the runtime searches for satisfying bindings in any direction.}
+\end{center}
+
+\subsection{How Prolog works under the hood}
+
+\textbf{Backward chaining (resolution-based).} Prolog answers ``does $X = bob$ make $ancestor(X, mary)$ true?'' by:
+\begin{enumerate}
+  \item Trying to match $ancestor(bob, mary)$ against the head of each rule.
+  \item Recursively trying to satisfy the body of each matched rule.
+  \item Backtracking on failure.
+\end{enumerate}
+
+This is \textbf{SLD resolution}, a specialised form of FOL resolution efficient for Horn clauses (clauses with at most one positive literal — exactly what Prolog rules are).
+
+\subsection{Why this is interesting for AI}
+
+\textbf{Classical AI's promise:} encode a domain in a formal logical KB, then use sound inference to answer arbitrary queries. The result is \textbf{transparent} — you can inspect the rules. Modern LLMs deliver fluency at the cost of opacity, sometimes hallucinating answers. A logic-backed system, by construction, can only output entailed conclusions.
+
+\begin{notebox}[: combining symbolic and neural AI]
+This is where the unit's essay topic — \textbf{neuro-symbolic AI} — comes in. The argument runs: pair a neural model's pattern recognition with a symbolic reasoner's correctness, and you might get the strengths of both. The tension is in the translation: natural language has nuance (sarcasm, ambiguity, context) that resists clean logical encoding. We'll meet this debate head-on in week 11.
+\end{notebox}
+
+% =====================================================================
+\section{Exam-mode answers}
+
+\begin{exambox}[(MCQ): Which predicate-logic sentence corresponds to ``Every dog has a tail''?]
+\textit{Correct: $\forall x \, (Dog(x) \rightarrow \exists y \, (Tail(y) \land Has(x, y)))$.}\\[0.3em]
+\textit{Trap distractors:}
+\begin{itemize}[leftmargin=*, itemsep=0pt, topsep=0pt]
+  \item $\forall x \, (Dog(x) \land \exists y \, Has(x, y))$ — wrong: this says ``everything is a dog and has something,'' too strong.
+  \item $\exists x \forall y \, (Dog(x) \rightarrow Has(x, y))$ — wrong: ``there exists a dog that has every $y$,'' switches the quantifier order.
+  \item $\forall x \forall y \, (Dog(x) \rightarrow Has(x, y))$ — wrong: ``every dog has \emph{everything},'' too strong.
+\end{itemize}
+\textit{The pattern: $\forall$ + implication, $\exists$ + conjunction.}
+\end{exambox}
+
+\begin{exambox}[(MCQ): For the model $\{Alice, Mary\}$ with the relation $Sister(Alice, Mary)$, which of the following sentences are true? Mark all that apply.]
+\textit{Set up: two objects, one arrow from Alice to Mary labelled Sister.}
+\begin{itemize}[leftmargin=*, itemsep=0pt, topsep=0pt]
+  \item $Sister(Alice, Mary)$ — \textbf{true} (matches the arrow).
+  \item $Sister(Mary, Alice)$ — \textbf{false} (arrow direction matters).
+  \item $\exists x \, Sister(Alice, x)$ — \textbf{true} ($x = Mary$).
+  \item $\forall x \, (x = Alice \lor x = Mary)$ — \textbf{true} (universe has only these two).
+  \item $\forall x \exists y \, Sister(x, y)$ — \textbf{false} (no sister-arrow originates at Mary).
+\end{itemize}
+\end{exambox}
+
+\begin{exambox}[(MCQ, mark all that apply): Which of the following are true about predicate logic?]
+\textit{TRUE:}
+\begin{itemize}[leftmargin=*, itemsep=0pt, topsep=0pt]
+  \item ``Predicate logic is more expressive than propositional logic.''
+  \item ``Predicate logic includes constants, predicates, functions, and variables.''
+  \item ``$\forall x \exists y$ does not in general have the same meaning as $\exists y \forall x$.''
+  \item ``Equality is a special binary predicate.''
+\end{itemize}
+\textit{FALSE:}
+\begin{itemize}[leftmargin=*, itemsep=0pt, topsep=0pt]
+  \item ``A predicate returns an object'' — wrong, predicates return sentences. Functions return objects.
+  \item ``Quantifiers are binary connectives'' — no, they bind a variable and modify a sentence.
+\end{itemize}
+\end{exambox}
+
+\begin{exambox}[(MCQ): Which of the following statements about Prolog is true?]
+\textit{Correct: \textbf{Prolog is built on predicate logic; programs are knowledge bases of facts and rules; the runtime answers queries via automated inference.}}\\[0.3em]
+\textit{Trap distractors: ``Prolog is a neural network framework'' (false). ``Prolog programs execute step-by-step in source order like C'' (false — they're declarative; the runtime chooses the order). ``Prolog is the fastest language for chess engines'' (false — chess engines use heuristic minimax, not logic programming).}
+\end{exambox}
+
+% =====================================================================
+\section*{Key equations / algorithms cheat sheet}
+
+\textbf{Term} (recursive):
+\[
+\text{Term} \;:=\; \text{Constant} \;|\; \text{Variable} \;|\; \text{Function}(\text{Term}, \dots).
+\]
+
+\textbf{AtomicSentence:}
+\[
+\text{AtomicSentence} \;:=\; True \;|\; False \;|\; \text{Predicate}(\text{Term}, \dots) \;|\; \text{Term} = \text{Term}.
+\]
+
+\textbf{Sentence:}
+\[
+\text{Sentence} \;:=\; \text{AtomicSentence} \;|\; \neg\text{Sentence} \;|\; \text{Sentence} \circ \text{Sentence} \;|\; \forall x\,\text{Sentence} \;|\; \exists x\,\text{Sentence}
+\]
+where $\circ \in \{\land, \lor, \rightarrow, \leftrightarrow\}$.
+
+\textbf{Translation templates:}
+\[
+\text{All } A \text{ are } B: \quad \forall x\,(A(x) \rightarrow B(x)).
+\]
+\[
+\text{Some } A \text{ is } B: \quad \exists x\,(A(x) \land B(x)).
+\]
+
+\textbf{Quantifier truth:}
+\[
+\forall x\,\phi(x) \text{ true } \iff \phi(o) \text{ true for every object } o.
+\]
+\[
+\exists x\,\phi(x) \text{ true } \iff \phi(o) \text{ true for some object } o.
+\]
+
+\textbf{Quantifier equivalences:}
+\[
+\neg \forall x \, \phi(x) \;\equiv\; \exists x \, \neg \phi(x), \qquad \neg \exists x \, \phi(x) \;\equiv\; \forall x \, \neg \phi(x).
+\]
+
+\textbf{Wumpus example (predicate vs propositional):}
+\[
+\forall s\,\bigl(Breezy(s) \leftrightarrow \exists r\,(Adjacent(r, s) \land Pit(r))\bigr) \quad \text{(predicate, one rule)}
+\]
+\[
+B_{1,1} \leftrightarrow (P_{1,2} \lor P_{2,1}), \quad \dots \quad \text{(propositional, one rule per square)}
+\]
+
+% =====================================================================
+\section*{Pitfalls and MCQ traps consolidated}
+
+\begin{trapbox}[summary]
+\begin{tabular}{@{}p{6.5cm}p{8cm}@{}}
+\toprule
+\thead{Trap} & \thead{Right answer} \\
+\midrule
+$\forall$ pairs with $\land$            & \textbf{No} — pair $\forall$ with $\rightarrow$. \\
+$\exists$ pairs with $\rightarrow$      & \textbf{No} — pair $\exists$ with $\land$. \\
+$\forall x \exists y \equiv \exists y \forall x$ & \textbf{No} — order matters. \\
+Argument order in predicates is irrelevant & \textbf{No} — $In(x, y) \neq In(y, x)$. \\
+A predicate returns an object           & \textbf{No}, a sentence. Functions return objects. \\
+Functions are sentences                  & \textbf{No}, terms. \\
+Equality is just a connective            & \textbf{No}, a special binary predicate. \\
+Variables are constants                  & \textbf{No}; variables are bound by quantifiers. \\
+Predicate logic and propositional are equivalent & \textbf{No}; predicate is strictly more expressive. \\
+Prolog is procedural like Python         & \textbf{No}, declarative — based on logical inference. \\
+\bottomrule
+\end{tabular}
+\end{trapbox}
+
+\textbf{Other confusions:}
+
+\begin{itemize}
+  \item \textbf{``First-order'' refers to the variable scope.} First-order quantifiers range over individuals (objects). Higher-order would let you quantify over predicates too — beyond this unit.
+  \item \textbf{Free vs bound variables.} A variable inside a $\forall$ or $\exists$ is \emph{bound}; outside, it's \emph{free}. Sentences with free variables don't have a determinate truth value (they're \emph{open formulas}).
+  \item \textbf{Universe of discourse matters.} ``$\forall x \, \phi(x)$'' depends on what the universe is. ``Every prime is odd'' is false for the universe $\mathbb{N}$ (because of 2) but true if the universe is ``primes greater than 2.''
+  \item \textbf{Equality is different from biconditional.} $Term = Term$ asserts \emph{object identity}; $\phi \leftrightarrow \psi$ asserts \emph{truth-value equality} of two sentences. They live at different levels.
+  \item \textbf{Translating English to logic loses nuance.} Sarcasm, idioms, context, presupposition — predicate logic captures none of these. The gap is what makes pure-symbolic AI brittle on real language.
+  \item \textbf{Domain conventions matter.} ``Everyone'' usually means ``every person''; in logic you'd quantify over the relevant domain explicitly: $\forall x \, (Person(x) \rightarrow \dots)$.
+\end{itemize}
+
+% =====================================================================
+\section*{Self-check questions}
+
+\begin{enumerate}
+  \item \textbf{Distinguish} propositional and predicate logic. Give two natural-language sentences that propositional logic cannot capture compactly.
+  \item \textbf{Translate} into predicate logic: ``All Italians like pasta.''
+  \item \textbf{Translate} into predicate logic: ``Some philosophers do not understand Hegel.''
+  \item \textbf{Translate} into predicate logic: ``Every parent loves all of their children.''
+  \item \textbf{Translate} into predicate logic: ``There is a teacher who teaches every student.''
+  \item \textbf{Translate} into English: $\forall x \exists y \, (Number(x) \rightarrow GreaterThan(y, x))$.
+  \item \textbf{Translate} into English: $\exists x \forall y \, Loves(x, y)$.
+  \item \textbf{Distinguish} a constant, a variable, a predicate, and a function with examples from the Wumpus world.
+  \item \textbf{Identify} the arity of: $Lecturer(x)$; $Teaches(x, y)$; $Between(x, y, z)$; $Square_{1,2}$.
+  \item \textbf{Define} terms and atomic sentences in predicate logic, using the recursive grammar.
+  \item \textbf{Construct} the predicate-logic sentence: ``the child of the lecturer is in square (1,2),'' using $Lecturer$, $Child$, $In$, $Square_{1,2}$.
+  \item \textbf{Evaluate} the truth of $\forall x \, (Sister(x, Mary) \rightarrow \neg(x = Mary))$ in a model with universe $\{Alice, Mary\}$ and a Sister relation from Alice to Mary.
+  \item \textbf{Compare and contrast} the Wumpus-world rule ``a room is breezy iff a neighbour has a pit'' in propositional vs.\ predicate logic. How many sentences does each require?
+  \item \textbf{Explain} the difference between $\forall x \exists y \, Loves(x, y)$ and $\exists y \forall x \, Loves(x, y)$. Construct a small model where one is true and the other is false.
+  \item \textbf{State} the quantifier equivalences for negation. Verify by writing them out semantically.
+  \item \textbf{Distinguish} free and bound variables. Give an example of a sentence with each.
+  \item \textbf{Describe} how Prolog uses predicate logic. What does it do when you submit a query?
+  \item \textbf{Discuss} the trade-off between symbolic AI (e.g.\ Prolog) and neural AI (e.g.\ LLMs) with respect to interpretability and hallucination.
+\end{enumerate}
+
+\end{document}

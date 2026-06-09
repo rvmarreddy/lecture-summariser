@@ -1,0 +1,675 @@
+\documentclass[11pt, a4paper]{article}
+
+\usepackage{fontspec}
+\setmainfont{Helvetica Neue}
+\setmonofont{Menlo}
+\usepackage{unicode-math}
+\setmathfont{STIX Two Math}
+
+\usepackage[margin=2cm, top=2cm, bottom=2.5cm]{geometry}
+\usepackage{microtype}
+\usepackage{parskip}
+\setlength{\parskip}{0.6em}
+\setlength{\parindent}{0pt}
+
+\usepackage[colorlinks=true, linkcolor=NavyBlue, urlcolor=NavyBlue, citecolor=NavyBlue]{hyperref}
+\usepackage{xcolor}
+\usepackage[dvipsnames]{xcolor}
+
+\usepackage{amsmath}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{tabularx}
+\newcommand{\thead}[1]{\textbf{#1}}
+
+% --- Graphics ---
+\usepackage{graphicx}
+\graphicspath{{figures/week31/}}
+
+\usepackage{enumitem}
+\setlist[itemize]{leftmargin=1.5em, itemsep=0.2em, topsep=0.3em}
+\setlist[enumerate]{leftmargin=1.5em, itemsep=0.2em, topsep=0.3em}
+
+\usepackage[most]{tcolorbox}
+\tcbuselibrary{breakable, skins, theorems}
+
+\definecolor{defBg}{HTML}{EAF2FB}
+\definecolor{defBd}{HTML}{1F4E79}
+\definecolor{exBg}{HTML}{F4F4F4}
+\definecolor{exBd}{HTML}{555555}
+\definecolor{tipBg}{HTML}{E8F5E9}
+\definecolor{tipBd}{HTML}{2E7D32}
+\definecolor{trapBg}{HTML}{FCE4EC}
+\definecolor{trapBd}{HTML}{AD1457}
+\definecolor{pitBg}{HTML}{FFF8E1}
+\definecolor{pitBd}{HTML}{B27600}
+\definecolor{noteBg}{HTML}{F3E5F5}
+\definecolor{noteBd}{HTML}{6A1B9A}
+\definecolor{tldrBg}{HTML}{E1F5FE}
+\definecolor{tldrBd}{HTML}{0277BD}
+
+\newtcolorbox{defbox}[1][]{enhanced, breakable, colback=defBg, colframe=defBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={Definition: #1}}
+\newtcolorbox{exbox}[1][]{enhanced, breakable, colback=exBg, colframe=exBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={Worked example: #1}}
+\newtcolorbox{exambox}[1][]{enhanced, breakable, colback=tipBg, colframe=tipBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={Exam-mode answer #1}}
+\newtcolorbox{trapbox}[1][]{enhanced, breakable, colback=trapBg, colframe=trapBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={MCQ trap #1}}
+\newtcolorbox{pitfallbox}[1][]{enhanced, breakable, colback=pitBg, colframe=pitBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={Pitfall #1}}
+\newtcolorbox{notebox}[1][]{enhanced, breakable, colback=noteBg, colframe=noteBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={Lecturer aside #1}}
+\newtcolorbox{tldrbox}[1][]{enhanced, breakable, colback=tldrBg, colframe=tldrBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={TL;DR #1}}
+
+\usepackage{titlesec}
+\titleformat{\section}[block]{\Large\bfseries\color{defBd}}{\thesection.}{0.6em}{}
+\titleformat{\subsection}[block]{\large\bfseries\color{defBd!80!black}}{\thesubsection}{0.5em}{}
+\titleformat{\subsubsection}[block]{\normalsize\bfseries}{}{0pt}{}
+\titlespacing*{\section}{0pt}{1.6em}{0.6em}
+\titlespacing*{\subsection}{0pt}{1.2em}{0.4em}
+
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small CM52078 — Week 11}
+\fancyhead[R]{\small Neuro-Symbolic AI (Essay Walkthrough)}
+\fancyfoot[C]{\small\thepage}
+\renewcommand{\headrulewidth}{0.3pt}
+
+\newcommand{\examflag}{\textcolor{tipBd}{\textbf{[EXAM]}}\,}
+\newcommand{\trapflag}{\textcolor{trapBd}{\textbf{[TRAP]}}\,}
+\newcommand{\doflag}{\textcolor{defBd}{\textbf{[DO]}}\,}
+
+\title{\vspace{-1cm}{\Huge\bfseries Week 11 — Neuro-Symbolic AI: Essay Walkthrough} \\[0.4em]{\large Three directed-reading papers: Velasquez (2025), Oltramari et al. (2020), Oltramari (2023)}}
+\author{\large CM52078 Classical Artificial Intelligence \\[0.2em]\normalsize University of Bath}
+\date{Revision notes}
+
+\begin{document}
+
+\maketitle
+\thispagestyle{empty}
+
+\vspace{1em}
+
+\begin{tldrbox}
+\begin{itemize}[leftmargin=*]
+  \item This lecture walks through the \textbf{three directed-reading papers} for the essay component of the exam. \emph{You only need to write about ONE of them}, but the lecturer reviews all three for context.
+  \item The unifying theme: \textbf{neuro-symbolic AI} — combining neural networks (deep learning, ``the neuro'') with symbolic AI (logic, knowledge graphs, ``the stuff in this course''). \textbf{Why combine?} Each has strengths the other lacks.
+  \item \textbf{Velasquez et al.\ (2025)} ``Neurosymbolic AI as an antithesis to scaling laws'': argues against the brute-force scaling of neural models. Pure scaling has unsustainable physical/economic costs. Neuro-symbolic offers a more efficient alternative through ``lifting'' (neural $\to$ symbolic) and ``projecting'' (symbolic $\to$ neural).
+  \item \textbf{Oltramari et al.\ (2020)} ``Neuro-symbolic Architectures for Context Understanding'': uses knowledge graphs (autonomous driving) and concept-net triples (NLP) to inject \emph{structured world knowledge} into neural models — making them more interpretable and better at handling context.
+  \item \textbf{Oltramari (2023)} ``Enabling High-Level Machine Reasoning with Cognitive Neuro-Symbolic Systems'': frames neuro-symbolic via Kahneman's \textbf{System 1} (fast, intuitive) and \textbf{System 2} (slow, deliberate) thinking. Argues for an ACT-R-style cognitive architecture with a central control hub coordinating neural and symbolic modules.
+  \item Common claims: pure deep learning struggles with reasoning, common sense, interpretability, and high-leverage knowledge integration. Symbolic AI struggles with statistics and scale. Hybrid may give the best of both.
+\end{itemize}
+\end{tldrbox}
+
+% =====================================================================
+\section{The exam essay setup}
+
+\textbf{Structure of the essay (34 marks).} Pick ONE of three papers. Three parts:
+
+\begin{enumerate}
+  \item \emph{Seen in advance, $\sim$9 marks:} one paragraph summarising the paper's contributions and motivations.
+  \item \emph{Seen in advance, $\sim$9 marks:} one paragraph giving a high-level overview of methodology / techniques.
+  \item \emph{Unseen, revealed in exam, $\sim$16 marks:} something the lecturer hasn't told us yet. Likely candidates based on past-paper precedent: \textbf{critical assessment}, \textbf{real-world application}, \textbf{future directions}, or \textbf{comparison across papers}.
+\end{enumerate}
+
+\textbf{In the exam you cannot consult the papers.} You must memorise enough of one paper's argument, structure, and key ideas to write coherently from cold.
+
+\textbf{Strategic recommendation:} pick ONE primary paper to know in depth (the one whose underlying ideas you find clearest). Know the other two well enough to compare them, in case the unseen part 3 demands cross-paper reasoning.
+
+\textbf{Marking criteria:} accuracy and clarity of statements; breadth and depth of reasoning; quality of argumentation. The marking is qualitative — there's no single ``correct'' answer to part 3, only better and worse arguments.
+
+% =====================================================================
+\section{Background: neuro-symbolic AI in context}
+
+\subsection{Why ``classical'' AI is back in fashion}
+
+The unit's narrative: classical AI (search, logic, probabilistic reasoning, Bayesian networks) ruled until $\sim$2015. Deep learning then took over by sheer scale. \textbf{But} as deep learning hits limits — interpretability, hallucinations, common-sense reasoning, scaling cost — the symbolic methods this course covers are coming back, paired with neural ones.
+
+\begin{defbox}[Neuro-symbolic AI]
+A class of AI systems that combines:
+\begin{itemize}[itemsep=0pt, topsep=0pt]
+  \item \textbf{Neural} components: deep learning models (transformers, neural networks) that excel at pattern recognition and statistical learning from data.
+  \item \textbf{Symbolic} components: logic, knowledge graphs, rules, structured human knowledge — the stuff of classical AI.
+\end{itemize}
+The central question: \emph{how should the two be integrated to get the strengths of each?}
+\end{defbox}
+
+\subsection{The trade-off in one table}
+
+\begin{center}
+\renewcommand{\arraystretch}{1.25}
+\begin{tabular}{@{}p{4cm}p{5cm}p{5.5cm}@{}}
+\toprule
+\thead{Property} & \thead{Neural / deep learning} & \thead{Symbolic / classical AI} \\
+\midrule
+Pattern recognition  & Excellent                  & Limited \\
+Reasoning depth      & Limited                    & Strong (logical proofs, etc.) \\
+Common sense         & Approximated via data      & Encoded explicitly in knowledge bases \\
+Interpretability     & Poor (black box)           & High (every step traceable) \\
+Data requirements    & Massive                    & Modest \\
+Energy / compute     & Massive                    & Small \\
+Scaling              & Improves with more data    & Brittle past a point \\
+Statistical handling & Native                     & Awkward \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+The hope of neuro-symbolic AI: combine these so each compensates for the other's weaknesses.
+
+\subsection{Key concepts to know}
+
+Several recurring concepts appear across the three papers. Understand them once and you can deploy them in any of the three essays.
+
+\subsubsection*{Scaling laws}
+
+\begin{defbox}[Scaling laws]
+The empirical observation that LLM performance improves predictably as you increase parameters / training data / compute. Roughly exponential — doubling-time on the order of months for some metrics.
+\end{defbox}
+
+The growth pattern is reminiscent of Moore's Law (transistor density doubling every two years) but in some metrics is faster: model parameters and certain capability benchmarks now double on a roughly six-month cadence. \textbf{Concrete cost markers:}
+\begin{itemize}
+  \item Gemini Ultra training: $\sim$\$191 million.
+  \item AI globally: estimated 3.7\% of greenhouse gas emissions.
+  \item US: data centres consume single-digit percentages of national electricity.
+\end{itemize}
+
+\subsubsection*{The bitter lesson}
+
+\begin{defbox}[The bitter lesson (Sutton, 2019)]
+The empirical observation that, historically, general-purpose methods that scale with computation have outperformed AI solutions relying on human domain knowledge. The argument that ``compute scaling wins'' over hand-crafted insight.
+\end{defbox}
+
+The bitter lesson explains why pure deep learning has dominated for the last decade. It's a hostile argument against neuro-symbolic AI — \emph{maybe} the symbolic component will get scaled away in the next generation.
+
+\textbf{The counterargument (relevant to Paper 1).} Pure scaling is reaching physical and economic limits. The bitter lesson might still be locally true (more compute beats more cleverness, week by week) while being globally untenable (more compute can't continue forever).
+
+\subsubsection*{Manifold hypothesis and universal function approximation}
+
+Two foundational claims of deep learning that Velasquez engages with:
+
+\begin{itemize}
+  \item \textbf{Manifold hypothesis}: real-world high-dimensional data lies on a lower-dimensional manifold within the input space. This justifies dimensionality reduction techniques.
+  \item \textbf{Universal function approximation}: neural networks with enough parameters can approximate any continuous function. This justifies scaling.
+\end{itemize}
+
+Both claims are mathematically correct. \textbf{But} both have caveats — universality says nothing about \emph{learnability} (how much data, how many iterations, whether gradient descent finds the right weights), and the manifold hypothesis is approximate, not exact.
+
+\begin{center}
+
+\footnotesize\textit{The two foundational claims that license pure scaling. The square nodes on the left are the high-dimensional input; the columns of circles are successive hidden layers; the single output on the right is the learned function value. The \textbf{manifold hypothesis} says that, although the input lives in many dimensions, the data actually concentrates on a smooth low-dimensional surface inside that space. The \textbf{universal function approximation theorem} then says a network with enough parameters can represent any such surface. Read the two together: this is exactly why ``just add parameters'' is believed to work --- and why Velasquez attacks the leap from ``can represent'' to ``can efficiently learn''. Image credit: Russell and Norvig, Artificial Intelligence: A Modern Approach, Global Edition.}
+\end{center}
+
+\subsubsection*{Kahneman's System 1 / System 2}
+
+\begin{defbox}[System 1 vs System 2 (Kahneman)]
+From \emph{Thinking, Fast and Slow}:
+\begin{itemize}[itemsep=0pt, topsep=0pt]
+  \item \textbf{System 1}: fast, automatic, intuitive. Pattern recognition, ``gut feel,'' instant answers.
+  \item \textbf{System 2}: slow, deliberate, effortful. Step-by-step reasoning, mental arithmetic, planning.
+\end{itemize}
+\end{defbox}
+
+\textbf{The relevance to AI.} LLMs are excellent at System 1 (pattern completion). They struggle with System 2 (multi-step reasoning, novel problem-solving). Paper 3 builds its entire argument on this distinction.
+
+\subsubsection*{Plato's Cave}
+
+The classical analogy used in Paper 3: prisoners chained in a cave see only shadows of objects projected on a wall. They have no direct experience of the world; they only know its representations. \textbf{LLMs are like that.} They have access only to text — descriptions of the world, not the world itself. This limits their reasoning: they can produce plausible-sounding answers without the experiential grounding to verify them.
+
+% =====================================================================
+\section{Paper 1: Velasquez et al.\ (2025) — Antithesis to scaling laws}
+
+\textbf{File:} \texttt{paper3-velasquez-scaling-laws.pdf}. Most recent of the three; published in PNAS Nexus, 2025. The lecturer covered this first as the most general and up-to-date.
+
+\textbf{Authors}: Alvaro Velasquez, Neel Bhatt, Ufuk Topcu, Zhangyang Wang, Katia Sycara, Simon Stepputtis, Sandeep Neema, Gautam Vallabha.
+
+\subsection{Key claim}
+
+The recent progress of large language models (Gemini Ultra, GPT-4) has been driven by \textbf{scaling laws}: massively increasing parameters, training data, and compute. \textbf{Velasquez et al.\ argue this is unsustainable and ultimately a dead end.} They propose neurosymbolic AI as a more efficient alternative.
+
+\subsection{The scaling-law argument}
+
+\textbf{Costs of pure scaling:}
+\begin{itemize}
+  \item \textbf{Energy:} data centres now consume single-digit percentages of national electricity grids.
+  \item \textbf{Money:} training Gemini Ultra reportedly cost \$191 million.
+  \item \textbf{Carbon:} AI training and inference contribute substantially to global greenhouse emissions.
+  \item \textbf{Gatekeeping:} only a handful of companies can afford the largest models, narrowing the AI ecosystem to those with hyperscale resources.
+\end{itemize}
+
+\textbf{Velasquez's counter to the bitter lesson:} the human brain runs on $\sim$20W of power and surpasses LLMs in many cognitive tasks. So compute alone clearly isn't the only path. \textbf{There must be smarter architectures.} Concrete numbers: GPT-3 training consumed $\sim$1.287 GWh; the human brain, at $\sim$20W, uses only $\sim$0.5 kWh over a full day --- far more efficient per unit of cognitive achievement.
+
+\subsection{The neuro-symbolic alternative}
+
+The paper proposes that integrating symbolic knowledge with neural networks can:
+\begin{itemize}
+  \item Reduce the data required (symbolic knowledge encodes priors).
+  \item Improve generalisation to novel situations.
+  \item Tackle compositional reasoning, where pure neural methods struggle.
+  \item Make systems more interpretable.
+  \item Better handle structured tasks like mathematical proof, planning, formal verification.
+\end{itemize}
+
+\subsection{Methodology: ``manifold landscape'' picture}
+
+The paper uses a geometric metaphor:
+\begin{itemize}
+  \item Neural models train on a high-dimensional \textbf{loss landscape}. In theory (manifold hypothesis $+$ universal approximation), neural networks can approximate any function given enough parameters.
+  \item In practice, the landscape is jagged: optimisers get stuck in suboptimal valleys, and gradients alone can't always navigate the structure (think back to local search problems from week 3).
+  \item \textbf{Symbolic knowledge can ``lift'' the optimiser into a more abstract layer}, where it can reason structurally rather than gradient-step-by-step. After reasoning at the symbolic level, results are \textbf{``projected''} back to the neural layer.
+\end{itemize}
+
+\begin{center}
+
+\footnotesize\textit{Pure data-driven training, before any symbolic component is added. Right: data is fed into a neural network during \emph{training}. Left: the grey 3D surface is the \textbf{objective (loss) function} --- the vertical axis $L$ is the loss, the horizontal axes are network parameters ($\theta$). Each white circle is one parameter setting; the dashed arrows trace the \textbf{data-driven update}, i.e.\ successive gradient-descent steps. Notice the surface is \emph{jagged}: gradient steps follow the local slope and can stall in a shallow valley well short of the global minimum. This is the picture Velasquez sets up in order to argue that gradients alone cannot navigate the structure --- compare local-search getting stuck on plateaux (week 20). Image credit: A. Velasquez et al., ``Neurosymbolic AI as an antithesis to scaling laws'', PNAS Nexus 4(5), 2025.}
+\end{center}
+
+The paper proposes specific mechanisms — \textbf{lifting} (neural $\to$ symbolic) and \textbf{projecting} (symbolic $\to$ neural). Examples include:
+\begin{itemize}
+  \item \textbf{Physics-informed neural networks (PINNs)}: architectures that bake in physical laws (e.g., partial differential equations) so the network's outputs respect known physics by construction.
+  \item \textbf{Knowledge-graph embeddings (KGEs)}: dense vectors that preserve graph structure, allowing symbolic relational data to live in a continuous space neural networks can manipulate.
+  \item \textbf{Neuro-symbolic theorem proving}: neural networks suggest proof tactics; symbolic systems verify them.
+\end{itemize}
+
+\begin{center}
+
+\footnotesize\textit{The complete lift/project loop --- the single most important figure for Paper 1. The lower grey surface is the same neural objective function as before; the upper blue sheet is the \textbf{symbolic space} where prior knowledge (equations, finite-state machines, logical constraints, relational graphs) lives. Follow the numbered cycle: \textbf{(1)} a data-driven gradient update on the neural surface; \textbf{(2) Lift} the current state up into the symbolic space; \textbf{(3)} a \textbf{symbolic update} --- structural reasoning done with logic, not gradients; \textbf{(4) Project} the symbolic result back down onto the neural surface. Each project step lands the optimiser somewhere a gradient could not have reached, letting it escape a poor valley. The result (right) is a \textbf{hybrid neural-symbolic network} trained and run with both logic-/physics-based constraints and data. Image credit: A. Velasquez et al., ``Neurosymbolic AI as an antithesis to scaling laws'', PNAS Nexus 4(5), 2025.}
+\end{center}
+
+\subsection{What to remember about Paper 1}
+
+\begin{itemize}
+  \item \textbf{Contribution:} a manifesto positioning neurosymbolic AI as the answer to the scaling-law impasse. Synthesises existing neuro-symbolic work into a unified framework.
+  \item \textbf{Motivation:} compute, energy, and economic cost of scaling; the bitter lesson is becoming an unbearable lesson.
+  \item \textbf{Methodology:} lift-and-project framework moving between neural and symbolic layers, with concrete examples (PINNs, KG embeddings).
+  \item \textbf{Likely critical-assessment angle:} the paper is a perspective piece, not an empirical demonstration. Strengths: clear framing, important problem, urgency. Weaknesses: doesn't quantify how much improvement neuro-symbolic actually gives, and the ``lifting/projecting'' picture is metaphorical rather than concrete. Also: the bitter lesson keeps being right, which is uncomfortable for the paper's thesis.
+\end{itemize}
+
+% =====================================================================
+\section{Paper 2: Oltramari et al.\ (2020) — Context understanding}
+
+\textbf{File:} \texttt{paper2-oltramari-context-understanding.pdf}. Earliest of the three (pre-GPT-3 era); from Oltramari, Francis, Henson, Ma, Wickramarachchi.
+
+\subsection{Key claim}
+
+To make AI systems \textbf{interpretable, trustworthy, and capable of handling real-world ambiguity}, you need explicit \textbf{context understanding}. Pure neural systems fail at this; pure symbolic systems are too brittle. A hybrid that \textbf{uses knowledge bases to guide neural learning} bridges the gap.
+
+\subsection{The motivating example}
+
+\textbf{``Is there an elephant in this living room?''} A picture of an elephant on the wall is enough to confuse a naive image classifier. A human, looking at the scene as a whole, recognises ``living room $+$ frame around elephant $\Rightarrow$ that's a picture, not an actual animal.'' \textbf{Context resolves the ambiguity.}
+
+\begin{center}
+
+\footnotesize\textit{The ``elephant in the room'' example. A naive object detector fires on the elephant pixels and reports ``elephant'', the animal --- an out-of-context interpretation. The surrounding scene (sofa, bookshelf, framed pictures) is the \textbf{context}: it tells a reasoner the elephant is inside a frame on a wall, so the correct label is ``picture'' or ``photograph''. The teaching point: the same visual evidence supports two readings, and only structured knowledge of the setting picks the right one --- which is why Oltramari et al.\ argue context understanding is the bottleneck for trustworthy, explainable AI. Image credit: Oltramari, ``Enabling High-level Machine Reasoning with Cognitive Neuro-symbolic systems'', AAAI Symposium Series 2(1), 2023.}
+\end{center}
+
+The paper argues that context understanding is the bottleneck for trustworthy AI — and that neuro-symbolic methods are uniquely placed to deliver it.
+
+\subsection{Three approaches compared}
+
+\begin{center}
+\renewcommand{\arraystretch}{1.25}
+\begin{tabular}{@{}p{3.5cm}p{5.5cm}p{5cm}@{}}
+\toprule
+\thead{Approach} & \thead{What it does} & \thead{Limitation} \\
+\midrule
+Pure data-driven (neural)    & More data, more parameters $\to$ better context. & Black box; hallucinations; awkward to integrate external knowledge. \\
+Pure knowledge-driven (symbolic) & Explicit knowledge base + symbolic inference rules. & Brittle; can't handle uncertainty; doesn't scale to noisy real-world data. \\
+\textbf{Hybrid (neuro-symbolic)} & Knowledge bases \emph{guide} the learning of neural networks. & Architectural complexity. \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\subsection{Methodology: two case-study domains}
+
+\subsubsection*{Domain 1 — Autonomous driving via knowledge graphs}
+
+\begin{itemize}
+  \item Build a \textbf{knowledge graph} of driving scenes: objects (pedestrian, car) and relations (crossing, stopping, in-front-of) form nodes and edges.
+  \item Each driving event gets encoded as a set of \textbf{triples} (subject, predicate, object): \emph{(person, crossing, road)}.
+  \item \textbf{Knowledge graph embedding (KGE)}: project the graph into a continuous vector space so that semantically similar scenes cluster.
+  \item Benefit: a model trained on UK driving can generalise to novel scenarios (e.g., kangaroo crossing the road) by leveraging the embedded structure (kangaroos are animals; animals shouldn't be hit).
+\end{itemize}
+
+\textbf{Why KGE helps generalisation.} The vector space encodes that ``kangaroo'' is similar to ``deer'' is similar to ``pedestrian'' along an ``animal'' dimension. So a model that has been trained to brake for deer can brake for kangaroos even if it has never seen one — the embedding has captured the relevant structural similarity.
+
+\subsubsection*{Domain 2 — NLP question answering via concept nets}
+
+\begin{itemize}
+  \item Use \textbf{ConceptNet} or similar common-sense knowledge bases (e.g., facts like ``a chair is for sitting,'' ``birds can fly'').
+  \item \textbf{Knowledge types:} factual (``Paris is in France''), taxonomic (``a tennis player is an athlete''), relational (``handwriting requires a pen'').
+  \item \textbf{Inject relevant triples} into a transformer-based question-answering model (BERT-era). Architecture: input + retrieved knowledge $\to$ attention layer $\to$ option-comparison network $\to$ prediction.
+  \item Result: improved performance on common-sense MCQ benchmarks compared to BERT alone.
+\end{itemize}
+
+\begin{center}
+
+\footnotesize\textit{The three-stage pipeline for the NLP question-answering case study, read left to right. \textbf{Stage 1 --- knowledge-type/base selection}: decide which kind of common sense the question needs (declarative ``Paris is in France''; taxonomic ``football players are athletes''; relational ``handwriting requires a hand and a pen'') and pick a matching knowledge base, e.g.\ ConceptNet, whose entries are $(C_1, r, C_2)$ triples. \textbf{Stage 2 --- extract triples}: pull triples that connect concepts in the question to concepts in the candidate answers, then verbalise each as a sentence. \textbf{Stage 3 --- knowledge injection}: feed those common-sense sentences into the deep model alongside the original question. This is the ``project symbols into neurons'' step made concrete for language.}
+\end{center}
+
+\subsection{Architectural details}
+
+The paper proposes a specific architecture for the NLP task:
+\begin{enumerate}
+  \item Input the question + answer options to BERT.
+  \item Separately retrieve relevant triples from the knowledge base.
+  \item Inject the knowledge triples through a second BERT pass or a fusion layer.
+  \item Apply attention over both the question representation and the knowledge.
+  \item Compare answer options through a comparison network.
+  \item Output a probability distribution over answers.
+\end{enumerate}
+
+\begin{center}
+
+\footnotesize\textit{The concrete BERT-based architecture for multiple-choice QA with knowledge injection. Each row is one (question, option) pair --- tokenised as \texttt{[CLS] Question [SEP] Option [SEP]} and encoded by the shared \textbf{BERT} block. The \textbf{additional input} (top) is the retrieved common-sense sentences from the previous figure, encoded by a Bi-LSTM. The purple \textbf{Inject cells} run an attention layer that fuses each option's BERT encoding with that injected knowledge; the yellow \textbf{OCN (option-comparison network) cells} then model interactions \emph{across} the options --- the crossing arrows --- so the choices are scored relative to one another rather than in isolation. A final \textbf{linear prediction head} outputs the probability distribution over answers. The take-home: symbolic knowledge enters at the inject cells, not by retraining BERT. Image credit: Oltramari et al., ``Neuro-Symbolic Architectures for Context Understanding'', Knowledge Graphs for Explainable Artificial Intelligence, 2020.}
+\end{center}
+
+\subsection{What to remember about Paper 2}
+
+\begin{itemize}
+  \item \textbf{Contribution:} demonstrates concretely (autonomous driving + NLP QA) that knowledge-graph injection improves neural models on context-sensitive tasks.
+  \item \textbf{Motivation:} interpretability and trust; pure neural models lose context.
+  \item \textbf{Methodology:} knowledge graphs $\to$ embeddings $\to$ injection into neural model architectures.
+  \item \textbf{Likely critical-assessment angle:} this is from 2020 — pre-GPT-3 — and the empirical baselines are dated. Modern LLMs handle context far better than the BERT-era systems benchmarked. But the conceptual argument (context grounded in structured knowledge improves interpretability) still holds, and the autonomous-driving application is independently relevant.
+\end{itemize}
+
+% =====================================================================
+\section{Paper 3: Oltramari (2023) — High-level reasoning via cognitive architectures}
+
+\textbf{File:} \texttt{paper1-oltramari-cognitive-systems.pdf}. Single-author by Oltramari; published in AAAI Fall Symposium Series 2023.
+
+\subsection{Key claim}
+
+LLMs and modern AI excel at \textbf{System 1} thinking (Kahneman: fast, intuitive pattern recognition). They struggle with \textbf{System 2} (slow, deliberate reasoning). The paper proposes \textbf{cognitive architectures} (specifically ACT-R) as the appropriate scaffolding for combining neural System-1 components with symbolic System-2 components, mediated by a central control buffer.
+
+\subsection{The System 1 / System 2 framing}
+
+From Kahneman's \emph{Thinking, Fast and Slow}:
+
+\begin{center}
+\begin{tabular}{@{}p{6cm}p{8cm}@{}}
+\toprule
+\thead{System 1 (fast)} & \thead{System 2 (slow)} \\
+\midrule
+Automatic, effortless        & Conscious, effortful \\
+Pattern recognition          & Step-by-step reasoning \\
+Intuition, ``gut feel''      & Deliberation \\
+``$4 \times 5 = 20$'' instantly & ``$2476 \times 27 = ?$'' needs effort \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\textbf{LLMs} have become extraordinarily good at System 1 outputs — they recognise patterns and produce plausible-sounding answers. \textbf{They struggle with System 2} — multi-step reasoning, planning, mathematical proof, novel problem-solving. (Examples: hallucinations, the ``how many R's in strawberry'' meme, sub-par performance on novel reasoning benchmarks.)
+
+\subsection{Plato's Cave analogy}
+
+The paper invokes Plato's Cave: LLMs only see \emph{shadows} of the world (text descriptions). They never directly observe; they reason from textual reflections. This limits their reasoning — they can't check the world.
+
+\textbf{What this implies.} Even an LLM with perfect System 1 instincts is missing something: experiential grounding. To do System 2 reasoning reliably, the system needs \emph{access} to symbolic facts about the world it can verify against, not just statistical regularities in language.
+
+\subsection{Methodology: ACT-R cognitive architecture}
+
+ACT-R (Adaptive Control of Thought—Rational) is a long-established cognitive architecture from cognitive psychology (John R.\ Anderson, 1990s onward). The paper proposes adapting it for AI:
+
+\begin{itemize}
+  \item \textbf{Central actor buffer}: the control hub. Coordinates information flow between modules.
+  \item \textbf{Declarative memory}: stores symbolic facts (the symbolic component).
+  \item \textbf{Procedural memory}: stores rules (the symbolic reasoning module).
+  \item \textbf{Symbolic reasoning module}: applies inference rules to declarative memory contents.
+  \item \textbf{Neural perception/pattern modules}: handle sensory input, pattern recognition, language fluency.
+  \item \textbf{Lifting and projecting}: same idea as Paper 1, used for translation between neural and symbolic representations.
+\end{itemize}
+
+\begin{center}
+
+\footnotesize\textit{The classical ACT-R cognitive architecture, before any neuro-symbolic adaptation. ACT-R models the mind as a fixed set of \textbf{modules} (Perceptual/Imaginal, Motor, Procedural Memory, Declarative Memory) plus \textbf{buffers} that hold their current contents. The control engine is bottom-centre: a \textbf{pattern matcher} reads the buffers, fires \textbf{production rules}, and \textbf{executes} them, which writes back to the buffers and drives the next cycle. The point to carry forward: ACT-R already separates declarative facts from procedural rules and coordinates everything through a central buffer hub --- exactly the skeleton Oltramari wants to reuse for neuro-symbolic AI. Image credit: Oltramari, ``Enabling High-level Machine Reasoning with Cognitive Neuro-symbolic systems'', AAAI Symposium Series 2(1), 2023.}
+\end{center}
+
+\textbf{Crucial difference from Papers 1 and 2:} those treat the neural component as the \emph{base} and the symbolic as an embellishment. Paper 3 treats them as \textbf{co-equal modules} coordinated by a central controller. The architecture is more brain-inspired (different brain regions handle different cognitive functions, coordinated by working memory).
+
+\begin{center}
+
+\footnotesize\textit{ACT-R re-cast as a neuro-symbolic architecture --- the heart of Paper 3's proposal. The green overlays add two new co-equal modules to the skeleton above: a \textbf{Neural Module} (CNN, RNN, LLM) and a \textbf{Symbolic Module} (knowledge graphs, rule bases, logic, with an inference engine). Three numbered interfaces wire them in: \textbf{(1)} symbolic knowledge $\leftrightarrow$ declarative memory (reading from / writing to an external knowledge base); \textbf{(2)} neural $\leftrightarrow$ perception (the neural net generates perceptual patterns from environmental input); \textbf{(3)} symbolic knowledge $\to$ neural, passed as \textbf{embeddings} (the KGE step --- the lower-right inset shows knowledge-graph embedding methods). Contrast with Papers 1 and 2: here neural and symbolic are peers coordinated by the central buffer, not a base with an add-on. Image credit: Oltramari, ``Enabling High-level Machine Reasoning with Cognitive Neuro-symbolic systems'', AAAI Symposium Series 2(1), 2023.}
+\end{center}
+
+\subsection{Why this matters}
+
+\textbf{Interpretability and reliability.} A System-2-capable AI can verify its outputs against symbolic facts. This is structurally what's needed to reduce hallucinations: the neural component generates plausible-sounding outputs; the symbolic component checks them.
+
+\textbf{Compositional reasoning.} ACT-R-style systems can chain multi-step inferences in ways neural networks alone struggle with. This includes mathematical proofs, multi-hop QA, planning.
+
+\textbf{Cognitive plausibility.} If the human brain has roughly this two-system architecture, an AI mimicking it might generalise more like humans do.
+
+\subsection{What to remember about Paper 3}
+
+\begin{itemize}
+  \item \textbf{Contribution:} proposes ACT-R-style cognitive architecture as the right framework for high-level reasoning AI.
+  \item \textbf{Motivation:} LLMs fail at System 2; existing neuro-symbolic approaches treat the symbolic as auxiliary.
+  \item \textbf{Methodology:} central control hub + declarative memory + symbolic module + neural perception modules + lifting/projecting.
+  \item \textbf{Likely critical-assessment angle:} this is the most architecturally ambitious of the three papers, but also the most speculative. ACT-R has decades of cognitive psychology behind it but limited large-scale AI engineering. Strengths: principled framework with clear conceptual grounding; weaknesses: lacks empirical demonstration in the paper, and the cognitive-architecture community has been making this argument for decades without dominant commercial impact.
+\end{itemize}
+
+% =====================================================================
+\section{Cross-paper themes for the unseen part 3}
+
+If the unseen 16-mark part asks for comparison or critical analysis, here are the threads to grab.
+
+\subsection{Theme 1: the role of symbolic knowledge}
+
+\begin{center}
+\begin{tabular}{@{}p{3cm}p{11cm}@{}}
+\toprule
+\thead{Paper} & \thead{Symbolic knowledge plays the role of\dots} \\
+\midrule
+Velasquez 2025 & A computational efficiency multiplier — replaces some compute with structure. \\
+Oltramari 2020 & A grounding mechanism for context — knowledge graphs let neural models handle ambiguity. \\
+Oltramari 2023 & A separate cognitive faculty — symbolic reasoning is System 2, sitting alongside System 1 (neural). \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\subsection{Theme 2: integration architecture}
+
+\begin{itemize}
+  \item \textbf{Paper 1 (Velasquez):} bidirectional lift/project between two layers.
+  \item \textbf{Paper 2 (Oltramari et al.):} knowledge injected into the neural model's input/architecture.
+  \item \textbf{Paper 3 (Oltramari):} both as separate modules coordinated by a central controller.
+\end{itemize}
+
+\textbf{Spectrum of integration tightness.} Paper 2 is loosest (one-shot injection). Paper 1 is medium (bidirectional translation). Paper 3 is tightest (full architectural co-ordination). Different problems call for different points on this spectrum.
+
+\subsection{Theme 3: empirical grounding}
+
+\begin{itemize}
+  \item \textbf{Paper 1:} mostly conceptual / position piece. Cites existing neuro-symbolic systems (PINNs, KGEs) but doesn't introduce new empirics.
+  \item \textbf{Paper 2:} two empirical case studies with measurable benchmarks. Most concrete of the three.
+  \item \textbf{Paper 3:} cognitive-architecture proposal; little empirical benchmarking. Most speculative.
+\end{itemize}
+
+\subsection{Theme 4: the bitter lesson, taken seriously}
+
+All three papers push back against pure scaling. They all argue, in different ways, that \emph{more compute alone} won't get us to robust AI. They each propose a structural alternative.
+
+\textbf{Counterargument} (worth considering for a critical assessment): the bitter lesson has been right repeatedly. Researchers who bet on cleverer methods over more compute have lost again and again over the past decade. Why should it be different this time?
+
+Possible defences against this counterargument:
+\begin{itemize}
+  \item \textbf{Physical limits.} You can't double indefinitely. At some point energy/cost saturates.
+  \item \textbf{Generalisation walls.} Scaling improves performance on existing benchmarks but doesn't necessarily improve out-of-distribution generalisation. The problems neuro-symbolic addresses are exactly the ones scaling doesn't solve.
+  \item \textbf{Interpretability mandates.} Regulation may forbid pure black-box AI in safety-critical domains. Neuro-symbolic offers a path to interpretability.
+\end{itemize}
+
+\subsection{Theme 5: connection to course content}
+
+\begin{itemize}
+  \item Paper 2's knowledge graphs $\to$ Bayesian networks (week 30): both encode structured probabilistic knowledge.
+  \item Paper 1's lifting/projecting $\to$ search abstraction levels: similar to using heuristics in informed search (week 20).
+  \item Paper 3's System 2 reasoning $\to$ logical inference (weeks 25--26): symbolic reasoning IS System 2 thinking.
+  \item All three $\to$ probabilistic reasoning (week 29): handling uncertainty is one of the things symbolic AI alone struggled with.
+  \item The general framing $\to$ classical AI from week 1 onward: this entire course has been building toward an understanding of symbolic AI; the essay papers complete the picture by showing how symbolic methods integrate with neural ones.
+\end{itemize}
+
+\textbf{Tying your essay back to course concepts is a strong move} — it shows you understand neuro-symbolic AI as part of the larger AI landscape, not as a free-standing topic.
+
+\subsection{Theme 6: real-world applications}
+
+If part 3 asks for real-world applications:
+
+\begin{itemize}
+  \item \textbf{Healthcare}: medical diagnosis is a great fit for neuro-symbolic. Neural models recognise symptoms in images/text; symbolic models encode disease taxonomies and reasoning about contraindications.
+  \item \textbf{Legal AI}: legal reasoning is structurally symbolic (logical chains of statute and precedent) but requires neural understanding of natural-language documents.
+  \item \textbf{Education}: tutoring systems need both empathic conversation (neural) and curriculum-faithful pedagogy (symbolic).
+  \item \textbf{Scientific discovery}: physics-informed neural networks (Velasquez's example) let scientists model phenomena without manually deriving every equation.
+  \item \textbf{Autonomous driving}: Oltramari 2020's case study — neural perception, symbolic reasoning about traffic rules and rare events.
+  \item \textbf{Software verification}: neural models suggest fixes; symbolic verifiers check them.
+\end{itemize}
+
+% =====================================================================
+\section{Essay strategy}
+
+\subsection{Structure for the seen parts (parts 1 and 2)}
+
+\textbf{Part 1 — contributions and motivations (one paragraph, $\sim$9 marks):}
+\begin{enumerate}[itemsep=0pt, topsep=0pt]
+  \item Sentence 1: name the paper and its central thesis.
+  \item Sentence 2--3: motivation (what problem does it address? why does it matter?).
+  \item Sentence 4--5: key contributions — what's new in this paper?
+  \item Sentence 6 (optional): broader significance or connection to AI trends.
+\end{enumerate}
+
+\textbf{Part 2 — methodology (one paragraph, $\sim$9 marks):}
+\begin{enumerate}[itemsep=0pt, topsep=0pt]
+  \item Sentence 1: high-level architecture / approach.
+  \item Sentence 2--3: key technical components or mechanisms.
+  \item Sentence 4--5: how the components fit together; concrete example or case study from the paper.
+  \item Sentence 6 (optional): empirical results, if any.
+\end{enumerate}
+
+\textbf{Part 3 — unseen ($\sim$16 marks):} likely possibilities.
+
+\subsection{Preparing for likely part 3 angles}
+
+\begin{itemize}
+  \item \textbf{Critical assessment.} For your chosen paper: identify 2--3 strengths (clarity of framing, empirical evidence, alignment with broader AI trends) and 2--3 weaknesses (lack of empirical baselines, scope, ageing assumptions, alternative explanations). \emph{Cite related work or course concepts when possible.}
+  \item \textbf{Real-world application.} Pick a domain (autonomous driving, healthcare, customer support, scientific discovery). Walk through how the paper's approach would apply: what's the specific problem, what would the neuro-symbolic system look like, what's the expected benefit?
+  \item \textbf{Future directions.} What's the next research question? E.g., scaling, evaluation benchmarks, integration with LLMs, ethical considerations.
+  \item \textbf{Comparison across papers.} (If allowed.) Compare your chosen paper's view of integration architecture with one of the other two — agreement, disagreement, complementary perspectives.
+  \item \textbf{Limitations and counterarguments.} What would a sceptic say? How does the paper defend itself?
+\end{itemize}
+
+\subsection{What to memorise}
+
+For your chosen paper:
+\begin{itemize}
+  \item Title, authors (rough), year.
+  \item One-sentence thesis.
+  \item 2--3 sentences on motivation.
+  \item 3--4 sentences on methodology / approach.
+  \item One concrete example or case study.
+  \item Connection to course concepts (search, logic, probabilistic reasoning).
+  \item 2--3 likely strengths and weaknesses for critical assessment.
+  \item 2--3 real-world application domains.
+\end{itemize}
+
+\textbf{For the other two papers:} just enough to compare and contrast — one-sentence thesis, the kind of architecture they propose, where they'd disagree with your chosen paper.
+
+% =====================================================================
+\section{Choosing a primary paper}
+
+\textbf{Pick the paper aligned with what you find clearest from the course.} Rough guidance:
+
+\begin{center}
+\begin{tabular}{@{}p{4.5cm}p{9.5cm}@{}}
+\toprule
+\thead{If you found this clearest\dots} & \thead{Pick\dots} \\
+\midrule
+Probability \& Bayesian networks  & \textbf{Paper 2 (Oltramari et al.\ 2020)} — knowledge graphs are graphical-model-adjacent; concept nets are statistical-meets-symbolic. \\
+Search and big-O analysis         & \textbf{Paper 1 (Velasquez 2025)} — the scaling-laws argument is fundamentally about computational complexity. \\
+Logic and reasoning               & \textbf{Paper 3 (Oltramari 2023)} — System 2 thinking is symbolic reasoning, the heart of weeks 25--26. \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\textbf{The lecturer's preferred paper to walk through first} was Velasquez (paper 1, in his ordering / paper 3 in publication-date order) — he found it the most general and most up-to-date.
+
+\textbf{Practical tip on memorisation difficulty.} Paper 1 is probably the easiest to memorise — it's a position piece with clear take-home messages. Paper 2 has the most concrete details to remember (two case studies). Paper 3 has the most novel framework (ACT-R) which may not have appeared elsewhere.
+
+% =====================================================================
+\section{Exam-mode answers}
+
+\begin{exambox}[(Essay part 1, $\sim$9 marks): Summarise the contributions and motivations of Velasquez et al.\ (2025), ``Neurosymbolic AI as an antithesis to scaling laws.'']
+\textit{The paper argues that the dominant paradigm in modern AI — scaling neural models by adding parameters, data, and compute — is reaching unsustainable physical, economic, and environmental limits. The authors note that AI training already accounts for several percent of national electricity grids, with greenhouse gas contributions and prohibitive financial costs that gatekeep cutting-edge AI to a handful of companies. Against this, the human brain achieves comparable or better cognitive performance at $\sim$20 W, suggesting that brute-force scaling is not the only viable path. The paper's contribution is to position \textbf{neurosymbolic AI} — the integration of structured symbolic knowledge with deep learning — as a methodologically heterogeneous alternative that can reduce data, compute, and parameter requirements while improving compositional reasoning and interpretability. The motivation is therefore both pragmatic (cost) and methodological (the limits of pure pattern recognition).}
+\end{exambox}
+
+\begin{exambox}[(Essay part 2, $\sim$9 marks): Summarise the methodology / techniques covered in Velasquez et al.\ (2025).]
+\textit{The paper uses a geometric metaphor of a high-dimensional loss landscape to motivate neuro-symbolic integration. Pure neural models perform gradient-based updates on this landscape, but the surface is jagged — gradients alone cannot easily navigate around local minima or compositionally combine knowledge. The proposed mechanism uses two operations: \textbf{lifting}, in which neural representations are translated to a higher-level symbolic layer, and \textbf{projecting}, the inverse, in which symbolic conclusions are translated back into neural parameters or activations. Concrete examples include physics-informed neural networks (PINNs), where physical laws are baked into the architecture, and knowledge-graph embeddings, where structured relational knowledge is encoded as dense vectors. The integration loop alternates between gradient updates at the neural layer and symbolic reasoning at the abstract layer, producing a system that benefits from both efficient learning and structural reasoning. The paper does not provide novel empirical benchmarks; rather, it consolidates existing neuro-symbolic methods under a unified framework.}
+\end{exambox}
+
+\begin{exambox}[(Essay part 1, $\sim$9 marks, Paper 2 example): Summarise the contributions and motivations of Oltramari et al.\ (2020), ``Neuro-symbolic Architectures for Context Understanding.'']
+\textit{The paper argues that context understanding — the ability to interpret a situation by integrating disparate sources of information — is foundational to trustworthy AI, and that neither pure data-driven nor pure knowledge-driven approaches can deliver it on their own. Pure neural models lack interpretability and a clean mechanism for integrating external knowledge; pure symbolic models cannot handle the noisy, statistical character of real-world inputs. The paper's contribution is to demonstrate, in two domains, that hybrid neuro-symbolic architectures using \textbf{knowledge bases to guide neural learning} achieve both the performance of data-driven methods and the interpretability of symbolic ones. The motivation lies in the need for explainable, trustworthy AI in safety-critical applications such as autonomous driving, where the cost of misinterpretation is high.}
+\end{exambox}
+
+\begin{exambox}[(Essay part 1, $\sim$9 marks, Paper 3 example): Summarise the contributions and motivations of Oltramari (2023), ``Enabling High-Level Machine Reasoning with Cognitive Neuro-Symbolic Systems.'']
+\textit{The paper argues that current AI, including state-of-the-art LLMs, excels at Kahneman's \textbf{System 1} thinking — fast, intuitive pattern recognition — but struggles with \textbf{System 2}, the slow, deliberate reasoning needed for novel and complex situations. The motivation is the well-documented limitations of LLMs in compositional reasoning, common-sense robustness, and avoiding hallucinations. The paper's contribution is to propose a cognitive architecture inspired by ACT-R, in which a central control buffer coordinates separate \textbf{neural} (System 1, perception, pattern recognition) and \textbf{symbolic} (System 2, declarative memory, reasoning) modules. Unlike previous neuro-symbolic approaches that treat symbolic methods as auxiliary to neural ones, this framework places them as co-equal cognitive faculties, mirroring the modular structure of the human brain.}
+\end{exambox}
+
+\begin{exambox}[(Essay part 3 example, $\sim$16 marks): Critical assessment of Velasquez et al.\ (2025)]
+\textit{The paper's strongest contribution is its clear framing of an unsustainability crisis in pure scaling — citing concrete energy, monetary, and environmental costs that AI training imposes. This framing is timely and has academic and public-policy relevance. The lifting/projecting metaphor offers a unifying perspective that helps practitioners see disparate methods (PINNs, KGEs, hybrid theorem provers) as instances of a common pattern. However, the paper's principal limitation is that it operates at the level of position rather than evidence: it doesn't quantify how much improvement neuro-symbolic actually delivers over pure scaling, nor does it offer benchmarks where pure scaling reaches a ceiling that neuro-symbolic surpasses. A second weakness is its rhetorical posture against the bitter lesson; while the energy argument is compelling, the bitter lesson has so far been right at every turn — researchers betting on cleverer methods have generally lost. The paper would be stronger if it engaged this counterargument directly. In terms of related work, the paper sits within a long tradition of neuro-symbolic AI advocacy (DeepProbLog, Neural Theorem Provers) without crisply differentiating its contribution. For real-world impact, the most promising domain is scientific computing, where physics-informed neural networks already demonstrate the lift/project pattern at scale and meaningfully reduce compute costs. In short: the paper is influential as a manifesto, less so as scientific argument, and the next step requires the empirical work it skips.}
+\end{exambox}
+
+% =====================================================================
+\section*{Key concepts cheat sheet}
+
+\textbf{Neuro-symbolic AI:} integration of neural networks (deep learning) with symbolic AI (logic, knowledge graphs, classical AI).
+
+\textbf{Scaling laws:} empirical trend that LLM performance improves predictably with parameters / data / compute. Roughly exponential.
+
+\textbf{The bitter lesson} (Sutton, 2019): general-purpose methods that scale with compute have outperformed AI solutions that rely on human domain knowledge. The argument that compute-scaling wins.
+
+\textbf{Manifold hypothesis:} natural data lies on a lower-dimensional manifold within the high-dimensional input space. Justifies dimensionality reduction.
+
+\textbf{Universal function approximation:} neural networks with enough parameters can approximate any function. Justifies scaling.
+
+\textbf{Lifting / projecting:} bidirectional translation between neural and symbolic representations. From Velasquez paper.
+
+\textbf{Knowledge graph:} a graph where nodes are entities and edges are relations, encoded as triples \emph{(subject, predicate, object)}.
+
+\textbf{Knowledge graph embedding (KGE):} dense vector representation of knowledge graphs preserving graph structure. Used to project symbolic into continuous space.
+
+\textbf{System 1 / System 2 thinking} (Kahneman): fast/automatic vs.\ slow/deliberate cognitive modes.
+
+\textbf{ACT-R:} a cognitive architecture from psychology with central control + declarative memory + symbolic + perceptual modules. Adapted for AI in Paper 3.
+
+\textbf{Plato's Cave (analogy for LLMs):} LLMs see only textual ``shadows'' of the world, not the world itself.
+
+\textbf{Hallucination:} confident but wrong outputs from generative AI. A symptom of System 1 dominance without System 2 grounding.
+
+\textbf{PINN (physics-informed neural network):} a neural architecture that bakes physical laws (PDEs etc.) into its structure. Concrete example of neuro-symbolic from Paper 1.
+
+\textbf{Three paper authors / years:}
+\begin{itemize}[itemsep=0pt, topsep=0pt]
+  \item Velasquez, Bhatt, Topcu, Wang, Sycara, Stepputtis, Neema, Vallabha (PNAS Nexus, 2025).
+  \item Oltramari, Francis, Henson, Ma, Wickramarachchi (2020).
+  \item Oltramari (AAAI Fall Symposium Series, 2023).
+\end{itemize}
+
+% =====================================================================
+\section*{Self-check questions}
+
+\begin{enumerate}
+  \item \textbf{Define} neuro-symbolic AI. What does each component contribute?
+  \item \textbf{Summarise} the central thesis of Velasquez et al.\ (2025) in one sentence. Then expand to 3 sentences (motivation + contribution).
+  \item \textbf{Summarise} the central thesis of Oltramari et al.\ (2020). What two domains does the paper apply its method to?
+  \item \textbf{Summarise} the central thesis of Oltramari (2023). What is its key architectural innovation?
+  \item \textbf{Distinguish} ``lifting'' and ``projecting'' as defined in Paper 1. Give an example of each.
+  \item \textbf{Define} a knowledge graph. Give a triple from a Wumpus-world or driving-scene context.
+  \item \textbf{Distinguish} System 1 and System 2 thinking. Why are LLMs better at one than the other?
+  \item \textbf{Describe} ACT-R's architecture. How does it differ from a typical neural-network-plus-knowledge-graph hybrid?
+  \item \textbf{Compare} the integration architectures of Papers 1, 2, and 3 in one sentence each.
+  \item \textbf{Argue} for or against the claim ``the bitter lesson is the right lesson.'' What does Paper 1 say? What's the counterargument?
+  \item \textbf{Discuss} the strengths and weaknesses of Paper 2's empirical contribution. (Hint: it's from 2020.)
+  \item \textbf{Connect} Paper 2's knowledge-graph approach to Bayesian networks (week 30). What's similar; what's different?
+  \item \textbf{Connect} Paper 3's symbolic reasoning module to predicate logic (week 26). How might one implement it?
+  \item \textbf{Construct} a real-world application of one paper's approach in a domain not discussed in the paper itself (e.g., medical diagnosis, legal reasoning, education).
+  \item \textbf{Choose} which of the three papers you would write your essay on, and justify your choice.
+  \item \textbf{Outline} a part-3 essay paragraph addressing ``critical assessment of the contributions and AI applications discussed in [your chosen paper], informed by aspects such as the related work and conclusions.''
+  \item \textbf{Outline} a part-3 essay paragraph addressing ``a real-world application where the findings of [your chosen paper] could be impactful.''
+  \item \textbf{Explain} why the human brain (running at $\sim$20W) is offered by Velasquez as evidence against pure-scaling AI. What does this argument prove and what does it not prove?
+\end{enumerate}
+
+\end{document}

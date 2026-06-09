@@ -1,0 +1,596 @@
+\documentclass[11pt, a4paper]{article}
+
+% --- Fonts and engine ---
+\usepackage{fontspec}
+\setmainfont{Helvetica Neue}
+\setmonofont{Menlo}
+\usepackage{unicode-math}
+\setmathfont{STIX Two Math}
+
+% --- Layout ---
+\usepackage[margin=2cm, top=2cm, bottom=2.5cm]{geometry}
+\usepackage{microtype}
+\usepackage{parskip}
+\setlength{\parskip}{0.6em}
+\setlength{\parindent}{0pt}
+
+% --- Typography and links ---
+\usepackage[colorlinks=true, linkcolor=NavyBlue, urlcolor=NavyBlue, citecolor=NavyBlue]{hyperref}
+\usepackage{xcolor}
+\usepackage[dvipsnames]{xcolor}
+
+% --- Math and tables ---
+\usepackage{amsmath}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{tabularx}
+\usepackage{graphicx}
+\graphicspath{{figures/week08/}}
+\newcommand{\thead}[1]{\textbf{#1}}
+
+% --- Lists ---
+\usepackage{enumitem}
+\setlist[itemize]{leftmargin=1.5em, itemsep=0.2em, topsep=0.3em}
+\setlist[enumerate]{leftmargin=1.5em, itemsep=0.2em, topsep=0.3em}
+
+% --- Boxed callouts ---
+\usepackage[most]{tcolorbox}
+\tcbuselibrary{breakable, skins, theorems}
+
+% Color palette
+\definecolor{defBg}{HTML}{EAF2FB}
+\definecolor{defBd}{HTML}{1F4E79}
+\definecolor{exBg}{HTML}{F4F4F4}
+\definecolor{exBd}{HTML}{555555}
+\definecolor{tipBg}{HTML}{E8F5E9}
+\definecolor{tipBd}{HTML}{2E7D32}
+\definecolor{trapBg}{HTML}{FCE4EC}
+\definecolor{trapBd}{HTML}{AD1457}
+\definecolor{pitBg}{HTML}{FFF8E1}
+\definecolor{pitBd}{HTML}{B27600}
+\definecolor{noteBg}{HTML}{F3E5F5}
+\definecolor{noteBd}{HTML}{6A1B9A}
+\definecolor{tldrBg}{HTML}{E1F5FE}
+\definecolor{tldrBd}{HTML}{0277BD}
+
+\newtcolorbox{defbox}[1][]{enhanced, breakable, colback=defBg, colframe=defBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={Definition: #1}}
+\newtcolorbox{exbox}[1][]{enhanced, breakable, colback=exBg, colframe=exBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={Worked example: #1}}
+\newtcolorbox{exambox}[1][]{enhanced, breakable, colback=tipBg, colframe=tipBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={Exam-mode answer #1}}
+\newtcolorbox{trapbox}[1][]{enhanced, breakable, colback=trapBg, colframe=trapBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={MCQ trap #1}}
+\newtcolorbox{pitfallbox}[1][]{enhanced, breakable, colback=pitBg, colframe=pitBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={Pitfall #1}}
+\newtcolorbox{notebox}[1][]{enhanced, breakable, colback=noteBg, colframe=noteBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={Lecturer aside #1}}
+\newtcolorbox{tldrbox}[1][]{enhanced, breakable, colback=tldrBg, colframe=tldrBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={TL;DR #1}}
+
+\usepackage{titlesec}
+\titleformat{\section}[block]{\Large\bfseries\color{defBd}}{\thesection.}{0.6em}{}
+\titleformat{\subsection}[block]{\large\bfseries\color{defBd!80!black}}{\thesubsection}{0.5em}{}
+\titleformat{\subsubsection}[block]{\normalsize\bfseries}{}{0pt}{}
+\titlespacing*{\section}{0pt}{1.6em}{0.6em}
+\titlespacing*{\subsection}{0pt}{1.2em}{0.4em}
+
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small CM52054 — Week 8}
+\fancyhead[R]{\small Optimisation Basics 2}
+\fancyfoot[C]{\small\thepage}
+\renewcommand{\headrulewidth}{0.3pt}
+
+\newcommand{\examflag}{\textcolor{tipBd}{\textbf{[EXAM]}}\,}
+\newcommand{\trapflag}{\textcolor{trapBd}{\textbf{[TRAP]}}\,}
+\newcommand{\doflag}{\textcolor{defBd}{\textbf{[DO]}}\,}
+
+\title{\vspace{-1cm}{\Huge\bfseries Week 8 — Optimisation Basics 2} \\[0.4em]{\large Linear least-squares regression: closed-form (Normal Equations) vs steepest descent, GD variants}}
+\author{\large CM52054 Foundational Machine Learning \\[0.2em]\normalsize University of Bath \,$\cdot$\, Dr Wenbin Li}
+\date{Revision notes}
+
+\begin{document}
+
+\maketitle
+\thispagestyle{empty}
+
+\vspace{1em}
+
+\begin{tldrbox}
+\begin{itemize}[leftmargin=*]
+  \item Wk8 instantiates Wk7's optimisation skeleton on the canonical ML problem: \textbf{linear least-squares regression}. Two ways to solve it — \textbf{closed-form} (Normal Equations) and \textbf{steepest descent}.
+  \item \textbf{Convex set}: a set $C$ where every chord stays inside. Formally, $(1-\beta)\mathbf{x}+\beta\mathbf{y}\in C$ for all $\mathbf{x},\mathbf{y}\in C$, $\beta\in[0,1]$. \textbf{Convex function} (recall Wk7 §1.3): chord above graph; same algebraic form with $\beta$ playing $\lambda$'s role.
+  \item \textbf{The least-squares problem}: minimise $L(\mathbf{w}) = \|\mathbf{X}\mathbf{w}-\mathbf{y}\|^2$ where $\mathbf{X}\in\mathbb{R}^{N\times M}$ stacks $N$ samples row-wise. The objective is convex in $\mathbf{w}$ (Hessian $2\mathbf{X}^\top\mathbf{X}$ is positive semi-definite); strictly convex iff $\mathbf{X}$ has full column rank.
+  \item \textbf{Closed-form (Normal Equations)} \doflag{}:
+  \[
+  \nabla_\mathbf{w}\|\mathbf{X}\mathbf{w}-\mathbf{y}\|^2 = 2\mathbf{X}^\top\mathbf{X}\mathbf{w}-2\mathbf{X}^\top\mathbf{y} \;\stackrel{!}{=}\; \mathbf{0}
+  \;\Longrightarrow\; \mathbf{X}^\top\mathbf{X}\mathbf{w}_* = \mathbf{X}^\top\mathbf{y}
+  \;\Longrightarrow\; \mathbf{w}_* = (\mathbf{X}^\top\mathbf{X})^{-1}\mathbf{X}^\top\mathbf{y}.
+  \]
+  Exact answer in one shot. Costs an $M\times M$ inverse — explodes for large $M$ and is numerically unstable when columns are near-collinear.
+  \item \textbf{Steepest descent} (instantiate Wk7's loop):
+  \[
+  \mathbf{w}_{t+1} \;=\; \mathbf{w}_t - \alpha\,(2\mathbf{X}^\top\mathbf{X}\mathbf{w}_t - 2\mathbf{X}^\top\mathbf{y}).
+  \]
+  Iterative, scalable, no inverse — but converges slowly on \emph{anisotropic} surfaces (zig-zag) and never produces a perfectly exact answer.
+  \item \textbf{Three GD variants} sit on a spectrum from cheap-and-noisy to expensive-and-stable: \textbf{Stochastic GD} uses one random sample per step; \textbf{Mini-batch GD} averages over $B$ samples ($B$ typically 32, 128, 256); \textbf{Batch GD} averages over all $N$. ``SGD'' in modern literature usually means mini-batch.
+  \item \examflag{}Past paper Q3 is built on this material: derive the gradient of a regularised quadratic loss (Q3a), write the SGD update with batch size 1 (Q3b). The exam tests whether you can take the gradient cleanly and plug it into the right place.
+\end{itemize}
+\end{tldrbox}
+
+% =====================================================================
+\section{Where this lecture fits}
+
+Week 7 set up the language: an iterative optimiser plays a four-step game (initialise, choose direction, choose step, update) and the design choices are the direction $\mathbf{p}_t$, step size $\alpha_t$, and termination condition. Week 8 plugs in concrete content for that skeleton on the workhorse ML problem of \textbf{linear regression}.
+
+The lecture is organised in three movements:
+
+\begin{enumerate}
+  \item \textbf{Formalising convexity} — Wk7 introduced the idea informally; here we pin down convex sets, convex functions, and the formal statement of the optimisation problem ($\arg\min$).
+  \item \textbf{The least-squares regression problem and two ways to solve it} — closed-form using calculus (Normal Equations) and iterative using gradient descent (steepest descent).
+  \item \textbf{Three variants of gradient descent} — Batch, Stochastic (SGD), and Mini-batch. The variant determines how much data you average the gradient over per step.
+\end{enumerate}
+
+% =====================================================================
+\section{Convex sets, convex functions, optimisation formulation}
+
+\subsection{Convex set}
+
+Wk7 defined convex \emph{functions}; we now add convex \emph{sets}. The two definitions are similar but not the same — a convex function lives \emph{on} a convex set.
+
+\begin{defbox}[Convex set]
+A subset $C \subseteq \mathbb{R}^n$ is \textbf{convex} if for every pair of points $\mathbf{x}, \mathbf{y} \in C$ and every $\beta \in [0,1]$,
+\[
+(1-\beta)\mathbf{x} + \beta\mathbf{y} \;\in\; C.
+\]
+Geometrically: any line segment connecting two points of $C$ lies entirely inside $C$. The set has no concavities, no holes, and no separated pieces.
+\end{defbox}
+
+\begin{center}
+
+\footnotesize\textit{Two regions illustrating the convex-set definition. \textbf{Left}: a convex blob --- the black chord connecting any two interior points $\mathbf{x}$ and $\mathbf{y}$ stays entirely inside the green region, so the set satisfies $(1-\beta)\mathbf{x}+\beta\mathbf{y}\in C$ for all $\beta\in[0,1]$. \textbf{Right}: a non-convex blob with a concavity --- the red chord from $\mathbf{x}$ to $\mathbf{y}$ exits the set, immediately violating the definition. Any set with a ``dent,'' a hole, or two disconnected pieces fails the test.}
+\end{center}
+
+The simplest convex sets are the empty set, single points, lines, half-spaces, and balls. Crescents, annuli, and unions of disjoint discs are non-convex. \examflag{}For exam purposes, you should be able to (a) state this definition verbatim and (b) decide whether a given set is convex by checking whether the chord rule holds.
+
+\subsection{Convex function (recap)}
+
+The convex-function definition from Wk7 §1.3 carries over with $\beta$ playing the role of $\lambda$:
+\[
+f((1-\beta)\mathbf{x} + \beta\mathbf{y}) \;\le\; (1-\beta)f(\mathbf{x}) + \beta f(\mathbf{y}), \qquad \beta\in[0,1].
+\]
+Strict convexity replaces $\le$ with $<$ for $\beta\in(0,1)$ and $\mathbf{x}\ne\mathbf{y}$. The \emph{domain} of a convex function must itself be a convex set.
+
+The headline property — the only one that matters for optimisation — is the same as Wk7: \textbf{any local minimum of a convex function is the unique global minimum} (and strictly so under strict convexity).
+
+\subsection{The optimisation problem}
+
+\begin{defbox}[Optimisation (minimisation) problem]
+Given a function $f : \mathcal{X} \subseteq \mathbb{R}^M \to \mathbb{R}$ (called the \textbf{objective} or \textbf{cost} function), find an element $\mathbf{x}_*$ such that
+\[
+f(\mathbf{x}_*) \;\le\; f(\mathbf{x}), \qquad \forall\,\mathbf{x}\in\mathcal{X}.
+\]
+\end{defbox}
+
+\textbf{Min vs max equivalence.} A minimisation problem can be converted to a maximisation problem (and vice versa) by multiplying the objective by $-1$. So everything we develop for $\arg\min$ applies to $\arg\max$ on the negated objective. Conventionally ML uses minimisation because losses are non-negative.
+
+% =====================================================================
+\section{Linear least-squares regression}
+
+\subsection{The problem}
+
+\textbf{Setup.} You have a dataset of $N$ input--output pairs:
+\[
+D = \{(\mathbf{x}_1, y_1), \ldots, (\mathbf{x}_N, y_N)\} \;\subset\; \mathcal{X}\times\mathcal{Y} \;\subset\; \mathbb{R}^M \times \mathbb{R}.
+\]
+Each $\mathbf{x}_i \in \mathbb{R}^M$ is an $M$-dimensional input (also called \textbf{features} or \textbf{attributes}); each $y_i \in \mathbb{R}$ is a scalar \textbf{label} or \textbf{output}.
+
+\begin{pitfallbox}[: keep $N$ and $M$ separate]
+$N$ = number of data points; $M$ = number of input dimensions per point. They appear together in the data matrix and the lecturer flags this as a common student confusion. ``$N$ samples each in $M$ dimensions'' is the right reading; the running cost-of-living example is $N$ days, with $M$ attributes per day (date, weather, etc.).
+\end{pitfallbox}
+
+\begin{center}
+
+\footnotesize\textit{The geometric picture of linear least-squares regression. The red line is the fitted model $f$; each blue dot is one data point $(\mathbf{x}_i, y_i)$. The \textbf{dashed vertical arrows} are the residuals --- the signed gap between the model's prediction $f(\mathbf{x}_i)$ (the point on the red line directly above $\mathbf{x}_i$, labelled $(\mathbf{x}_i, f(\mathbf{x}_i))$ in red) and the true output $y_i$ (the blue dot, labelled $(\mathbf{x}_i, y_i)$). Training minimises the \emph{sum of squared} arrow lengths --- the SSE --- over all data points simultaneously.}
+\end{center}
+
+\textbf{Linear model.} A linear function from $\mathbb{R}^M$ to $\mathbb{R}$:
+\[
+f(\mathbf{x}) = w_0 x_0 + w_1 x_1 + \cdots + w_M x_M = \mathbf{w}^\top \mathbf{x},
+\]
+where the conventional bias term is absorbed by setting $x_0 = 1$ for every sample. The unknown is the weight vector $\mathbf{w}\in\mathbb{R}^M$.
+
+\textbf{Goal.} Find $\mathbf{w}$ such that the model's predictions $f(\mathbf{x}_i) = \mathbf{w}^\top\mathbf{x}_i$ are as close as possible to the labels $y_i$.
+
+\subsection{The squared-error objective}
+
+The choice of ``close'' is the \textbf{Sum of Squared Errors} (SSE):
+\[
+L(\mathbf{w}) \;=\; \mathrm{SSE}(\mathbf{w}) \;=\; \sum_{i=1}^N \big(f(\mathbf{x}_i) - y_i\big)^2 \;=\; \sum_{i=1}^N \big(\mathbf{w}^\top\mathbf{x}_i - y_i\big)^2.
+\]
+The squared form is non-negative, treats positive and negative residuals symmetrically, and (crucially) is differentiable everywhere — which is why it dominates over the absolute-error ($L_1$) form in classical regression.
+
+\begin{center}
+
+\footnotesize\textit{The toy regression dataset with a candidate linear fit $f$ (red line). Each \textbf{dashed arrow} connects a data point $(\mathbf{x}_i, y_i)$ to the line at the same $x$-coordinate; the arrow's length is the residual $|f(\mathbf{x}_i) - y_i|$. The SSE sums the \emph{squares} of all these lengths. Because squaring treats upward and downward arrows symmetrically and penalises large errors more heavily than small ones, the best $\mathbf{w}$ is the one that makes all arrows collectively as short as possible.}
+\end{center}
+
+\begin{notebox}[: ``least squares'' decoded]
+The lecturer pauses on the name. \emph{``Linear''} = the model is linear in $\mathbf{w}$ (so $f(\mathbf{x})=\mathbf{w}^\top\mathbf{x}$, no $\mathbf{w}^2$ or $\sin(\mathbf{w})$ terms). \emph{``Least squares''} = we minimise the squared error. ``Linear'' refers to the model; ``least squares'' refers to the loss. Other regressions swap one or both.
+\end{notebox}
+
+\subsection{The matrix form}
+
+Sums-of-squares are convenient on paper but slow on a computer: a $\sum_{i=1}^N$ becomes a Python \texttt{for} loop. The matrix form rewrites the same objective as a single norm.
+
+Stack the inputs row-wise into the \textbf{data matrix} $\mathbf{X}$ and the labels into the \textbf{label vector} $\mathbf{y}$:
+\[
+\mathbf{X} = \begin{bmatrix}\mathbf{x}_1^\top \\ \mathbf{x}_2^\top \\ \vdots \\ \mathbf{x}_N^\top\end{bmatrix} \in \mathbb{R}^{N\times M},
+\qquad
+\mathbf{y} = \begin{bmatrix}y_1 \\ y_2 \\ \vdots \\ y_N\end{bmatrix} \in \mathbb{R}^N.
+\]
+Then $\mathbf{X}\mathbf{w}\in\mathbb{R}^N$ stacks all $N$ predictions $\mathbf{w}^\top\mathbf{x}_i$, and $\mathbf{X}\mathbf{w}-\mathbf{y}\in\mathbb{R}^N$ stacks all $N$ residuals. The squared $L_2$ norm sums their squares:
+\[
+\|\mathbf{X}\mathbf{w} - \mathbf{y}\|^2 \;=\; \sum_{i=1}^N (\mathbf{w}^\top\mathbf{x}_i - y_i)^2.
+\]
+The minimisation problem becomes
+\[
+\boxed{\;\mathbf{w}_* \;=\; \arg\min_{\mathbf{w}\in\mathbb{R}^M} \; \|\mathbf{X}\mathbf{w} - \mathbf{y}\|^2.\;}
+\]
+This is the form the rest of the lecture solves.
+
+% =====================================================================
+\section{Solution 1 — Closed form (Normal Equations)}
+
+\subsection{Derivation}
+
+Expand the squared norm using $\|\mathbf{u}\|^2 = \mathbf{u}^\top\mathbf{u}$ with $\mathbf{u} = \mathbf{X}\mathbf{w}-\mathbf{y}$:
+\[
+L(\mathbf{w}) \;=\; (\mathbf{X}\mathbf{w}-\mathbf{y})^\top(\mathbf{X}\mathbf{w}-\mathbf{y})
+\;=\; \mathbf{w}^\top\mathbf{X}^\top\mathbf{X}\mathbf{w} - 2\mathbf{y}^\top\mathbf{X}\mathbf{w} + \mathbf{y}^\top\mathbf{y}.
+\]
+The cross-term collapse uses $(\mathbf{X}\mathbf{w})^\top\mathbf{y} = \mathbf{y}^\top\mathbf{X}\mathbf{w}$ (a scalar equals its own transpose).
+
+Differentiate with respect to $\mathbf{w}$. Two matrix-derivative identities do all the work:
+\[
+\frac{\partial}{\partial\mathbf{w}}\big(\mathbf{w}^\top\mathbf{A}\mathbf{w}\big) = 2\mathbf{A}\mathbf{w} \quad (\mathbf{A}\text{ symmetric}),
+\qquad
+\frac{\partial}{\partial\mathbf{w}}\big(\mathbf{b}^\top\mathbf{w}\big) = \mathbf{b}.
+\]
+Apply these with $\mathbf{A} = \mathbf{X}^\top\mathbf{X}$ (symmetric) and $\mathbf{b} = \mathbf{X}^\top\mathbf{y}$:
+\[
+\nabla_\mathbf{w} L(\mathbf{w}) \;=\; 2\mathbf{X}^\top\mathbf{X}\mathbf{w} - 2\mathbf{X}^\top\mathbf{y}.
+\]
+
+\textbf{Set the gradient to zero.} The first-order condition for an unconstrained minimum:
+\[
+2\mathbf{X}^\top\mathbf{X}\mathbf{w}_* - 2\mathbf{X}^\top\mathbf{y} = \mathbf{0}
+\quad\Longleftrightarrow\quad
+\mathbf{X}^\top\mathbf{X}\mathbf{w}_* = \mathbf{X}^\top\mathbf{y}.
+\]
+This is the \textbf{Normal Equation}. When $\mathbf{X}^\top\mathbf{X}$ is invertible (see uniqueness below), pre-multiply by $(\mathbf{X}^\top\mathbf{X})^{-1}$:
+\[
+\boxed{\;\mathbf{w}_* \;=\; (\mathbf{X}^\top\mathbf{X})^{-1}\mathbf{X}^\top\mathbf{y}.\;}
+\]
+\doflag{}This is the closed-form least-squares solution. You should be able to write down all three steps — expand, differentiate, set to zero — without notes.
+
+\begin{exbox}[Closed-form least squares, end-to-end]
+\textbf{Problem.} Minimise $L(\mathbf{w}) = \|\mathbf{X}\mathbf{w}-\mathbf{y}\|^2$ over $\mathbf{w}\in\mathbb{R}^M$.\\[0.3em]
+\textbf{Step 1 — expand.} $L(\mathbf{w}) = \mathbf{w}^\top\mathbf{X}^\top\mathbf{X}\mathbf{w} - 2\mathbf{y}^\top\mathbf{X}\mathbf{w} + \mathbf{y}^\top\mathbf{y}$.\\[0.3em]
+\textbf{Step 2 — gradient.} $\nabla_\mathbf{w} L = 2\mathbf{X}^\top\mathbf{X}\mathbf{w} - 2\mathbf{X}^\top\mathbf{y}$.\\[0.3em]
+\textbf{Step 3 — first-order condition.} Set $\nabla_\mathbf{w} L = \mathbf{0}$: $\mathbf{X}^\top\mathbf{X}\mathbf{w}_* = \mathbf{X}^\top\mathbf{y}$.\\[0.3em]
+\textbf{Step 4 — solve.} If $\mathbf{X}^\top\mathbf{X}$ is invertible: $\mathbf{w}_* = (\mathbf{X}^\top\mathbf{X})^{-1}\mathbf{X}^\top\mathbf{y}$.\\[0.3em]
+\textbf{Step 5 — verify it is a minimum.} Hessian $\nabla^2_\mathbf{w} L = 2\mathbf{X}^\top\mathbf{X}$ is positive semi-definite, so $L$ is convex and the stationary point is the global minimum.
+\end{exbox}
+
+\subsection{Convexity and uniqueness}
+
+\textbf{Why is the least-squares loss convex in $\mathbf{w}$?} Compute the Hessian:
+\[
+\nabla^2_\mathbf{w} L(\mathbf{w}) \;=\; 2\mathbf{X}^\top\mathbf{X}.
+\]
+For \emph{any} vector $\mathbf{z}\in\mathbb{R}^M$,
+\[
+\mathbf{z}^\top(\mathbf{X}^\top\mathbf{X})\mathbf{z} \;=\; (\mathbf{X}\mathbf{z})^\top(\mathbf{X}\mathbf{z}) \;=\; \|\mathbf{X}\mathbf{z}\|^2 \;\ge\; 0.
+\]
+So $\mathbf{X}^\top\mathbf{X}$ is \textbf{positive semi-definite (PSD)}, the Hessian is PSD, and $L$ is convex. \emph{Always.} Whatever $\mathbf{X}$ and $\mathbf{y}$ you give it, $\|\mathbf{X}\mathbf{w}-\mathbf{y}\|^2$ is convex in $\mathbf{w}$.
+
+\textbf{When is the optimum unique?} Convexity gives ``every local min is global''; \emph{strict} convexity gives ``the global min is the only one.'' Strict convexity holds when $\mathbf{X}^\top\mathbf{X}$ is \textbf{positive definite (PD)}: $\mathbf{z}^\top(\mathbf{X}^\top\mathbf{X})\mathbf{z} > 0$ for every $\mathbf{z}\ne\mathbf{0}$. This requires $\mathbf{X}\mathbf{z} \ne \mathbf{0}$ for every $\mathbf{z}\ne\mathbf{0}$, i.e.\ $\mathbf{X}$ has \textbf{full column rank} (no column is a linear combination of the others, and $N \ge M$).
+
+\begin{tabularx}{\linewidth}{@{}lXX@{}}
+\toprule
+\thead{Condition on $\mathbf{X}$} & \thead{$\mathbf{X}^\top\mathbf{X}$} & \thead{Optimum} \\
+\midrule
+Always (any $\mathbf{X}$) & PSD & $L$ is convex; some optimum exists \\
+Full column rank & PD (invertible) & $L$ is strictly convex; unique $\mathbf{w}_*$ \\
+Rank-deficient ($\text{rank}(\mathbf{X}) < M$) & singular & infinitely many $\mathbf{w}_*$ achieve the minimum \\
+\bottomrule
+\end{tabularx}
+
+\begin{defbox}[Hessian definiteness $\leftrightarrow$ convexity, in one place]
+For a twice-differentiable loss, the Hessian's definiteness \emph{is} its convexity:
+\begin{itemize}[leftmargin=1.4em, itemsep=0.15em]
+  \item \textbf{$\mathbf{H}$ positive semi-definite} ($\mathbf{z}^\top\mathbf{H}\mathbf{z}\ge 0$ for \emph{all} $\mathbf{z}$) $\;\Longleftrightarrow\;$ the loss is \textbf{convex} — every local minimum is a global minimum.
+  \item \textbf{$\mathbf{H}$ positive definite} ($\mathbf{z}^\top\mathbf{H}\mathbf{z}> 0$ for all $\mathbf{z}\ne\mathbf{0}$) $\;\Longrightarrow\;$ the loss is \textbf{strictly convex} — the global minimiser is \textbf{unique}.
+\end{itemize}
+For least squares $\mathbf{H} = 2\mathbf{X}^\top\mathbf{X}$, which is \emph{always} PSD because $\mathbf{z}^\top(\mathbf{X}^\top\mathbf{X})\mathbf{z} = \|\mathbf{X}\mathbf{z}\|^2 \ge 0$ — a squared norm can never be negative. So least squares is convex no matter what data you feed it. It is \emph{strictly} convex — and the optimum unique — exactly when $\|\mathbf{X}\mathbf{z}\|^2 > 0$ for every $\mathbf{z}\ne\mathbf{0}$, i.e.\ when $\mathbf{X}\mathbf{z}\ne\mathbf{0}$ for every $\mathbf{z}\ne\mathbf{0}$, which is precisely the statement that $\mathbf{X}$ has \textbf{full column rank}.
+\end{defbox}
+
+This uniqueness condition is the ``Optional'' Q8c in the practice sheet. The lecturer notes it is beyond the core lecture material and not examinable; it is useful background only: $\mathbf{w}_*$ is unique when $\mathbf{X}$ has full column rank, equivalently $\mathbf{X}^\top\mathbf{X}$ is invertible.
+
+\subsection{When closed-form is the right tool}
+
+\begin{itemize}
+  \item \textbf{Pros.} Exact answer in one shot. Single line of NumPy or MATLAB. No tuning of step size, no convergence questions.
+  \item \textbf{Cons.} Requires inverting an $M\times M$ matrix, costing $O(M^3)$. Becomes infeasible when $M$ is in the thousands. Numerically unstable when columns of $\mathbf{X}$ are near-collinear (the matrix $\mathbf{X}^\top\mathbf{X}$ becomes ill-conditioned, the inverse blows up, the solution is dominated by floating-point noise).
+\end{itemize}
+
+\begin{notebox}[: \emph{why} near-collinear features wreck the inverse — a volume argument]
+``Ill-conditioned'' sounds like jargon; the geometry behind it is concrete. The \textbf{determinant of a matrix is the volume of the parallelepiped spanned by its column vectors}. If two feature columns are highly correlated, they point in \emph{almost the same direction} — the parallelepiped they span is squashed nearly flat, so its volume, and hence $\det(\mathbf{X}^\top\mathbf{X})$, collapses toward $0$. The matrix is then \textbf{ill-conditioned}: it is not quite singular, but barely invertible.
+
+Why does that hurt? Computing $(\mathbf{X}^\top\mathbf{X})^{-1}$ effectively \emph{divides by that near-zero determinant}, so the entries of the inverse blow up to huge magnitudes. A computer stores numbers to only $\sim 16$ significant digits and truncates the rest; once the inverse has enormous entries, those tiny rounding errors are amplified by the same large factor. The result: the fitted weights $\mathbf{w}_* = (\mathbf{X}^\top\mathbf{X})^{-1}\mathbf{X}^\top\mathbf{y}$ end up dominated by floating-point \emph{noise} rather than by the data. This is the precise reason near-collinear features are dangerous, and why the practical advice is to solve the linear system directly (Cholesky/QR) rather than form the inverse — or to regularise (Wk21), which lifts $\det(\mathbf{X}^\top\mathbf{X}+\lambda\mathbf{I})$ away from zero.
+\end{notebox}
+
+\begin{pitfallbox}[: ``compute $(\mathbf{X}^\top\mathbf{X})^{-1}$'' is rarely what you do in practice]
+The Normal Equation $\mathbf{X}^\top\mathbf{X}\mathbf{w} = \mathbf{X}^\top\mathbf{y}$ is solved by Gaussian elimination, Cholesky factorisation, or QR decomposition — never by literally constructing the inverse. The form $(\mathbf{X}^\top\mathbf{X})^{-1}\mathbf{X}^\top\mathbf{y}$ is good for derivation, bad for code. The exam expects the algebraic form; library code does the right linear-algebra trick under the hood.
+\end{pitfallbox}
+
+% =====================================================================
+\section{Solution 2 — Steepest descent}
+
+The closed form's $M\times M$ inverse is the bottleneck. Steepest descent trades exactness for scalability: iterate small updates that each cost $O(NM)$ rather than one big step that costs $O(M^3 + NM^2)$.
+
+\subsection{Specialise the Wk7 loop}
+
+Recall Wk7's generic update: $\mathbf{w}_{t+1} = \mathbf{w}_t + \alpha_t \mathbf{p}_t$. Plugging in the steepest-descent direction $\mathbf{p}_t = -\nabla L(\mathbf{w}_t)$ and the gradient we just computed:
+\[
+\boxed{\;\mathbf{w}_{t+1} \;=\; \mathbf{w}_t - \alpha_t\,\big(2\mathbf{X}^\top\mathbf{X}\mathbf{w}_t - 2\mathbf{X}^\top\mathbf{y}\big).\;}
+\]
+This is the steepest-descent update for least squares.
+
+\textbf{Algorithm.}
+
+\begin{exbox}[Steepest descent for linear least-squares]
+\textbf{Inputs:} step size $\alpha > 0$, tolerance $\epsilon > 0$.\\[0.2em]
+\textbf{1.} $t \leftarrow 0$. Initialise $\mathbf{w}_0$ (random, or $\mathbf{0}$).\\
+\textbf{2.} While $\|\alpha\,\nabla L(\mathbf{w}_t)\| \ge \epsilon$:\\
+\quad\quad (a) Compute $\nabla L(\mathbf{w}_t) = 2\mathbf{X}^\top\mathbf{X}\mathbf{w}_t - 2\mathbf{X}^\top\mathbf{y}$.\\
+\quad\quad (b) $\mathbf{w}_{t+1} \leftarrow \mathbf{w}_t - \alpha\,\nabla L(\mathbf{w}_t)$.\\
+\quad\quad (c) $t \leftarrow t+1$.\\
+\textbf{3.} Return $\mathbf{w}_t$.
+\end{exbox}
+
+\textbf{Three design choices, revisited.} Direction is fixed (negative gradient). Step size: simplest is a constant $\alpha$; better, an adaptive schedule (decreasing $\alpha_t$, or simulated-annealing-style temperature). Termination: gradient-near-zero $\|\alpha\,\nabla L\| < \epsilon$, or iteration cap, or progress-near-zero. Combine them.
+
+The first-order gradient $\nabla L$ tells you the \emph{direction} to move but says nothing about the step size. The \textbf{second-order gradient} (the Hessian) supplies the missing curvature information that can be used to choose the step size rather than fixing $\alpha$ to an arbitrary constant — the lecturer calls this \textbf{momentum}. For the least-squares loss the Hessian is $2\mathbf{X}^\top\mathbf{X}$, a \emph{constant} (no $\mathbf{w}$ in it at all), so this curvature-based step size is itself constant.
+
+\subsection{Isotropic vs anisotropic loss surfaces}
+
+The shape of the loss surface decides how well steepest descent performs.
+
+\textbf{Isotropic surface} — the contours are concentric circles. The gradient at every point already points exactly at the minimum; one step (with the right $\alpha$) is enough; many steps still converge cleanly.
+
+\textbf{Anisotropic surface} — the contours are ellipses. The negative gradient is perpendicular to the local contour, but \emph{this is not the same as pointing at the minimum} on an elongated surface. The iterate overshoots the long axis, gets corrected on the next step, overshoots again — the canonical \textbf{zig-zag}.
+
+\textbf{Extreme anisotropy} — the contours are very thin elongated ellipses (high condition number of the Hessian). The zig-zag becomes pathological: the iterates bounce across a narrow valley with almost no forward progress along its length. Convergence is glacial.
+
+\begin{verbatim}
+Isotropic                  Anisotropic                Extreme anisotropy
+(circles)                  (ellipses)                 (very thin ellipses)
+
+   ___                       _____                   _____________
+  / o \    --> direct       /  o  \   --> zig-zag   /      o      \  --> trapped
+  \___/        descent      \_____/                 \_____________/
+\end{verbatim}
+
+\begin{center}
+
+\footnotesize\textit{\textbf{Isotropic loss surface} (circular contours). The orange arrows show successive steepest-descent steps. Because the contours are circles, the negative gradient at every point aims directly at the centre --- the minimum --- so the iterates advance cleanly along a straight path. A single well-chosen step reaches the optimum; convergence is fast regardless of the step size, as long as $\alpha$ is not too large.}
+\end{center}
+
+\begin{center}
+
+\footnotesize\textit{\textbf{Anisotropic loss surface} (elliptical contours). The loss decreases much faster in one direction than the other, so the negative gradient is perpendicular to the local contour but \emph{not} aimed at the minimum. Each orange step overshoots the narrow axis, requiring a corrective step in the opposite direction --- the characteristic \textbf{zig-zag}. Progress along the long axis of the ellipse is slow; many iterations are wasted oscillating across the short axis. This is the standard failure mode of steepest descent on poorly-conditioned problems.}
+\end{center}
+
+\begin{center}
+
+\footnotesize\textit{\textbf{Extreme anisotropy} (very thin elongated contours, high condition number). The ellipse is now so flat that the gradient is almost entirely perpendicular to the direction of the minimum. The zig-zag collapses to a near-vertical oscillation at the left end of the valley: the iterates bounce rapidly across the narrow dimension while making almost no headway toward the minimum along the long dimension. Convergence is glacially slow. This pathology grows with the ratio of the largest to smallest eigenvalue of the Hessian $2\mathbf{X}^\top\mathbf{X}$ --- the \emph{condition number}.}
+\end{center}
+
+\textbf{The fix is Newton's method (Week 9):} pre-multiply the gradient by the inverse Hessian to ``round out'' the contours. For a quadratic loss the Hessian is constant, and Newton's converges in \emph{one step} regardless of anisotropy. The cost is computing $\mathbf{H}^{-1}$ — the same $M\times M$ inverse that made the closed form expensive. Wk9 unpacks the trade-off.
+
+\subsection{Closed form vs steepest descent — when to use which}
+
+\begin{tabularx}{\linewidth}{@{}lXX@{}}
+\toprule
+\thead{Criterion} & \thead{Closed-form (Normal Eq.)} & \thead{Steepest descent} \\
+\midrule
+Cost per call    & $O(NM^2 + M^3)$ — single shot & $O(NM)$ per iteration, many iterations \\
+Memory           & $M\times M$ matrix in RAM    & Only $\mathbf{w}_t$ and a gradient \\
+Exactness        & Exact (up to floating point)  & Approximate, controlled by $\epsilon$ \\
+Numerical risk   & Ill-conditioned $\mathbf{X}^\top\mathbf{X}$ blows up the inverse & Bounded by $\alpha$ — slow but stable \\
+Scales to large $M$? & No (cubic in $M$)         & Yes \\
+Scales to large $N$?  & Yes (linear in $N$ for forming $\mathbf{X}^\top\mathbf{X}$) & Yes — and SGD/mini-batch decouples cost from $N$ \\
+\bottomrule
+\end{tabularx}
+
+\textbf{Rule of thumb.} Closed form for small problems with well-conditioned $\mathbf{X}$. Steepest descent (in some variant) for everything else, especially deep learning where $M$ is in the millions.
+
+% =====================================================================
+\section{Three GD variants — Batch, Stochastic, Mini-batch}
+
+The steepest-descent algorithm above uses the gradient of $L(\mathbf{w}) = \sum_i (\mathbf{w}^\top\mathbf{x}_i - y_i)^2$ — the \emph{full} gradient summed over all $N$ data points. That's slow when $N$ is huge: each step is $O(NM)$. The three GD variants differ in \emph{how many points contribute to each gradient estimate per step}.
+
+\subsection{Batch GD}
+
+\textbf{Update:} use \emph{all} $N$ points each step.
+\[
+\mathbf{w}_{t+1} \;=\; \mathbf{w}_t - \alpha_t\,\frac{1}{N}\sum_{i=1}^N \nabla L_i(\mathbf{w}_t),
+\]
+where $L_i(\mathbf{w}) = (\mathbf{w}^\top\mathbf{x}_i - y_i)^2$ is the per-sample loss.
+
+\textbf{Pros.} Direction is the true gradient — stable, no zig-zag from sampling noise. On a convex loss, converges deterministically.\\
+\textbf{Cons.} Each step costs $O(NM)$. For $N$ in the millions, even one update is expensive.
+
+\begin{notebox}[: batch GD computes the \emph{exact} gradient, in one matrix shot]
+The total loss is a \emph{sum} of per-point losses, $L(\mathbf{w}) = \sum_{i=1}^N L_i(\mathbf{w})$. The derivative of a sum is the sum of derivatives, so $\nabla L(\mathbf{w}) = \sum_{i=1}^N \nabla L_i(\mathbf{w})$ — the batch gradient is (up to the $1/N$ averaging) just the \emph{average of the per-point gradients}. Nothing is approximated: this is the true gradient of the objective.
+
+The key practical point is that you never run a $\sum_{i=1}^N$ loop to get it. The whole sum collapses into one matrix expression — for least squares, $\nabla L = 2\mathbf{X}^\top(\mathbf{X}\mathbf{w}-\mathbf{y})$ — evaluated in a single BLAS call over the \emph{entire} data matrix $\mathbf{X}$. ``Batch'' = the full matrix $\mathbf{X}$ is present in every step. SGD, by contrast, \textbf{abandons the matrix $\mathbf{X}$ entirely}: it draws \emph{one} random row $\mathbf{x}_i$ and steps on that single point's gradient $2(\mathbf{w}^\top\mathbf{x}_i - y_i)\mathbf{x}_i$ — a noisy one-sample estimate of the same average. Mini-batch is the compromise: instead of all $N$ rows or one row, it uses a \emph{small matrix} of 32/64/128 rows and averages over that.
+\end{notebox}
+
+\subsection{Stochastic GD (SGD)}
+
+\textbf{Update:} pick \emph{one} random sample $i_s$ per step and use only its gradient.
+\[
+\mathbf{w}_{t+1} \;=\; \mathbf{w}_t - \alpha_t\,\nabla L_{i_s}(\mathbf{w}_t).
+\]
+\textbf{Expanding the per-sample gradient (squared error).} \doflag{} For $L_i(\mathbf{w}) = (\mathbf{w}^\top\mathbf{x}_i - y_i)^2$, the chain rule gives $\nabla L_i(\mathbf{w}) = 2(\mathbf{w}^\top\mathbf{x}_i - y_i)\,\mathbf{x}_i$. The scalar $(\mathbf{w}^\top\mathbf{x}_i - y_i)$ is the residual at point $i$; the vector $\mathbf{x}_i$ is the input direction. Plugging back in:
+\[
+\mathbf{w}_{t+1} \;=\; \mathbf{w}_t \;-\; 2\alpha_t\,(\mathbf{w}_t^\top\mathbf{x}_{i_s} - y_{i_s})\,\mathbf{x}_{i_s}.
+\]
+This is the expression past-paper Q3b asks for. Read it as: ``shift $\mathbf{w}$ in the direction of $\mathbf{x}_{i_s}$, by an amount proportional to how wrong we are on sample $i_s$.'' If the residual is zero ($\mathbf{w}_t^\top\mathbf{x}_{i_s} = y_{i_s}$), no update happens for that sample — the model already agrees with that point.
+
+\textbf{Pros.} Each step costs $O(M)$ — independent of $N$. Stochastic noise can help \emph{escape} narrow local minima on non-convex losses (deep learning).\\
+\textbf{Cons.} The gradient at one sample is a noisy estimate of the true gradient — direction is unstable, iterates bounce around. On convex losses, doesn't converge to a single point unless step size decays.
+
+\examflag{}From past paper Q1: ``Stochastic gradient descent can be regarded as a stochastic approximation of gradient-descent optimisation, which considers a randomly selected subset of the dataset.'' \textbf{True}, exactly as stated. SGD's per-step gradient is a one-sample (or mini-batch) approximation of the full gradient.
+
+\examflag{}From past paper Q1: ``For convex problems, given the optimal batch size, batch gradient descent is guaranteed to eventually converge to the global optimum of a loss function while stochastic gradient descent is not.'' \textbf{True} as stated. Convex $L$ + appropriate $\alpha$ $\Rightarrow$batch GD converges deterministically. SGD's iterates fluctuate; convergence requires a decaying step-size schedule, otherwise no.
+
+\subsection{Mini-batch GD}
+
+\textbf{Update:} pick a random subset of $B$ samples (with $B<N$) and average their gradients.
+\[
+\mathbf{w}_{t+1} \;=\; \mathbf{w}_t - \alpha_t\,\frac{1}{B}\sum_{i=1}^B \nabla L_i(\mathbf{w}_t).
+\]
+\textbf{Why it works.} Real datasets have correlated samples — the mini-batch gradient is a low-variance estimate of the full gradient at a fraction of the cost.\\
+\textbf{Typical $B$.} 32, 128, 256 — powers of 2 chosen to fit GPU memory layouts efficiently.\\
+\textbf{Pros.} Best of both worlds: per-step cost is $O(BM)$ (cheap), direction noise is moderate (stable enough), and GPU vectorisation makes a mini-batch step almost as fast as a single-sample step.\\
+\textbf{Cons.} Adds a hyperparameter ($B$). Too small: noisy. Too large: closed-form's slowness without its exactness.
+
+\begin{notebox}[: ``SGD'' in modern usage]
+The lecturer flags that ``SGD'' in deep learning libraries (PyTorch, TensorFlow) almost never means batch-of-1. It means \emph{mini-batch SGD} with the user-specified batch size. The strict batch-of-1 form is academic.
+\end{notebox}
+
+\subsection{Spectrum view}
+
+\begin{tabularx}{\linewidth}{@{}lXXX@{}}
+\toprule
+\thead{Variant} & \thead{Samples per step} & \thead{Direction} & \thead{Cost per step} \\
+\midrule
+Batch GD       & all $N$ & exact gradient — stable & $O(NM)$ \\
+Mini-batch GD  & $B$ random ($1<B<N$) & low-variance estimate — moderate noise & $O(BM)$ \\
+Stochastic GD  & one random & high-variance estimate — very noisy & $O(M)$ \\
+\bottomrule
+\end{tabularx}
+
+\begin{center}
+
+\footnotesize\textit{Loss-surface trajectories for all three GD variants on an anisotropic (elliptical) loss surface. \textbf{Top-left --- Batch GD}: every step uses the exact full-data gradient; the red path advances steadily and smoothly toward the minimum $+$, never deviating. \textbf{Top-right --- Mini-batch GD}: each step averages $B$ random samples; the path is slightly jagged but still converges reliably, balancing speed and stability. \textbf{Bottom --- Stochastic GD}: each step uses a single random sample; the path oscillates wildly, bouncing erratically around the loss landscape before eventually reaching the vicinity of the minimum. The oscillation does not disappear at convergence unless the step size is decayed. Figure credit: Akash Wagh.}
+\end{center}
+
+% =====================================================================
+\section{Exam-mode answers}
+
+The Wk8 material owns the heart of past-paper Q3 (gradient derivation, SGD update form) and a chunk of Q1 (T/F on convergence properties) and Q2 (MCQ on optimisation factors). Mark-style answers for each:
+
+\begin{exambox}[{(True/False): Stochastic gradient descent is a stochastic approximation of gradient descent, considering a randomly selected subset of the dataset.}]
+\textit{\textbf{True}. SGD computes the gradient on a randomly drawn sample (or mini-batch) and uses it as an estimate of the full-data gradient. The randomness gives ``stochastic''; the subsetting gives ``approximation.'' In modern usage the subset is typically a mini-batch of size 32--256, but a strict batch-of-1 also qualifies. (1 mark)}
+\end{exambox}
+
+\begin{exambox}[{(True/False): For convex problems with an appropriate batch size, batch gradient descent converges to the global optimum, while stochastic gradient descent does not.}]
+\textit{\textbf{True} as stated. (1 mark)}\\[0.3em]
+\textit{\emph{Justification you would write under the answer to earn the mark.} Convex $L$ + appropriately chosen step size $\Rightarrow$ batch GD's iterates form a deterministic decreasing sequence converging to the unique global minimum. SGD uses a single-sample (or mini-batch) gradient estimate, which has positive variance even at the optimum, so its iterates fluctuate; convergence requires a decaying step-size schedule, which the question does not give. Without that schedule, SGD does not converge to a single point.}
+\end{exambox}
+
+\begin{exambox}[{\doflag{}Derive the gradient of the squared-error loss $L(\mathbf{w})=\|\mathbf{X}\mathbf{w}-\mathbf{y}\|^2$ with respect to $\mathbf{w}$.}]
+\textit{\textbf{Step 1.} Expand: $L(\mathbf{w}) = (\mathbf{X}\mathbf{w}-\mathbf{y})^\top(\mathbf{X}\mathbf{w}-\mathbf{y}) = \mathbf{w}^\top\mathbf{X}^\top\mathbf{X}\mathbf{w} - 2\mathbf{y}^\top\mathbf{X}\mathbf{w} + \mathbf{y}^\top\mathbf{y}$. (1 mark)}\\[0.3em]
+\textit{\textbf{Step 2.} Apply $\partial(\mathbf{w}^\top\mathbf{A}\mathbf{w})/\partial\mathbf{w} = 2\mathbf{A}\mathbf{w}$ (since $\mathbf{X}^\top\mathbf{X}$ is symmetric) and $\partial(\mathbf{b}^\top\mathbf{w})/\partial\mathbf{w} = \mathbf{b}$. (1 mark)}\\[0.3em]
+\textit{\textbf{Step 3.} Combine: $\nabla_\mathbf{w} L(\mathbf{w}) = 2\mathbf{X}^\top\mathbf{X}\mathbf{w} - 2\mathbf{X}^\top\mathbf{y}$. (2 marks)}\\[0.3em]
+\textit{\emph{Equivalent forms acceptable.} Some textbooks drop the factor of $2$ by absorbing it into $\alpha$; some use $\frac{1}{N}$ scaling. The marker accepts any form that is dimensionally consistent and traceable to the same expansion.}
+\end{exambox}
+
+\begin{exambox}[{\doflag{}Write the update equation for stochastic gradient descent with batch size 1, using the squared-error loss.}]
+\textit{\textbf{Setup.} Per-sample loss $L_i(\mathbf{w}) = (\mathbf{w}^\top\mathbf{x}_i - y_i)^2$ has gradient $\nabla L_i(\mathbf{w}) = 2(\mathbf{w}^\top\mathbf{x}_i - y_i)\,\mathbf{x}_i$. (1 mark)}\\[0.3em]
+\textit{\textbf{Update.} Pick a random sample index $i_s\in\{1,\ldots,N\}$:}
+\[
+\mathbf{w}_{t+1} \;=\; \mathbf{w}_t - \alpha\,\nabla L_{i_s}(\mathbf{w}_t) \;=\; \mathbf{w}_t - 2\alpha(\mathbf{w}_t^\top\mathbf{x}_{i_s} - y_{i_s})\mathbf{x}_{i_s}.
+\]
+\textit{\textbf{Comment for full marks.} Compared to full-batch GD, the sum $\sum_{i=1}^N$ has collapsed to evaluation at a single random sample; the direction is now a noisy estimate of the full gradient. (3 marks)}
+\end{exambox}
+
+\begin{exambox}[{Concept: state the linear least-squares problem and the closed-form solution.}]
+\textit{\textbf{Problem.} Given dataset $\{(\mathbf{x}_i,y_i)\}_{i=1}^N\subset\mathbb{R}^M\times\mathbb{R}$, fit a linear model $f(\mathbf{x})=\mathbf{w}^\top\mathbf{x}$ minimising the sum of squared errors:}
+\[
+\mathbf{w}_* = \arg\min_{\mathbf{w}} \|\mathbf{X}\mathbf{w}-\mathbf{y}\|^2.
+\]
+\textit{\textbf{Closed-form solution.} Setting $\nabla_\mathbf{w}\|\mathbf{X}\mathbf{w}-\mathbf{y}\|^2 = 2\mathbf{X}^\top\mathbf{X}\mathbf{w} - 2\mathbf{X}^\top\mathbf{y} = \mathbf{0}$ gives the Normal Equation $\mathbf{X}^\top\mathbf{X}\mathbf{w}_* = \mathbf{X}^\top\mathbf{y}$. When $\mathbf{X}$ has full column rank, $\mathbf{X}^\top\mathbf{X}$ is invertible and the unique solution is $\mathbf{w}_* = (\mathbf{X}^\top\mathbf{X})^{-1}\mathbf{X}^\top\mathbf{y}$.}
+\end{exambox}
+
+\begin{exambox}[{Concept: compare batch GD, SGD, and mini-batch GD.}]
+\textit{Three points on the same spectrum, differing in how many samples contribute to each gradient estimate:}\\[0.3em]
+\textit{\quad — \textbf{Batch GD} (all $N$): direction is the exact gradient, very stable; per-step cost $O(NM)$, infeasible for huge $N$.}\\
+\textit{\quad — \textbf{SGD} (one random sample): per-step cost $O(M)$, fast; direction is a noisy estimate, iterates fluctuate; can escape narrow minima on non-convex losses.}\\
+\textit{\quad — \textbf{Mini-batch GD} ($B$ samples, $B$ typically 32--256): per-step cost $O(BM)$; direction is a low-variance estimate, moderately stable; matches GPU memory layouts. ``SGD'' in modern usage usually means this variant.}
+\end{exambox}
+
+% =====================================================================
+\section*{Key equations cheat sheet}
+\addcontentsline{toc}{section}{Key equations cheat sheet}
+
+\begin{tabularx}{\linewidth}{@{}lX@{}}
+\toprule
+\thead{Object} & \thead{Definition / formula} \\
+\midrule
+Convex set        & $C$ s.t.\ $(1-\beta)\mathbf{x}+\beta\mathbf{y}\in C$ for all $\mathbf{x},\mathbf{y}\in C$, $\beta\in[0,1]$ \\
+Linear model      & $f(\mathbf{x}) = \mathbf{w}^\top\mathbf{x}$ \\
+SSE objective     & $L(\mathbf{w}) = \sum_{i=1}^N (\mathbf{w}^\top\mathbf{x}_i - y_i)^2 = \|\mathbf{X}\mathbf{w}-\mathbf{y}\|^2$ \\
+Gradient (LS)     & $\nabla_\mathbf{w} L(\mathbf{w}) = 2\mathbf{X}^\top\mathbf{X}\mathbf{w} - 2\mathbf{X}^\top\mathbf{y}$ \\
+Hessian (LS)      & $\nabla^2_\mathbf{w} L(\mathbf{w}) = 2\mathbf{X}^\top\mathbf{X}$ \\
+Normal Equation   & $\mathbf{X}^\top\mathbf{X}\mathbf{w}_* = \mathbf{X}^\top\mathbf{y}$ \\
+Closed-form solution & $\mathbf{w}_* = (\mathbf{X}^\top\mathbf{X})^{-1}\mathbf{X}^\top\mathbf{y}$ (if $\mathbf{X}^\top\mathbf{X}$ invertible) \\
+Uniqueness condition & $\mathbf{X}$ has full column rank $\Leftrightarrow$ $\mathbf{X}^\top\mathbf{X}$ is PD \\
+Steepest-descent update & $\mathbf{w}_{t+1} = \mathbf{w}_t - \alpha(2\mathbf{X}^\top\mathbf{X}\mathbf{w}_t - 2\mathbf{X}^\top\mathbf{y})$ \\
+Batch GD          & $\mathbf{w}_{t+1} = \mathbf{w}_t - \frac{\alpha}{N}\sum_{i=1}^N \nabla L_i(\mathbf{w}_t)$ \\
+SGD (batch=1)     & $\mathbf{w}_{t+1} = \mathbf{w}_t - \alpha\nabla L_{i_s}(\mathbf{w}_t)$, $i_s$ random \\
+Mini-batch GD     & $\mathbf{w}_{t+1} = \mathbf{w}_t - \frac{\alpha}{B}\sum_{i=1}^B \nabla L_i(\mathbf{w}_t)$, $B$ random samples \\
+Useful matrix-derivative identities & $\partial(\mathbf{w}^\top\mathbf{A}\mathbf{w})/\partial\mathbf{w} = 2\mathbf{A}\mathbf{w}$ ($\mathbf{A}$ symmetric); $\partial(\mathbf{b}^\top\mathbf{w})/\partial\mathbf{w} = \mathbf{b}$ \\
+\bottomrule
+\end{tabularx}
+
+% =====================================================================
+\section*{Pitfalls and traps consolidated}
+\addcontentsline{toc}{section}{Pitfalls and traps consolidated}
+
+\begin{itemize}
+  \item \textbf{$N$ vs $M$:} $N$ = number of samples, $M$ = features per sample. Don't swap them in the data matrix dimensions.
+  \item \textbf{$\mathbf{X}^\top\mathbf{X}$ is $M\times M$, not $N\times N$.} The cost of inverting is cubic in feature dimension, not sample count.
+  \item \textbf{Convexity holds always, uniqueness does not.} The least-squares loss is convex for any $\mathbf{X}$. Uniqueness needs full column rank.
+  \item \textbf{Don't actually invert the Gram matrix.} On paper, $\mathbf{w}_* = (\mathbf{X}^\top\mathbf{X})^{-1}\mathbf{X}^\top\mathbf{y}$. In code, solve the linear system directly (\texttt{numpy.linalg.solve} or \texttt{scipy.linalg.lstsq}).
+  \item \trapflag{}\textbf{``SGD considers a random subset of the dataset.''} \textbf{True}, even though students sometimes second-guess because ``subset'' could mean ``mini-batch'' rather than ``one sample''; both interpretations are accepted.
+  \item \trapflag{}\textbf{``Batch GD converges, SGD does not.''} \textbf{True} as written in the past paper — but the underlying reason is fluctuation under fixed step size, not a fundamental impossibility (decaying $\alpha$ recovers convergence).
+  \item \textbf{Vanilla GD vs Batch GD (terminology).} The lecturer occasionally calls per-sample GD ``vanilla GD,'' which conflicts with batch GD. The cleanest taxonomy: SGD (batch=1), Mini-batch (1<B<N), Batch (B=N). When in doubt, define the variant you're using before you talk about it.
+  \item \textbf{Anisotropy = bad GD performance, not a non-convexity.} A quadratic with very different eigenvalues is still convex but zig-zags. Newton's method (Wk9) fixes this.
+\end{itemize}
+
+% =====================================================================
+\section*{Self-check questions}
+\addcontentsline{toc}{section}{Self-check questions}
+
+\textit{No answers given. Verb cues: \emph{define} = state the formula precisely; \emph{derive} = show every step; \emph{compare} = parallel structure; \emph{explain why} = mechanism + reasoning.}
+
+\begin{enumerate}
+  \item Define a convex set. Define a convex function. Why is convexity useful in optimisation?
+  \item Write the linear least-squares minimisation problem in both summation form and matrix form. Show the two are equivalent.
+  \item Derive the gradient of $L(\mathbf{w}) = \|\mathbf{X}\mathbf{w}-\mathbf{y}\|^2$ with respect to $\mathbf{w}$. Show every step of the expansion.
+  \item Starting from the gradient, derive the Normal Equation and write the closed-form solution. State the assumption needed to invert.
+  \item Show that the least-squares loss is convex by writing it as a quadratic form and exhibiting a positive semi-definite Hessian.
+  \item Compute $\nabla^2_\mathbf{w} L(\mathbf{w})$. Under what condition on $\mathbf{X}$ is this Hessian positive definite?
+  \item State the steepest-descent update for least squares. Identify the three design choices (direction, step size, termination) and the simplest reasonable choice for each.
+  \item Compare the closed-form and steepest-descent solutions on (a) computational cost, (b) memory, (c) numerical stability, (d) scalability to large $M$ and large $N$.
+  \item Define isotropic and anisotropic loss surfaces. Explain why steepest descent zig-zags on the latter. Forward link: how does Newton's method fix this? (Answer in Week 9.)
+  \item State the update rule for batch GD, SGD, and mini-batch GD. Give one advantage and one disadvantage of each.
+  \item Why are typical mini-batch sizes powers of 2 (32, 128, 256)?
+  \item State a stopping criterion that combines a gradient threshold and an iteration cap. Give one situation where the gradient threshold alone would falsely trigger.
+  \item True or false: ``SGD can be regarded as a stochastic approximation of gradient descent, which considers a randomly selected subset of the dataset.'' Justify.
+  \item True or false: ``For convex problems with an appropriate batch size, batch GD is guaranteed to converge to the global optimum, whereas SGD is not.'' Justify carefully.
+  \item Outline how you would extend the least-squares derivation to a regularised loss $L(\mathbf{w}) = \|\mathbf{X}\mathbf{w}-\mathbf{y}\|^2 + \lambda\|\mathbf{w}\|^2$ (full treatment in Week 21).
+\end{enumerate}
+
+\end{document}

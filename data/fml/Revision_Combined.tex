@@ -1,0 +1,2745 @@
+\documentclass[11pt, a4paper]{article}
+
+% --- Fonts and engine ---
+\usepackage{fontspec}
+\setmainfont{Helvetica Neue}
+\setmonofont{Menlo}
+\usepackage{unicode-math}
+\setmathfont{STIX Two Math}
+
+% --- Layout ---
+\usepackage[margin=2cm, top=2cm, bottom=2.5cm]{geometry}
+\usepackage{microtype}
+\usepackage{parskip}
+\setlength{\parskip}{0.45em}
+\setlength{\parindent}{0pt}
+
+% --- Typography and links ---
+\usepackage[colorlinks=true, linkcolor=NavyBlue, urlcolor=NavyBlue, citecolor=NavyBlue]{hyperref}
+\usepackage{xcolor}
+\usepackage[dvipsnames]{xcolor}
+
+% --- Math and tables ---
+\usepackage{amsmath}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{tabularx}
+\newcommand{\thead}[1]{\textbf{#1}}
+
+% --- Lists ---
+\usepackage{enumitem}
+\setlist[itemize]{leftmargin=1.4em, itemsep=0.1em, topsep=0.2em}
+\setlist[enumerate]{leftmargin=1.5em, itemsep=0.1em, topsep=0.2em}
+
+% --- Boxed callouts ---
+\usepackage[most]{tcolorbox}
+\tcbuselibrary{breakable, skins, theorems}
+
+\definecolor{defBg}{HTML}{EAF2FB}
+\definecolor{defBd}{HTML}{1F4E79}
+\definecolor{tipBg}{HTML}{E8F5E9}
+\definecolor{tipBd}{HTML}{2E7D32}
+\definecolor{trapBg}{HTML}{FCE4EC}
+\definecolor{trapBd}{HTML}{AD1457}
+\definecolor{pitBg}{HTML}{FFF8E1}
+\definecolor{pitBd}{HTML}{B27600}
+\definecolor{noteBg}{HTML}{F3E5F5}
+\definecolor{noteBd}{HTML}{6A1B9A}
+\definecolor{tldrBg}{HTML}{E1F5FE}
+\definecolor{tldrBd}{HTML}{0277BD}
+\definecolor{exBg}{HTML}{F4F4F4}
+\definecolor{exBd}{HTML}{555555}
+
+\newtcolorbox{defbox}[1][]{enhanced, breakable, colback=defBg, colframe=defBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=5pt, bottom=5pt, fonttitle=\bfseries, title={Definition: #1}}
+\newtcolorbox{exbox}[1][]{enhanced, breakable, colback=exBg, colframe=exBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=5pt, bottom=5pt, fonttitle=\bfseries, title={Worked example: #1}}
+\newtcolorbox{setupbox}[1][]{enhanced, breakable, colback=defBg, colframe=defBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=5pt, bottom=5pt, fonttitle=\bfseries, title={Setup: #1}}
+\newtcolorbox{exambox}[1][]{enhanced, breakable, colback=tipBg, colframe=tipBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=5pt, bottom=5pt, fonttitle=\bfseries, title={Exam-mode answer #1}}
+\newtcolorbox{trapbox}[1][]{enhanced, breakable, colback=trapBg, colframe=trapBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=5pt, bottom=5pt, fonttitle=\bfseries, title={MCQ trap #1}}
+\newtcolorbox{pitfallbox}[1][]{enhanced, breakable, colback=pitBg, colframe=pitBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=5pt, bottom=5pt, fonttitle=\bfseries, title={Pitfall #1}}
+\newtcolorbox{notebox}[1][]{enhanced, breakable, colback=noteBg, colframe=noteBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=5pt, bottom=5pt, fonttitle=\bfseries, title={Lecturer aside #1}}
+\newtcolorbox{tldrbox}[1][]{enhanced, breakable, colback=tldrBg, colframe=tldrBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=5pt, bottom=5pt, fonttitle=\bfseries, title={#1}}
+
+\usepackage{titlesec}
+\titleformat{\section}[block]{\Large\bfseries\color{defBd}}{\thesection.}{0.6em}{}
+\titleformat{\subsection}[block]{\large\bfseries\color{defBd!80!black}}{\thesubsection}{0.5em}{}
+\titleformat{\subsubsection}[block]{\normalsize\bfseries}{}{0pt}{}
+\titlespacing*{\section}{0pt}{1.4em}{0.45em}
+\titlespacing*{\subsection}{0pt}{0.9em}{0.3em}
+
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small CM52054 — Combined Revision}
+\fancyhead[R]{\small Weeks 1–4, 7–11, 19–23, 25–26, 29}
+\fancyfoot[C]{\small\thepage}
+\renewcommand{\headrulewidth}{0.3pt}
+
+\providecommand{\blacksquare}{\rule{0.55em}{0.55em}}
+\newcommand{\examflag}{\textcolor{tipBd}{\textbf{[EXAM]}}\,}
+\newcommand{\trapflag}{\textcolor{trapBd}{\textbf{[TRAP]}}\,}
+\newcommand{\kw}[1]{\textbf{#1}}
+
+\title{\vspace{-1.2cm}{\Huge\bfseries Combined Revision Notes} \\[0.4em]{\large Trees (1–4) $\cdot$ Optimisation (7–9) $\cdot$ Bayesian \& Logistic (10–11) $\cdot$ Unsupervised (19) $\cdot$ Parametric (20) $\cdot$ Regularisation (21) $\cdot$ Graphical Models (22–23) $\cdot$ SVM (25–26) $\cdot$ Kernels (29)}}
+\author{\large CM52054 Foundational Machine Learning \\[0.2em]\normalsize University of Bath}
+\date{Condensed mark-scheme-style revision}
+
+\begin{document}
+
+\maketitle
+\thispagestyle{empty}
+
+\begin{tldrbox}[How to use]
+The complete final revision document — Weeks 1–4, 7–11, 19–23, 25–26. Statements are at
+\emph{mark-scheme keyword} density: every definition and setup is boxed, every examinable derivation
+is included inline, pitfalls and MCQ traps are flagged. Non-examinable material is omitted; where a
+\emph{proof} is non-examinable but its \emph{idea} is testable, only the idea is given. Revise
+directly from this document — the one-line recall checklist at the end is the last-minute pass.
+\end{tldrbox}
+
+\begin{center}\large\bfseries\color{defBd} PART I — Foundations, Trees, Bias–Variance, Performance\end{center}
+
+% =====================================================================
+\section{Week 1 — the chassis}
+
+Week~1 owns no past-paper question, but it sets up the vocabulary every later question silently
+assumes — so treat it as the conceptual chassis the rest of the unit bolts onto.
+
+The starting move is to distinguish three ways a computer can act intelligently. In
+\kw{programming} a human writes the rule directly — every threshold and branch is hand-coded — so the
+machine ``does exactly what you tell it and nothing else.'' In \kw{classical AI} the human specifies
+the \emph{problem} and the computer \emph{searches} a fully built problem space for the best solution
+(A$^\ast$ on a road graph). In \kw{ML} the computer gets neither the rule nor the full problem space:
+it is handed input/output \emph{examples} and must \emph{induce} the rule itself. The relationship is
+strictly nested: ML $\subset$ AI $\subset$ Programming — every ML system is doing AI, every AI system
+is a program, but not every program learns.
+
+\begin{itemize}
+  \item \kw{Five-step pipeline}: (1) choose problem; (2) obtain data; (3) choose/design model;
+  (4) fit by optimisation; (5) measure performance — then iterate. The loop matters: a poor
+  performance measurement feeds straight back into re-choosing or re-fitting the model. This unit
+  ignores step~2 and concentrates on steps~3--5.
+  \item Model fitting \kw{is} optimisation: pick a parametric family $f_{\boldsymbol\theta}$, pick a
+  loss $L(\boldsymbol\theta)$ scoring how badly it fits, then \emph{search} for
+  $\boldsymbol\theta^\ast=\arg\min L$. This single schema — family, loss, search — recurs for every
+  model in the unit; only the family and the optimiser change.
+  \item \kw{Classification} = discrete label output (fish vs invertebrate, spam vs not); \kw{regression}
+  = real-valued target (tomorrow's stock price). This is the \emph{type of output}; a separate axis is
+  whether the output is a hard label or a probability.
+  \item \kw{Train/test split}: fit on the training set, judge on an unseen test set. The reason this
+  is non-negotiable is that several different rules can fit a small training set perfectly yet
+  disagree on test data — perfect training accuracy therefore guarantees \emph{nothing} about
+  generalisation. The lecturer's ``bear'' dramatises the sharpest version: deployed in the wild the
+  model meets a mammal, an input its fish/invertebrate family simply cannot represent.
+\end{itemize}
+
+\begin{notebox}[an ML system is code plus a parameter blob]
+The lecturer's slogan ``an ML algorithm outputs code'' is best read as: the \emph{architecture} (the
+function that consumes a feature vector and returns a prediction) is fixed at design time, and
+training only produces the \emph{parameters} that, plugged into that fixed function, pick out one
+specific predictor. A trained model is therefore exactly two things — static code plus a parameter
+blob — which is the working picture behind every later ``the model is parameterised by
+$\boldsymbol\theta$.''
+\end{notebox}
+
+\begin{itemize}
+  \item \kw{Decision stump} = depth-1 tree: enumerate all (feature, value) pairs, score each on the
+  training set, return the best. The two parameters are \emph{which feature} and \emph{which value};
+  the loss is implicit (error rate); the optimiser is brute force. It works here only because the
+  parameter space is tiny ($n_{\text{features}}\times2$) — a deliberately \kw{weak} family that
+  motivates the richer families and gradient-based optimisers of later weeks.
+  \item \kw{Why ML beats hand-coded rules}: a hand rule must be rewritten from scratch for every new
+  problem, so engineering effort scales with the number of problems; ML transfers the \emph{algorithm}
+  and only swaps the data. \kw{Domain knowledge is not required} — the algorithm operates on the
+  feature matrix and is blind to what the symbols mean, which is exactly why one algorithm serves
+  fish-classification, fraud detection, and spam filtering alike.
+  \item \kw{When to output a probability} rather than a hard label: when a downstream decision needs a
+  \emph{confidence} to act on — fraud risk-pricing, medical risk, recommendation ranking. ``It is a
+  fish'' and ``$p(\text{fish}\mid x)=0.83$'' answer different questions.
+\end{itemize}
+
+% =====================================================================
+\section{Week 2 — Decision Trees}
+
+A decision tree is the natural escalation of the Week~1 stump. A single stump puts one threshold on
+one feature axis, which works only when the classes are separable by an \kw{axis-aligned} hyperplane.
+Real data rarely cooperates — the canonical counter-example is a central disc of one class ringed by
+the other, where every horizontal or vertical cut leaves half the ring on each side. The fix is to
+apply the splitting procedure \emph{recursively}: split, then split each side again, and so on. The
+decision boundary becomes a staircase of axis-aligned cuts that can approximate any curved boundary.
+
+\begin{setupbox}[decision tree]
+\kw{Internal node} = a test on one feature, routes data to a child. \kw{Leaf} = emits a prediction
+(classification: majority class; regression: mean target). Training = \kw{recursive partitioning}:
+at each node search candidate splits, pick the one most reducing impurity, recurse on children. The
+model parameter $\boldsymbol\theta$ \emph{is} the whole tree — its topology, every node's
+(feature, threshold), and every leaf's label — so unlike linear regression's fixed-shape weight
+vector, the parameter object itself has variable shape.
+\end{setupbox}
+
+\begin{itemize}
+  \item Training is \kw{greedy} — at each node it brute-forces the locally best single split, with no
+  look-ahead to how that choice constrains descendants. Finding the globally optimal tree over all
+  trees of bounded size is \kw{NP-hard}, so greedy is the standard tractable substitute: cheap, and
+  good enough in practice.
+  \item \kw{Linearly separable} = classes separable by a single hyperplane (a line in 2-D). Most real
+  datasets are not linearly separable in their original feature space; trees sidestep this by
+  stacking many axis-aligned splits rather than searching for one clever boundary.
+\end{itemize}
+
+\subsection{Splitting criteria}
+
+The split criterion is the loss the tree minimises during training, and it must reward
+\emph{partial} progress. Each node has class proportions $p_i$, summarised by an \kw{impurity}:
+\[
+H(p) = -\textstyle\sum_i p_i\log p_i \;\;\text{(entropy)}, \qquad
+G(p) = 1-\textstyle\sum_i p_i^2 \;\;\text{(Gini impurity)}.
+\]
+Both are $0$ at a pure node and maximal at a uniform mix, and both vary \emph{smoothly} with the
+proportions — which is the property that lets them detect a split that nudges a node toward purity
+without yet flipping any prediction. Entropy is the average number of bits/nats to encode a sample
+from the node's class distribution; Gini is the probability that two samples drawn with replacement
+from the node have different classes. A split sends $n_l$ of the $n$ points left and $n_r$ right.
+
+A split produces \emph{two} children, so a single comparable score is built by taking a
+count-weighted average of the two child impurities — a branch carrying more data deserves more
+weight, since it contributes more to the tree's future training set.
+
+\begin{defbox}[split scoring — one template, two names]
+\kw{Information Gain} (entropy), \emph{maximise}:
+$\;I = H(p_{\text{par}}) - \big[\tfrac{n_l}{n}H(p_l)+\tfrac{n_r}{n}H(p_r)\big]$. \\
+\kw{Gini split loss}, \emph{minimise}:
+$\;L = \tfrac{n_l}{n}G(p_l)+\tfrac{n_r}{n}G(p_r)$. \\
+Same structure = count-weighted average of child impurities; swap $H\leftrightarrow G$. Parent
+impurity is constant at split time $\Rightarrow$ minimising the child sum $\equiv$ maximising the
+gain. Information gain thus reads as ``how many bits of class uncertainty this split eliminates.''
+\end{defbox}
+
+For typical class proportions the entropy and Gini curves have the same shape — both vanish at the
+pure endpoints, both peak at the even mixture — so the two criteria pick almost identical splits in
+classification. Gini is the common default purely because it skips the logarithm.
+
+\begin{trapbox}[IG and Gini interchangeable — only for classification]
+Classification: both use the same $p_i$, behave near-identically. \kw{Regression}:
+\begin{itemize}
+  \item Entropy has a continuous counterpart $\Rightarrow$ IG becomes \kw{Variance Reduction}:
+  $\text{Var}(\text{par})-\big[\tfrac{n_l}{n}\text{Var}(l)+\tfrac{n_r}{n}\text{Var}(r)\big]$
+  (surrogate: Gaussian differential entropy $H=\tfrac12\log(2\pi e\sigma^2)$).
+  \item Gini ($1-\sum p_i^2$) = discrete category-mismatch probability only; \kw{no} continuous form,
+  no link to variance.
+\end{itemize}
+\end{trapbox}
+
+For a \kw{regression tree}, the leaf prediction is the \kw{mean} of the training targets reaching
+it, and the split criterion becomes \kw{variance reduction} — choose the split minimising the
+count-weighted child variances $\tfrac{n_l}{n}\sigma_l^2+\tfrac{n_r}{n}\sigma_r^2$. Variance is the
+regression analogue of Gini: zero on a pure node (all targets equal, so the mean is exactly right),
+larger when the targets disagree. The \kw{median} is a more outlier-robust leaf prediction, since a
+single huge target drags the mean far but the median only slightly.
+
+\begin{pitfallbox}[0--1 loss is unusable \emph{inside} a tree]
+0--1 loss is fine for a single \emph{stump} but breaks inside a tree because it is blind to ``less
+wrong'': after the first split both children typically still hold a class mixture, and an
+intermediate split can make them purer in \emph{distribution} without yet flipping any majority
+prediction $\Rightarrow$ zero measured improvement $\Rightarrow$ the tree wastes splits and stalls.
+The cure is an impurity measure (entropy/Gini) that varies smoothly with proportions and so rewards
+distributional improvement at every level.
+\end{pitfallbox}
+
+\subsection{Input types}
+
+The recursive-partitioning algorithm never changes across input types — only the list of
+\emph{candidate splits} offered to the brute-force search does.
+
+\begin{itemize}
+  \item \kw{Real-valued}: sort the values along the axis; candidate thresholds sit \emph{between}
+  adjacent sorted values (the midpoint convention keeps no training point exactly on the boundary);
+  each ``$x<t$'' is one binary split.
+  \item \kw{Quantised real} (pre-binned, e.g. age recorded as ``18--24''): the exact values have been
+  discarded, so two points in the same bin are \kw{indistinguishable} to the model. A split
+  \emph{inside} a bin therefore sends every point in it the same way and separates nothing (zero
+  information gain) $\Rightarrow$ only test splits at \kw{bin boundaries}; the gain profile is a set
+  of discrete spikes at the bin transitions.
+  \item \kw{Categorical (unordered)}: there is no ``$<$'' to threshold, so use
+  \kw{one-left-rest-right} — for $n$ categories test the $n$ splits ``$\{k\}\mid\text{rest}$'', each a
+  boolean ``feature $==k$?''.
+\end{itemize}
+
+\begin{center}
+\renewcommand{\arraystretch}{1.2}
+\begin{tabularx}{\linewidth}{l l l X}
+\toprule
+\thead{Categorical strategy} & \thead{\# candidates} & \thead{Storage} & \thead{Scaling} \\
+\midrule
+All binary partitions & $O(2^{n-1})$ & subset of categories & exponential ($\sim5\times10^5$ at $n{=}20$) \\
+One-left-rest-right & $O(n)$ & single category index & linear (20 at $n{=}20$) \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+After a categorical split both children grow further: left child = the $\{k\}$ rows (split on
+\emph{other} features); right child = remaining-category mix (free to peel off another category).
+The categorical feature is an \emph{input}, not the prediction target.
+
+\begin{exbox}[what a categorical-feature split looks like]
+Feature ``cheese'' $\in\{$Cheddar, Brie, Gouda, Stilton$\}$. A one-left-rest-right split on Brie:
+\begin{center}\small\ttfamily
+[\,cheese == Brie?\,]\quad yes $\to$ \{Brie rows\}\qquad no $\to$ \{Cheddar, Gouda, Stilton rows\}
+\end{center}
+The left child holds only the Brie rows and is grown on \emph{other} features (age, income, \dots);
+the right child holds the remaining-category mixture and may split on ``cheese'' again to peel off
+Cheddar, then Gouda, and so on. ``Cheese'' is an input feature being used to predict a separate
+target — not the thing being predicted.
+\end{exbox}
+
+\subsection{Trade-offs}
+
+\begin{pitfallbox}[interpretability $\ne$ accuracy]
+Trees are \kw{interpretable} (readable decision path) — required in regulated domains (e.g. loan
+decisions). But interpretability is a separate axis from accuracy: a readable tree is not necessarily
+an accurate one.
+\end{pitfallbox}
+
+\begin{center}
+\renewcommand{\arraystretch}{1.2}
+\begin{tabularx}{\linewidth}{l l X}
+\toprule
+\thead{Train acc} & \thead{Test acc} & \thead{Diagnosis} \\
+\midrule
+high & low & \kw{overfitting} \\
+low & low & \kw{underfitting} \\
+high & high & good fit \\
+low & high & data leakage / bug (suspicious) \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+% =====================================================================
+\section{Week 3 — Bias, Variance, Cross-Validation}
+
+Week~3 builds the language needed to say precisely \emph{why} a model is wrong. It starts with a
+small worked case — the bias of the sample variance — purely to install the vocabulary ``bias of an
+estimator = how far its expectation sits from the truth,'' then reuses that vocabulary in the
+bias--variance decomposition.
+
+\subsection{Naive sample variance is biased}
+
+$\hat\sigma^2_{\text{naive}}=\tfrac1n\sum(X_i-\bar X)^2$ \kw{underestimates} $\sigma^2$. The reason
+is that $\bar X$ is fitted to the very same data: $\sum(X_i-\bar X)^2$ is minimised at $\bar X$, so
+deviations measured from the sample mean are systematically \emph{smaller} than deviations from the
+true $\mu$. The estimator is reusing the data both to locate the centre and to measure spread about
+it, and that double use is what costs a degree of freedom.
+
+\begin{defbox}[sum-of-squares identity]
+\[
+\textstyle\sum_{i=1}^n(X_i-\bar X)^2 = \sum_{i=1}^n(X_i-\mu)^2 - n(\bar X-\mu)^2.
+\]
+\emph{Proof.} $X_i-\bar X=(X_i-\mu)-(\bar X-\mu)$; expand the square. Third term constant in $i$
+$\to n(\bar X-\mu)^2$. Middle: $\sum(X_i-\mu)=n(\bar X-\mu)$ so it is $2n(\bar X-\mu)^2$. Combine
+$-2n+n=-n$.\hfill$\blacksquare$
+\end{defbox}
+
+Taking expectations of the identity, $\mathbb E[\sum(X_i-\mu)^2]=n\sigma^2$ and
+$\mathbb E[n(\bar X-\mu)^2]=n\,\text{Var}(\bar X)=\sigma^2$, so
+$\mathbb E[\sum(X_i-\bar X)^2]=(n-1)\sigma^2$ — exactly $\sigma^2$ short of $n\sigma^2$. Hence the
+\kw{unbiased estimator divides by $n-1$} (Bessel's correction): one degree of freedom was spent
+estimating $\bar X$.
+
+\subsection{Bias–variance decomposition}
+
+The same ``how far is the expectation from the truth'' idea now applies to a trained model. A model
+trained on a random dataset $\mathcal D$ is itself a \kw{random object}, written
+$\hat f(\cdot;\mathcal D)$: re-sample $\mathcal D$ and you get a different fitted model. So we study
+the \emph{expected} error, averaging over both the random training set and the test-point noise.
+
+\begin{defbox}[MSE decomposition]
+For target $y=f(x)+\varepsilon$, $\;\mathbb E[\varepsilon]=0$, $\;\text{Var}(\varepsilon)=\sigma^2$:
+\[
+\mathbb E_{\mathcal D,\varepsilon}\big[(y-\hat f(x))^2\big]
+= \underbrace{(f(x)-\mathbb E_{\mathcal D}[\hat f(x)])^2}_{\text{Bias}^2}
++ \underbrace{\mathbb E_{\mathcal D}[(\hat f(x)-\mathbb E_{\mathcal D}[\hat f(x)])^2]}_{\text{Variance}}
++ \underbrace{\sigma^2}_{\text{irreducible}}.
+\]
+\end{defbox}
+
+\begin{itemize}
+  \item \examflag{}The \kw{proof is non-examinable}; the \kw{components, their meaning, and the
+  decomposition idea are examinable}. Worth tracing the proof once: substitute $y=f+\varepsilon$,
+  expand, drop the $\varepsilon$ cross term, then add-and-subtract $\mathbb E_{\mathcal D}[\hat f]$
+  and expand again to peel off bias$^2$ and variance.
+  \item \kw{Cross terms vanish} for two reasons, and articulating them is what shows you understand
+  the proof: (i) $\varepsilon$ is independent of $\hat f$ — the noise on a test point has nothing to
+  do with which training set produced the model — so $\mathbb E[(f-\hat f)\varepsilon]$ factorises and
+  $\mathbb E[\varepsilon]=0$ kills it; (ii) $\mathbb E_{\mathcal D}[\mathbb E_{\mathcal D}[\hat f]-\hat f]=0$
+  because the expectation of a quantity minus its own mean is zero.
+  \item \kw{Dartboard} picture: train the model 100 times on 100 training sets and plot all 100
+  predictions at one test point as darts. Bias = distance from the cluster's centre of mass to the
+  bullseye (systematic offset); variance = how tightly the darts group around their own centre
+  (consistency). The two are independent axes.
+  \item \kw{Bias} = error from a model too rigid to represent the truth (a line fitting a circle —
+  underfit); \kw{Variance} = error from a model flexible enough to track the sample's noise (overfit).
+  A flexible family has low bias but high variance; a rigid family the reverse. The
+  irreducible \kw{noise} $\sigma^2$ is the data's own ambiguity and no algorithm can touch it.
+\end{itemize}
+
+\begin{pitfallbox}[double descent]
+The classical U-shaped trade-off is the examined picture, but it can \emph{break down} for very
+over-parameterised models (deep learning) — test error descends again past the interpolation point.
+\end{pitfallbox}
+
+The trade-off is the lever behind almost every practical technique. Increasing model capacity
+(deeper trees, higher-degree polynomials) lowers bias and raises variance; the total error
+Bias$^2+\text{Variance}+\sigma^2$ is minimised at an \emph{intermediate} capacity, not at either
+extreme. A fully grown tree sits at the low-bias, high-variance end — which is exactly why Week~4's
+forests are principled rather than ad hoc: they average that variance away.
+
+\subsection{Regularisation reduces variance}
+
+\[
+\text{Objective}=\text{Loss}(\hat f(X),Y)+\lambda\,\Omega(w), \qquad
+\Omega=\textstyle\sum w_j^2\ \text{(L2/Ridge)}\ \text{or}\ \sum|w_j|\ \text{(L1/Lasso)}.
+\]
+\begin{itemize}
+  \item The variance argument is concrete: a sharp wiggle threading a particular noisy point needs
+  steep slopes, i.e. large weights — and those large weights are exactly what swings most from one
+  training sample to the next, which \emph{is} the variance term. Penalising $\|w\|$ caps weight size,
+  forbidding the model from contorting around any single point $\Rightarrow$ smoother predictions,
+  less variance, a little bias added (the constrained optimum can no longer reach the unregularised
+  one).
+  \item $\lambda$ tunes the position on the bias--variance curve: $\lambda=0$ recovers the
+  high-variance fit, larger $\lambda$ trades more bias for less variance. L1 additionally drives
+  weights to \emph{exactly} zero (sparsity / feature selection), L2 only shrinks them.
+\end{itemize}
+
+\subsection{Data discipline and cross-validation}
+
+Choosing where to sit on the bias--variance curve is an empirical decision, and it needs data the
+model never trained on. That is the entire reason for splitting data three ways.
+
+\begin{defbox}[three-way split]
+\kw{Train} set — fits parameters. \kw{Validation} set — selects hyperparameters. \kw{Test} set —
+used \emph{once}, final estimate only. Typical $\approx70$–$80\,/\,10$–$15\,/\,10$–$15$.
+\end{defbox}
+
+\begin{pitfallbox}[tuning on the test set]
+Selecting hyperparameters on the test set leaks information $\Rightarrow$ optimistically biased
+score. The test set must be touched once, at the end.
+\end{pitfallbox}
+
+A fixed train/validation split wastes data on small datasets — the validation points never train the
+model. Cross-validation rotates the held-out slice through the data so every point is used for both.
+
+\begin{defbox}[$k$-fold cross-validation]
+Split data into $k$ equal folds. For each of $k$ rounds: hold out 1 fold (validate), train on the
+other $k-1$, record score. Average the $k$ scores. Every point validates exactly once, and the
+average smooths out the sampling noise of any single split.
+\end{defbox}
+
+\begin{itemize}
+  \item Typical $k=5$ or $10$ (range $\sim4$–$20$); cost $=k\times$ training, since the model is
+  refitted once per fold — with a grid search over hyperparameters this can dominate compute.
+  \item Use: maximises usable data on small sets; averages out single-split sampling noise; it is the
+  \kw{engine for hyperparameter tuning}. The full pipeline: pick the best hyperparameter by CV
+  $\to$ retrain one final model on all the train+validation data $\to$ touch the test set once.
+  \item \kw{Stratified} $k$-fold = preserves class proportions per fold (imbalanced classes).
+  \kw{LOOCV} = $k{=}N$: thorough, $N$ retrains, expensive.
+\end{itemize}
+
+% =====================================================================
+\section{Week 4a — Random Forests}
+
+Week~3 diagnosed the single tree's weakness precisely — low bias, high variance — and the natural
+cure is to \emph{average many trees} so their random fluctuations cancel. That only works if the
+trees genuinely \kw{disagree}: a hundred identical trees average to one tree. So the whole design of
+a random forest is machinery for manufacturing \emph{diverse} trees from one fixed dataset.
+
+\begin{defbox}[bootstrap sample]
+From a training set of size $n$: draw one point uniformly \kw{with replacement}, repeat exactly $n$
+times $\Rightarrow$ a same-size-$n$ sample with duplicates and omissions. Repeat $S$ times for $S$
+datasets (one per tree). Bootstrapping is the cheap way to ``fake'' the many training sets we cannot
+collect — each draw is a slightly different mix of the same data.
+\end{defbox}
+
+\begin{itemize}
+  \item Two loops: the \kw{inner} loop samples $n$ times to build one dataset; the \kw{outer} loop
+  runs $S$ times, one dataset per tree.
+  \item A specific point survives a single draw with probability $1-\tfrac1n$, so survives all $n$
+  draws with probability $(1-\tfrac1n)^n\to 1/e\approx0.37$. Hence each bootstrap sample omits
+  $\approx37\%$ of the original points — that omitted third is the tree's \kw{out-of-bag (OOB)} set,
+  a free held-out set for \emph{that} tree.
+\end{itemize}
+
+Bagging alone is not quite enough for trees: the same few dominant features keep winning the root
+split, so bagged trees still look alike. The random subspace method forces the issue.
+
+\begin{defbox}[random subspace method]
+At \kw{every split} (re-sampled per split, not once per tree), restrict the candidate features to a
+fresh random subset. Subset size: $\sqrt n$ (classification), $n/3$ (regression), of $n$ total
+features. By denying trees their favourite features it pushes them to base early decisions on
+different features, decorrelating them further.
+\end{defbox}
+
+\begin{itemize}
+  \item \kw{Bagging} = \kw{B}ootstrap \kw{agg}regat\kw{ing} — the resampling is on the data, but what
+  gets aggregated is the prediction of each \emph{fully trained} estimator. \kw{Final prediction}:
+  push a new point through \emph{all} $S$ trees; average (regression) / majority vote (classification).
+  \item \kw{OOB evaluation} gives a free validation set: to score training point $i$, aggregate only
+  the trees whose bootstrap sample \emph{omitted} $i$. No tree is ever judged on a point it trained
+  on, so the OOB error is an honest generalisation estimate at zero extra cost — and it is a distinct
+  operation from final prediction, which uses every tree.
+  \item Bootstrap + random subspace $\Rightarrow$ \kw{diverse} trees $\Rightarrow$ near-independent
+  errors. Averaging $S$ independent estimators each of variance $V$ gives variance $V/S$ (the
+  variance of a mean of $S$ i.i.d.\ quantities) $\Rightarrow$ \kw{bias preserved} (each tree is still
+  flexible and trained on data from the true distribution, so the average stays low-bias),
+  \kw{variance destroyed}. This is the whole point: the forest improves the variance term without
+  paying in bias.
+  \item \kw{Boosting} = the other ensemble family: trees built \kw{sequentially}, each correcting the
+  errors of those before it (vs bagging's \kw{parallel}, independent trees).
+  \item \kw{Limitations}: a forest sacrifices the single tree's \kw{interpretability} (you can read
+  one tree, not 100 averaged ones); like any tree it \kw{cannot extrapolate} beyond the range of the
+  training data; and it costs more memory and prediction time (all $S$ trees stored and evaluated).
+\end{itemize}
+
+\begin{notebox}[why ensembling works, and when to use a forest]
+\kw{Why it works}: on noisy or limited data many different trees fit the training set about equally
+well — committing to a single one throws information away. Averaging a \emph{diverse} set keeps the
+shared signal and lets the independent errors cancel. \kw{Bagging alone is not enough}: bootstrap
+samples still share the dominant features, so the trees stay correlated — the random subspace method
+is what forces genuine diversity. \kw{When}: choose a forest for raw accuracy (pre-deep-learning it
+was the best general-purpose classifier, and it is fast to train); choose a single tree when you
+need interpretability — you cannot have both at once.
+\end{notebox}
+
+% =====================================================================
+\section{Week 4b — Loss \& Performance Measures}
+
+\subsection{Risk and the Bayes classifier}
+
+This half of Week~4 switches register from algorithms to evaluation: what does it actually mean for a
+classifier to ``perform well''? The answer needs a clean separation between the error we can measure
+and the error we genuinely care about.
+
+\begin{defbox}[empirical vs expected risk]
+\kw{Empirical risk} $R_{\text{emp}}=\tfrac1n\sum_i\ell(\hat f(x_i),y_i)$ — the average loss on a
+finite \emph{sample}; measurable. \\
+\kw{Expected (true) risk} $R(f)=\mathbb E_P[\ell(f(x),y)]$ — the average loss over the true
+distribution $P$; what we want, but \emph{not} measurable since $P$ is unknown. A held-out test set's
+empirical risk is an unbiased estimate of it, provided the test data really is drawn from $P$ and was
+never seen during training.
+\end{defbox}
+
+\begin{defbox}[Bayes classifier]
+Predicts, for each $x$, the class with the highest \kw{true} posterior $P(C_k\mid x)$ — for binary
+classes, predict $C_1$ when $P(C_1\mid x)\ge0.5$. Predicting the more probable class is provably the
+lowest-error rule, so it is the optimum. But it assumes $P$ is known exactly, which it never is
+$\Rightarrow$ the Bayes classifier is a \kw{theoretical benchmark} you can reason about but never
+build.
+\end{defbox}
+
+\begin{trapbox}[knowing the distribution removes uncertainty — FALSE]
+Knowing $P$ gives the exact \emph{odds}, not the \emph{outcome}: $x\mapsto P(y\mid x)$ is
+\kw{stochastic}. The optimal classifier's unavoidable error = \kw{Bayes error rate} = irreducible
+\kw{noise floor} = \kw{aleatoric uncertainty} (hidden variables + intrinsic randomness).
+\[
+\text{model error} = \underbrace{\text{Bayes error}}_{\text{noise floor}}
++ \underbrace{\text{excess risk}}_{\text{estimator's fault}}.
+\]
+\end{trapbox}
+
+\subsection{Conditional probability from a joint density}
+
+To reach the posterior the Bayes classifier needs, two standard rules combine: the definition of
+conditional probability $P(C_1\mid x)=p(x,C_1)/p(x)$, and the law of total probability for the
+marginal $p(x)=p(x,C_1)+p(x,C_2)$.
+
+\kw{Notation}: $P(\cdot)$ = probability (a pure number in $[0,1]$); $p(\cdot)$ = probability
+\kw{density} (the height of a curve, which can exceed $1$ — only $p\cdot\mathrm dx$ is a probability).
+\[
+P(y{=}C_1\mid x)=\frac{p(x,C_1)}{p(x)},\qquad p(x)=p(x,C_1)+p(x,C_2)
+\;\Rightarrow\;
+P(y{=}C_1\mid x)=\frac{p(x,C_1)}{p(x,C_1)+p(x,C_2)}.
+\]
+Bayes' rule for continuous variables. The window factor $\mathrm dx$ ($P=p\cdot\mathrm dx$) is
+identical in every term and \kw{cancels} $\Rightarrow$ ratio of curve heights; result on the left is
+a genuine probability.
+
+\subsection{Bayes-optimal threshold}
+
+\begin{setupbox}[1-D two-class threshold]
+Two joint-density curves $p(x,C_1),p(x,C_2)$ over an axis. \kw{Crossover $x_0$} = curves equal
+$\Rightarrow P(C_1\mid x_0)=\tfrac12$ = \kw{Bayes-optimal threshold}. It slices the axis into
+\kw{decision regions} $R_1$ (predict $C_1$, taller curve), $R_2$ (predict $C_2$).
+\end{setupbox}
+
+\begin{itemize}
+  \item Classification is a property of \kw{regions}, not point values. \kw{Errors are area
+  integrals}: Bayes error $=\int_{R_1}p(x,C_2)\,\mathrm dx+\int_{R_2}p(x,C_1)\,\mathrm dx$ (the
+  unavoidable curve overlap).
+  \item Density height at a point is not a probability; the height-ratio is the conditional
+  probability of a \kw{micro-region} of width $\mathrm dx$ — string these together to build the
+  macro-regions.
+  \item \kw{$\hat x$} = the \emph{estimated} boundary of a real trained model, $\hat x\ne x_0$. In the
+  band between $x_0$ and $\hat x$ the model predicts the shorter-curve (wrong) class $\Rightarrow$ the
+  \kw{red region} = \kw{excess risk}, the avoidable error from the estimator. Green/blue overlap =
+  the universe's fault; red = the estimator's fault.
+\end{itemize}
+
+\begin{exbox}[Bayes-optimal threshold — worked numbers]
+At a point $\hat x$ suppose the class-density heights are $p(\hat x,C_1)=1$ and $p(\hat x,C_2)=4$. The
+conditional probabilities are
+\[
+P(C_1\mid\hat x)=\frac{1}{1+4}=0.20,\qquad P(C_2\mid\hat x)=\frac{4}{1+4}=0.80
+\]
+— they sum to $1$, and the Bayes rule predicts the larger, $C_2$. At the crossover $x_0$ the two
+heights are equal ($p$ each), so $P(C_1\mid x_0)=\tfrac{p}{2p}=0.5$ — exactly the decision boundary.
+A trained model whose boundary $\hat x$ sits away from $x_0$ predicts the $20\%$ class throughout the
+band between them: that band is the avoidable excess-risk error.
+\end{exbox}
+
+\subsection{0--1 loss, margin, surrogates}
+
+0--1 loss is the right \emph{metric} — its empirical version is exactly the classification error — but
+the wrong \emph{loss function} to optimise. The two roles must be kept apart: the metric is what you
+report and the business cares about; the training loss is a tractable surrogate the optimiser can
+actually descend.
+
+Binary labels $y\in\{-1,+1\}$, raw score $f(x)$. \kw{Margin} $z=y\,f(x)$ is positive when $y$ and
+$f(x)$ share a sign ($z>0$ correct, $z\le0$ wrong). \kw{0--1 loss} as a function of $z$ is a step:
+$1$ for $z\le0$, $0$ for $z>0$.
+
+\begin{notebox}[why 0--1 loss is unusable for gradient methods]
+\kw{Zero gradient} almost everywhere, undefined at $z{=}0$ $\Rightarrow$ no descent direction.
+Summed over a training set: \kw{non-convex}, combinatorially many local minima, exact minimisation is
+\kw{NP-hard}. Empirically a multi-dimensional staircase of flat plateaus + cliffs.
+\end{notebox}
+
+\kw{Convex surrogates} replace the step with a tractable upper bound: convex (so a global minimum is
+reachable), differentiable (so gradient methods have a direction), and lying \emph{above} the step
+(so minimising the surrogate also approximately minimises 0--1 loss). All three below have a usable
+slope on the wrong side $z<0$:
+\begin{itemize}
+  \item \kw{Hinge} $\max(0,1-z)$ (SVM) — zero once the margin is comfortable ($z\ge1$), linear
+  penalty below; it still penalises correct-but-unconfident points ($0<z<1$) but stops pushing once
+  the margin is large, a useful sparsity-inducing property.
+  \item \kw{Logistic} $\log(1+e^{-z})$ — smooth, strictly positive, decays towards 0 but never
+  reaches it, so it always pushes for a little more confidence.
+  \item \kw{Squared} $(1-z)^2$ — convex but \kw{increases again for $z\gg1$}, so it over-penalises
+  confident-correct predictions $\Rightarrow$ suboptimal for classification (it is the natural choice
+  for regression instead).
+\end{itemize}
+
+\subsection{Confusion matrix and metrics}
+
+\begin{defbox}[confusion matrix — this unit's convention]
+\kw{Rows = predicted, columns = actual} (some textbooks transpose — check the axes). \\
+Read each cell backwards: 2nd word = predicted class; 1st word = whether correct.
+\kw{TP} predicted +, correct. \kw{TN} predicted $-$, correct. \kw{FN} predicted $-$, wrong (the
+miss — actually +). \kw{FP} predicted +, wrong (false alarm — actually $-$).
+\end{defbox}
+
+\[
+\text{Acc}=\frac{TP+TN}{TP+TN+FP+FN},\quad
+\text{Prec}=\frac{TP}{TP+FP},\quad
+\text{Rec}=\frac{TP}{TP+FN},\quad
+F_1=\frac{2\,\text{Prec}\cdot\text{Rec}}{\text{Prec}+\text{Rec}}.
+\]
+
+Read the metrics by the question each answers. \kw{Precision} = ``of the things I called positive,
+how many actually were?'' — high precision means few false alarms (a spam filter optimises this).
+\kw{Recall} = ``of the actual positives, how many did I catch?'' — high recall means few misses
+(cancer screening optimises this). The two trade off: always-predict-positive maxes recall and tanks
+precision. \kw{$F_1$} is their \emph{harmonic} mean, which sits closer to the smaller of the two, so
+a high $F_1$ forces \emph{both} to be good — you cannot game it by acing one and tanking the other.
+
+\begin{trapbox}[balanced accuracy = \emph{mean} of recalls]
+Not the sum (could reach 2.0). Binary: $\tfrac12(\text{Rec}_++\text{Rec}_-)$. Multi-class: sum
+per-class recalls, divide by \#classes.
+\end{trapbox}
+
+\begin{pitfallbox}[accuracy misleads on imbalanced data]
+99.9\%-negative fraud data: ``always predict negative'' scores 99.9\% accuracy yet is useless. Use
+\kw{F1} or \kw{balanced accuracy} instead.
+\end{pitfallbox}
+
+\begin{exambox}[Q5-style — compute metrics from $TP{=}40,\ FN{=}10,\ FP{=}20,\ TN{=}30$]
+Prec $=40/60=0.667$; Rec $=40/50=0.80$; Acc $=70/100=0.70$;
+$F_1=2(0.667)(0.8)/(1.467)=0.727$; BalAcc $=\tfrac12(0.80+0.60)=0.70$
+(Rec$_-=TN/(TN+FP)=30/50=0.60$).
+\end{exambox}
+
+\begin{center}\large\bfseries\color{defBd} PART II — Optimisation (Weeks 7–9)\end{center}
+
+% =====================================================================
+\section{Week 7 — Optimisation framing}
+
+Model fitting \emph{is} optimisation — pick a family, pick a loss, minimise. Week~7 supplies the
+language and the toolkit for that minimisation step; Weeks~8 and~9 instantiate it for linear
+regression with gradient descent and Newton's method. The framing example throughout is ``find the
+biggest apple on the tree'': with one attribute the search space is a smooth single bowl a computer
+solves trivially; add attributes and the surface becomes high-dimensional and bumpy. The asymmetry
+that drives everything is that the optimiser, unlike a human eyeing a 3-D plot, sees only the
+function value at points it has explicitly evaluated — it must decide where to look next from a
+local view.
+
+\begin{defbox}[gradient and Hessian]
+\kw{Gradient} $\nabla f$ = column vector of first partial derivatives. It points in the direction of
+fastest \emph{increase}, and its magnitude is the rate of that increase — so it carries both ``which
+way'' and ``how steep.'' \kw{Hessian} $\nabla^2 f$ = matrix of second partials; symmetric (Schwarz's
+theorem, for $C^2$ functions). It encodes \kw{curvature} — how fast the slope itself is changing —
+and is what Week~9's Newton's method consumes.
+\end{defbox}
+
+\subsection{The generic iterative scheme}
+
+This is the single most examinable abstraction in Week~7: every gradient-based optimiser in the unit
+is just a specific choice of the three design knobs below.
+
+\begin{defbox}[iterative optimiser]
+Initialise $x_0$; repeat $x_{t+1}=x_t+\alpha_t\,p_t$ until termination. Three design choices:
+\kw{direction} $p_t$ (gradient descent: $p_t=-\nabla f(x_t)$ — the negative gradient, because the
+gradient points uphill and we want downhill), \kw{step size} $\alpha_t$ (the learning rate; too
+large overshoots and oscillates, too small crawls), and the \kw{termination condition}.
+\end{defbox}
+
+\kw{Termination conditions} (any one):
+\begin{itemize}
+  \item Iteration cap $t\ge T_{\max}$.
+  \item Gradient near zero $\|\nabla f(x_t)\|\le\epsilon_g$.
+  \item Progress near zero $\|x_{t+1}-x_t\|\le\epsilon_x$.
+\end{itemize}
+
+\begin{pitfallbox}[$t\ge T_{\max}$ is the \emph{stop} rule]
+The notes state the \emph{termination} (stop) rule: from $t{=}0$, stop when $t\ge T_{\max}$. The
+familiar $t<T_{\max}$ is the \emph{continuation} (while-loop) condition — the logical negation.
+\end{pitfallbox}
+
+\begin{pitfallbox}[stopped moving $\ne$ found the minimum]
+GD converges to a \kw{stationary point} ($\nabla f=0$) — could be a local min, saddle, or plateau.
+Only \kw{convexity} licenses ``stationary $\Rightarrow$ global minimum''.
+\end{pitfallbox}
+
+\subsection{Convexity}
+
+Convexity is the property that licenses an optimiser's local view. A function is \kw{convex} if every
+chord joining two points on its graph lies on or above the graph; the consequence is that
+\emph{every local minimum is the global minimum} — the bowl has one bottom. So any descent method
+that reaches a stationary point is provably correct. Strict convexity (chord strictly above) further
+makes the optimum \emph{unique}. Most non-trivial ML losses (deep networks, mixtures, hidden-variable
+models) are non-convex, with many basins; from inside one there is no way to tell a better one
+exists. The working strategy is then ``perform convex within non-convex'': treat each local region
+as if convex and accept the local optimum it yields.
+
+\begin{center}
+\renewcommand{\arraystretch}{1.25}
+\begin{tabularx}{\linewidth}{l X X}
+\toprule
+\thead{Aspect} & \thead{Convex} & \thead{Non-convex} \\
+\midrule
+Local minimum & is the global minimum & may be a worse-than-global trap \\
+Initial guess matters? & No — same answer each run & Yes — different start, different answer \\
+Theory & clean guarantees & no general theory; heuristics \\
+Strategy & run any descent method to convergence & split surface, treat regions as convex, accept local optimum \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\begin{pitfallbox}[convexity is about the loss surface, not the data]
+Linear and logistic regression have convex loss \kw{regardless} of how the data is distributed.
+Convexity is a property of $L(w)$.
+\end{pitfallbox}
+
+\subsection{Four families of optimisers}
+
+The four families form a spectrum from guaranteed-but-unscalable to scalable-but-local. The list
+itself is examinable.
+
+\begin{enumerate}
+  \item \kw{Brute force} / exhaustive — try every candidate, return the best. Guaranteed optimal but
+  blows up combinatorially ($N$-queens reaches $64^{64}\!\approx\!10^{115}$); only for tiny discrete
+  spaces.
+  \item \kw{Random / grid search} — sample the space rather than exhaust it; cheaper, no optimality
+  guarantee. \kw{Random beats grid} when only some inputs matter: a grid wastes evaluations re-testing
+  the same value of the important axis, whereas random sampling gives a fresh value of every axis per
+  point, probing the axis that matters far more densely (Bergstra \& Bengio).
+  \item \kw{Metaheuristics} — population or stochastic search that tolerates uphill moves to escape
+  local minima.
+  \item \kw{Gradient-based} — use $\nabla f$ (and optionally $\nabla^2 f$) to pick a guaranteed-descent
+  direction; fast, principled, scales to high dimensions, but needs a differentiable $f$ and gets
+  stuck in local minima on non-convex losses. The workhorse of the rest of the unit.
+\end{enumerate}
+
+\begin{notebox}[the core challenge — an optimiser only sees locally]
+A gradient-based optimiser never sees the whole loss surface; at each step it sees only a small
+neighbourhood and must decide where to look next. That local-only view is \emph{why} convexity
+matters so much (it guarantees the local ``downhill'' direction is globally right) and \emph{why}
+non-convex problems need heuristics — from inside one basin there is no way to know a better basin
+exists elsewhere.
+\end{notebox}
+
+\subsection{Metaheuristics}
+
+These are controlled-randomness algorithms borrowed from physical or biological processes; you should
+be able to describe each in a sentence or two, not derive them.
+
+\begin{itemize}
+  \item \kw{Particle swarm} — a population of candidates scattered through the space; each moves by a
+  blend of local descent, its own best-so-far, and the swarm's shared global best. Balances
+  \kw{exploration} and \kw{exploitation}: a particle stuck in a shallow basin is pulled out by
+  another particle's discovery, so collective shared information outperforms a single greedy walk.
+  \item \kw{Simulated annealing} — mimics heating then slowly cooling a metal. It maintains a
+  candidate and accepts uphill steps with a temperature-controlled probability; early (hot) iterations
+  jump widely and tolerate uphill moves to escape local minima, then it \kw{cools} so late iterations
+  only accept downhill moves and freeze into a basin.
+  \item \kw{MCMC} — walks a memoryless Markov chain (next state depends only on the current one)
+  whose long-run visit frequencies match an unknown target distribution; the histogram of visits
+  $\approx$ the distribution. It is a \kw{sampler}, not an optimiser — it maps the whole landscape and
+  is used for Bayesian inference. Same mechanism as simulated annealing but \kw{no cooling}. Slow:
+  millions of evaluations, so run multiple chains in parallel.
+\end{itemize}
+
+\begin{trapbox}[``Newton's method applies to any optimisation problem'' — FALSE]
+Newton needs $f$ twice-differentiable and the Hessian invertible. See §10 for the applicability test.
+\end{trapbox}
+
+% =====================================================================
+\section{Week 8 — Gradient Descent}
+
+Week~8 plugs concrete content into Week~7's skeleton on the workhorse problem of \kw{linear
+least-squares regression}, and solves it two ways — a closed form and an iterative descent.
+
+\begin{defbox}[convex set and convex function]
+\kw{Convex set} $C$: for all $x,y\in C$, $\beta\in[0,1]$, $\;(1-\beta)x+\beta y\in C$ — every line
+segment joining two points of $C$ stays inside (no dents, holes, or separated pieces).
+\kw{Convex function}: its domain is a convex set and the chord lies on/above the graph; equivalently
+its Hessian is positive semi-definite. The headline property is the one from Week~7 — any local
+minimum is the global minimum, and uniquely so under strict convexity.
+\end{defbox}
+
+\subsection{Batch GD}
+
+Batch GD uses the whole dataset per step. The total loss is a \emph{sum} of per-point losses, and
+the derivative of a sum is the sum of derivatives $\Rightarrow$ the batch gradient is the average of
+the per-point gradients — nothing is approximated, this is the exact gradient. The point is that you
+never run a $\sum_i$ loop: the whole sum collapses into one matrix expression evaluated in a single
+BLAS call. (Squared error is preferred over absolute/$L_1$ error because it is \kw{differentiable
+everywhere} — a clean gradient and a closed form — whereas $|\cdot|$ has a non-differentiable kink at
+$0$.)
+\begin{setupbox}[regularised least squares]
+\[
+L(w)=\|Xw-y\|^2+\lambda\|w\|^2, \qquad
+\nabla L(w)=2X^\top(Xw-y)+2\lambda w.
+\]
+The product $X^\top(\cdots)$ \emph{is} the engine summing every per-point gradient at once.
+\end{setupbox}
+
+\kw{Normal equation} — the first solution method. Since the loss is convex, its unique stationary
+point is the global minimum, so set the (unregularised) gradient to zero and solve:
+$\nabla L=2X^\top(Xw-y)=0\Rightarrow X^\top X\,w^\ast=X^\top y$, giving
+$w^\ast=(X^\top X)^{-1}X^\top y$ \kw{if $X^\top X$ is invertible} ($X$ full column rank). It is an
+exact answer in one shot, a single line of NumPy — but it costs an $M\times M$ inverse, which is
+$O(M^3)$ and infeasible for large $M$.
+\begin{itemize}
+  \item Why is the loss convex at all? The Hessian is $2X^\top X$, and
+  $z^\top X^\top X\,z=\|Xz\|^2\ge0$ for every $z$ — a squared norm is never negative — so $X^\top X$
+  is PSD \emph{whatever} the data. Invertible $\Rightarrow$ Hessian PD $\Rightarrow$ strictly convex
+  $\Rightarrow$ \kw{unique} $w^\ast$.
+  \item Singular $X^\top X$ (collinear features, or fewer points than features) $\Rightarrow$ Hessian
+  only PSD $\Rightarrow$ a flat-bottomed valley, so \kw{infinitely many} $w^\ast$ all achieve the
+  minimum.
+\end{itemize}
+
+\begin{trapbox}[cannot split $(X^\top X)^{-1}=X^{-1}(X^\top)^{-1}$]
+$(AB)^{-1}=B^{-1}A^{-1}$ needs $A,B$ \kw{square}. Design matrix $X$ is $N\times M$, $N\gg M$,
+rectangular $\Rightarrow$ $X^{-1}$ does not exist. Only the square product $X^\top X$ ($M\times M$)
+is invertible.
+\end{trapbox}
+
+\begin{pitfallbox}[do not literally invert the Gram matrix]
+In practice solve the linear system $X^\top X\,w=X^\top y$ (Cholesky / QR), not by forming
+$(X^\top X)^{-1}$ — faster and numerically safer.
+\end{pitfallbox}
+
+\subsection{Near-collinearity / ill-conditioning}
+
+Highly correlated columns carry near-identical information. Determinant = volume spanned by columns;
+near-parallel column vectors collapse that volume $\Rightarrow\det(X^\top X)\to0$, matrix
+\kw{ill-conditioned}. Computing $(X^\top X)^{-1}$ divides by the near-zero determinant $\Rightarrow$
+inverse entries \kw{blow up} $\Rightarrow$ tiny floating-point rounding errors are \kw{amplified}
+until fitted weights are noise, not signal. Cure: ridge $+\lambda I$ lifts the determinant off zero.
+
+\subsection{SGD and mini-batch}
+
+Batch GD's exact gradient costs $O(NM)$ per step — slow when $N$ is huge. The variants trade
+gradient accuracy for cheaper steps by averaging over fewer points.
+
+\begin{defbox}[SGD update]
+SGD abandons the full matrix $X$ entirely: draw one random index $i_s$ and step on that single
+point's noisy gradient. For least squares $\nabla L_i=2(w^\top x_i-y_i)x_i$, so
+\[
+w_{t+1}=w_t-2\alpha\,(w_t^\top x_{i_s}-y_{i_s})\,x_{i_s}.
+\]
+\end{defbox}
+
+\begin{defbox}[mini-batch GD]
+Batch of $B$ points (powers of 2 for GPUs): $\;w_{t+1}=w_t-\dfrac{\alpha}{B}\sum_{i\in\text{batch}}\nabla L_i$.
+Lower-variance gradient estimate than SGD. ``SGD'' in modern usage = mini-batch.
+\end{defbox}
+
+The three variants sit on a spectrum from expensive-and-stable to cheap-and-noisy:
+\begin{itemize}
+  \item Batch GD: slow, exact-gradient steps that head straight to the minimum with no sampling noise.
+  \item SGD: fast and cheap, but the single-point gradient is noisy, so the trajectory is a
+  ``drunken'' zig-zag; on average it still descends, and faster in wall-clock terms. \kw{Bonus}: the
+  noise can \emph{escape} narrow local minima on non-convex losses — an advantage for deep learning.
+  \item Mini-batch: the practical compromise — a small matrix of 32/64/128 rows gives a
+  lower-variance gradient than SGD while staying far cheaper than batch. ``SGD'' in modern usage means
+  mini-batch.
+\end{itemize}
+
+\begin{exambox}[Q3-style T/F — ``convex + right step size $\Rightarrow$ BGD reaches the global optimum, SGD not''. \trapflag]
+\kw{TRUE as stated.} Convex = single global min; BGD uses the exact full-data gradient $\Rightarrow$
+deterministic descent to the bottom — ironclad. SGD's single-point gradient is noisy: fixed step
+$\Rightarrow$ bounces forever; converges only ``in expectation'' with a \kw{decaying} step schedule —
+no unconditional guarantee. ``Guaranteed to eventually converge'' $\Rightarrow$ mark TRUE.
+\end{exambox}
+
+\subsection{Anisotropy — why GD zig-zags}
+
+How well steepest descent performs depends on the \emph{shape} of the loss surface, not just its
+convexity.
+
+\begin{itemize}
+  \item \kw{Isotropic} loss (circular contours) $\Rightarrow$ $-\nabla f$ — which is always
+  perpendicular to the local contour — happens to point straight at the minimum, so descent is
+  direct.
+  \item \kw{Anisotropic} loss (elliptical contours, large \kw{condition number} = ratio of largest
+  to smallest Hessian eigenvalue) $\Rightarrow$ perpendicular-to-contour is \emph{not} towards the
+  minimum: the iterate overshoots the long axis, is corrected, overshoots again — the slow
+  \kw{zig-zag}. In the extreme it bounces across a thin valley with almost no forward progress.
+  Newton's method fixes this by rescaling each direction with the local curvature.
+  \item \kw{Trap}: anisotropy is \emph{not} non-convexity — a badly-conditioned quadratic is still
+  perfectly convex; it has one global minimum, it just makes GD zig-zag on the way there.
+\end{itemize}
+
+% =====================================================================
+\section{Week 9 — Newton's Method}
+
+Newton's method closes the optimisation arc with a \emph{second-order} method: where gradient descent
+uses only $\nabla f$ and a fixed scalar step, Newton's also reads the \kw{curvature} off the Hessian
+and uses it to set a per-direction step automatically. This is exactly what cures GD's
+anisotropy zig-zag.
+
+\begin{defbox}[curvature]
+Curvature = rate of change of the slope = $f''$ (1-D) / Hessian (multivariate). Geometrically it is
+$1/r$ where $r$ is the radius of the inscribed circle that best fits the curve: a tight turn means a
+small circle and \emph{high} curvature, a flat stretch means a huge circle and near-zero curvature.
+The optimiser cares because near a sharp turn it should take a small step (or overshoot) and on a
+flat stretch a large one — and GD's fixed $\alpha$ cannot tell the two apart.
+\end{defbox}
+
+\subsection{Derivation and update}
+
+The update is derived by approximating $f$ near the current iterate with a quadratic, then jumping
+straight to that quadratic's minimum. The 2nd-order Taylor model at $w_t$ is
+$\;f(w)\approx f(w_t)+\nabla f^\top(w-w_t)+\tfrac12(w-w_t)^\top H(w-w_t)$. Differentiate w.r.t.\ $w$
+to get $\nabla f(w_t)+H(w_t)(w-w_t)$, set this to zero, and solve $\Rightarrow$
+\begin{defbox}[Newton update]
+\[
+w_{t+1}=w_t-[H(w_t)]^{-1}\nabla f(w_t).
+\]
+Fits a local quadratic, jumps to its minimum. There is no separate step size: the matrix $H^{-1}$
+\emph{is} the step size, generalised from a scalar — it rescales every direction by its own
+curvature, which is why on an anisotropic bowl it ``rounds out'' the contours and points straight at
+the minimum. Requires $H$ \kw{invertible}.
+\end{defbox}
+
+\subsection{Convergence behaviour}
+
+Whether Newton lands in one step depends entirely on whether the loss is exactly quadratic.
+
+\begin{itemize}
+  \item \kw{Quadratic loss}: $H=2X^\top X$ is \emph{constant} (two differentiations of
+  $(w^\top x_i-y_i)^2$ kill the $w$). Substituting into the update, the $\tfrac12$ from $H^{-1}$ and
+  the $2$ from the gradient cancel, and $(X^\top X)^{-1}(X^\top X)=I$ cancels the leading $w_t$:
+  $\;w_{t+1}=(X^\top X)^{-1}X^\top y$. Both the starting point and the iteration index vanish — Newton
+  hits the exact normal-equation solution in \kw{one step}, from anywhere. The reason is that the
+  2nd-order Taylor model of a quadratic has \emph{zero remainder}: the local model \emph{is} the
+  global loss.
+  \item \kw{Higher-order loss} (e.g. $\sum(\cdots)^4$): two differentiations drop the power from 4 to
+  2 but not to 0, so $H$ still contains $w$ — it is \kw{$w$-dependent}, curvature varies with
+  position $\Rightarrow$ the local parabola matches only locally $\Rightarrow$ Newton must
+  \kw{iterate}. Even so the rate is \kw{quadratic} near the optimum (the number of correct digits
+  roughly doubles per step) — far faster than GD's merely \kw{linear} rate.
+\end{itemize}
+
+\begin{notebox}[Taylor expansion to the loss's own degree]
+A degree-$N$ polynomial loss expanded to Taylor order $N$ has zero remainder — the model equals the
+true loss everywhere $\Rightarrow$ one-shot convergence recovered. We stop at order 2 because order
+$\ge3$ needs derivative \kw{tensors} ($M^3,M^4,\dots$ — storage explodes) and minimising a
+cubic/quartic local model is no longer a fast linear solve.
+\end{notebox}
+
+\subsection{Applicability}
+
+\begin{defbox}[two-line applicability test]
+Newton applies iff: (1) $f$ is \kw{twice differentiable} ($C^2$); (2) the Hessian is
+\kw{invertible} at every iterate.
+\end{defbox}
+
+\begin{notebox}[loss must leave $w$ after first differentiation — wording correction]
+If $g(w)$ is at most first-order (linear), $\nabla g$ is constant and $H=0$ $\Rightarrow$ $H^{-1}$
+does not exist, Newton cannot run. Quadratic $\Rightarrow$ $H$ constant non-zero $\Rightarrow$ one
+step. Higher-order $\Rightarrow$ $H$ depends on $w$ $\Rightarrow$ iterate. \\
+The notes' phrase ``\emph{must not collapse to a constant under second differentiation}'' is
+misleading — a non-zero constant Hessian is the \emph{ideal}. Accurate: ``must not collapse to a
+constant under \kw{first} differentiation'' ($\equiv$ not to \kw{zero} under second).
+\end{notebox}
+
+\subsection{Three failure modes}
+
+Each failure mode is one of the applicability conditions being violated.
+
+\begin{enumerate}
+  \item \kw{Singular Hessian} (zero curvature in some direction = zero eigenvalue) $\Rightarrow$ the
+  step is \kw{undefined} — note: undefined, not infinite. A flat region has no parabola, so the
+  question ``where is the local model's minimum?'' has no answer at all.
+  \item \kw{Not twice-differentiable} (kinks: hinge, $\ell_1$, ReLU) $\Rightarrow$ no Hessian exists
+  at the kink — use sub-gradient methods or smooth the kink locally.
+  \item \kw{Initial point far from optimum} — the 2nd-order Taylor model is only \emph{locally}
+  accurate, so from far away a full Newton step can shoot off into a worse region; and on a
+  non-convex surface Newton heads to whatever \kw{local} minimum is nearest, with no way to know a
+  better basin exists. Newton has \emph{local} convergence guarantees only.
+\end{enumerate}
+
+\subsection{Damping (fix for singular / unreliable Hessian)}
+
+There are two distinct kinds of damping for two distinct problems. Shrinking the step with a scalar
+tames \emph{magnitude} (failure mode~3) but does nothing for a \emph{singular} Hessian (failure
+mode~1) — there $H^{-1}$ still does not exist, so the damping must go \emph{inside} the inverse.
+
+\kw{Levenberg–Marquardt}: use $(H+\lambda I)^{-1}$. Adding $\lambda I$ shifts \kw{every} eigenvalue by
+$\lambda$: $e_i\to e_i+\lambda$. A zero eigenvalue becomes $\lambda\ne0$, restoring invertibility; for
+the damped matrix to be \emph{positive definite} as well you need every shifted eigenvalue $>0$,
+i.e.\ $\lambda>-e_{\min}$.
+
+\kw{Choosing $\lambda$}:
+\begin{itemize}
+  \item \kw{Levenberg–Marquardt} (dynamic): step succeeds $\to$ shrink $\lambda$ (trust Hessian, $\to$
+  pure Newton); step fails $\to$ grow $\lambda$ ($\to$ small-step gradient descent).
+  \item \kw{Trust-region}: fix a radius the quadratic model is trusted within; $\lambda$ emerges as
+  the Lagrange multiplier enforcing it.
+  \item \kw{Static} (ridge): fixed hyperparameter, chosen by cross-validation.
+\end{itemize}
+
+\kw{Damped Newton}: $w_{t+1}=w_t-\alpha_t H^{-1}\nabla f$, $\alpha_t\in(0,1]$ — the second kind of
+damping, used when the Taylor model is unreliable far from the optimum. It keeps Newton's
+curvature-aware direction but covers only a fraction of the recommended distance, so the single clean
+jump is replaced by a controlled ``staircase'' of partial steps that walk towards the optimum and
+re-Taylor as they go.
+
+\begin{trapbox}[``the Hessian is positive definite'' — only proved for linear regression]
+The PD proof applies to the \emph{specific} loss $\|Xw-y\|^2+\lambda\|w\|^2$ ($H=2(X^\top X+\lambda I)$,
+PD everywhere). Newton's \emph{method} applies to any $C^2$ $f$. On a non-convex surface $H$ can be
+\kw{indefinite} (mixed-sign eigenvalues) — still \kw{invertible} if no eigenvalue is exactly zero,
+but not PD. E.g. $\big(\begin{smallmatrix}1&0\\0&-1\end{smallmatrix}\big)$: $\det=-1$, invertible,
+not PD. So invertible $\ne$ convex.
+\end{trapbox}
+
+\subsection{Why GD usually beats Newton in practice}
+
+\begin{center}
+\renewcommand{\arraystretch}{1.2}
+\begin{tabularx}{\linewidth}{l l X}
+\toprule
+& \thead{Gradient descent} & \thead{Newton} \\
+\midrule
+Per-iteration cost & $O(NM)$ & $O(NM^2+M^3)$ (Hessian build + invert) \\
+Memory & $O(M)$ gradient & $O(M^2)$ Hessian ($\sim$100$\times$ for large $M$) \\
+Convergence rate & linear & quadratic (but only \emph{local}) \\
+\bottomrule
+\end{tabularx}
+\end{center}
+For large $M$, Newton's $M^2$ memory and $M^3$ inversion are prohibitive — a single transformer layer
+has $M\sim10^8$, so the Hessian alone would have $10^{16}$ entries, physically uncomputable. Hence
+GD / SGD dominate at scale, and Newton-style methods survive there only as cheap \emph{approximations}
+of $H^{-1}$. For unit-scale linear regression ($M\le1000$) full Newton is feasible and elegant; the
+storage cost matters most for embedded deployment where running memory is tightly constrained.
+
+\begin{center}\large\bfseries\color{defBd} PART III — Probabilistic Modelling (Weeks 10–11)\end{center}
+
+% =====================================================================
+\section{Week 10 — Bayesian Linear Regression}
+
+Week 10 is not a new problem — it is Week 8's linear regression \emph{re-told as a story about
+probability}. The data $X$ and labels $y$ are the same; what changes is that we now imagine the
+labels were \emph{generated} by a noisy process and ask which parameters were most likely to have
+produced them. This reframing is worth the effort because it pays off twice over. First, ordinary
+least squares \kw{falls out for free}: under Gaussian noise, the maximum-likelihood estimator turns
+out to be exactly Week 8's squared-error minimiser, so the closed-form solution you already know is
+revealed to be a principled estimator rather than an arbitrary heuristic. Second, regularisation
+\kw{falls out for free}: bolting a prior onto the parameters and doing MAP estimation reproduces
+ridge regression exactly — which is the bridge to Week 21. The deeper, fully Bayesian extension
+(predictive distributions, uncertainty) is flagged non-examinable, so these notes stop at the two
+point estimators.
+
+\begin{setupbox}[probabilistic model]
+$y_i=w^\top x_i+\epsilon_i$ with \kw{i.i.d.\ Gaussian noise} $\epsilon_i\sim\mathcal N(0,\sigma^2)$
+(independent, identically distributed; zero mean = unbiased; $\sigma^2$ = spread). \\
+Equivalently $\;y_i\mid x_i,w\sim\mathcal N(w^\top x_i,\sigma^2)$ — each label = the line plus noise.
+\end{setupbox}
+
+The story behind this model: there is some true function producing the labels, but every real
+measurement deviates from it for a thousand small reasons — sensor jitter, rounding, stray
+environmental effects. We bundle all of them into a single random variable $\epsilon$ and assume the
+truth itself is linear. ``I.i.d.'' means the noise on each sample is drawn independently and from the
+same distribution; the Gaussian is the standard default. Its zero mean encodes that the noise does
+not systematically push observations up or down, and $\sigma^2$ sets the width of the bell: as
+$\sigma\to0$ the distribution collapses onto the mean (every label is exactly the line) and as
+$\sigma$ grows it flattens towards pure randomness. Crucially, once $x_i$ and $w$ are fixed the
+\emph{only} randomness left in $y_i$ is the noise, so subtracting the prediction gives
+$y_i-w^\top x_i=\epsilon_i\sim\mathcal N(0,\sigma^2)$ — which is exactly the equivalent form in the
+box: each label is a Gaussian centred on the model's prediction.
+
+\subsection{Likelihood and Maximum Likelihood}
+
+\begin{defbox}[likelihood]
+$p(y\mid X,w)$ = probability of the \kw{observed data}, treating a parameter $w$ as the truth.
+A \kw{function of $w$}, with data $X,y$ \kw{fixed}.
+\end{defbox}
+
+The likelihood is the object you slide $w$ around to maximise: the data is nailed down (it is what
+you actually collected) and $w$ is the free variable. This is the single most-misread idea in the
+topic, so it gets a trap of its own.
+
+\begin{trapbox}[likelihood is not P(parameters correct) — it is the reverse]
+Likelihood = P(seeing this exact data $\mid$ $w$ assumed true), \emph{not} P($w$ is right).
+\kw{Coin}: 9 heads in 10 flips is the fixed data; likelihood of ``fair'' ($w{=}0.5$) is low,
+likelihood of ``weighted'' ($w{=}0.9$) is high. \kw{ML} = pick the $w$ that makes the observed data
+least surprising.
+\end{trapbox}
+
+Read the coin example carefully, because it pins down the direction of the conditional. The 9-heads
+run is the fixed evidence. You then score \emph{candidate} coins by it: a fair coin would rarely
+produce so lopsided a run, so its likelihood is low; a 90\%-heads coin produces exactly such runs,
+so its likelihood is high. At no point are you computing ``the probability the coin is fair'' —
+that would require a prior. Maximum likelihood simply returns the parameter under which the observed
+data is least surprising. Note too that the likelihood is a function of $w$ and need \emph{not}
+integrate to 1 over $w$; it is not a distribution over parameters.
+
+Because the samples are i.i.d., the probability of the whole dataset factorises into a product of
+per-sample Gaussians, and that product collapses neatly because the exponents add:
+\[
+p(y\mid X,w)=\prod_{i=1}^N p(y_i\mid x_i,w)
+=\frac{1}{(2\pi\sigma^2)^{N/2}}\exp\!\Big(-\frac{\|Xw-y\|^2}{2\sigma^2}\Big).
+\]
+The numerator inside the exponential, $\sum_i(y_i-w^\top x_i)^2$, is precisely the sum of squared
+errors $\|Xw-y\|^2$ from Week 8 — that is the first clue that least squares is hiding inside this
+Gaussian. \kw{Maximum Likelihood} then picks $w_\ast=\arg\max_w p(y\mid X,w)$. The clean way to do
+this is to take the log first: the logarithm is monotone (so the $\arg\max$ is unchanged), it turns
+the product into a sum, and it kills the exponential, leaving
+$\log p=-\tfrac{N}{2}\log(2\pi\sigma^2)-\tfrac{1}{2\sigma^2}\|Xw-y\|^2$. The first term does not
+depend on $w$ and drops out; maximising the second is the same as minimising the squared error:
+\[
+w_\ast=\arg\min_w\|Xw-y\|^2 \;=\;(X^\top X)^{-1}X^\top y.
+\]
+\examflag{}\kw{``Under i.i.d.\ Gaussian noise, ML estimation $\equiv$ ordinary least squares.''}
+Wk8's closed form \emph{is} the ML estimator — not a heuristic. This is the headline result of the
+lecture's first half and a likely scenario-question target.
+
+\subsection{Bayes' rule, prior, posterior, MAP}
+
+\kw{Why move from ML to MAP}: ML needs a lot of data, and on a small or unrepresentative sample it
+overfits. The lecturer's pointed example: flip a coin three times, see three heads, and ML concludes
+the coin \emph{always} lands heads — because that is literally the parameter under which the data is
+most probable. ML has no way to push back against a freak sample. A prior is exactly that pushback:
+it injects external belief about $w$ that regularises the freak conclusion away. MAP estimation is
+the mechanism for folding that belief in, via Bayes' rule.
+
+\begin{defbox}[Bayes' rule for parameters]
+\[
+\underbrace{p(w\mid X,y)}_{\text{posterior}}=
+\frac{\overbrace{p(y\mid X,w)}^{\text{likelihood}}\;\overbrace{p(w)}^{\text{prior}}}
+{\underbrace{p(y\mid X)}_{\text{evidence}}}
+\;\;\propto\;\; p(y\mid X,w)\,p(w).
+\]
+\kw{Prior} = belief about $w$ \emph{before} data. \kw{Posterior} = updated belief \emph{after} data.
+\kw{Evidence} = normaliser, constant in $w$, dropped for $\arg\max$.
+\end{defbox}
+
+The point of the proportionality is practical: the evidence $p(y\mid X)$ is a constant in $w$ (it is
+just the normaliser that makes the posterior integrate to 1), so for the purpose of finding the
+\emph{location} of the posterior's peak it can be ignored entirely. The prior encodes what you
+believe about $w$ before seeing any data; the posterior is that belief after the data has spoken;
+the likelihood is the data's verdict. Bayes' rule is simply the rule that reconciles the two.
+
+\begin{defbox}[MAP estimation]
+$w_\ast=\arg\max_w p(w\mid X,y)=\arg\max_w p(y\mid X,w)\,p(w)$ — most probable $w$ \emph{after}
+seeing the data.
+\end{defbox}
+
+So MAP is just ML with one extra factor — the prior — multiplied into the objective. The likelihood
+pulls $w$ towards parameters that explain the data; the prior anchors $w$ towards what you assumed
+beforehand; MAP picks the single peak where those two pulls balance.
+
+\begin{center}
+\renewcommand{\arraystretch}{1.2}
+\begin{tabularx}{\linewidth}{l X X}
+\toprule
+& \thead{ML} & \thead{MAP} \\
+\midrule
+Maximises & likelihood $p(y\mid X,w)$ & posterior $p(w\mid X,y)$ \\
+Uses a prior? & no & yes \\
+Reduces to & least squares & ridge / $L_2$-regularised least squares \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+MAP $=$ ML when the prior is \kw{uniform} (uninformative) — with a constant prior the $p(w)$ factor
+contributes nothing to the $\arg\max$ and drops out, leaving the bare likelihood. So ML is not a
+rival method but the special case of MAP in which you bring no prior information at all.
+
+\subsection{MAP with a Gaussian prior $=$ ridge}
+
+The simplest non-trivial prior is the zero-mean isotropic Gaussian $p(w)=\mathcal N(0,I)$, which in
+plain English says ``before seeing the data I expect the weights to be small, and I am equally
+suspicious of any one component being large in any direction.'' It is the natural default when you
+have no domain knowledge about $w$. Substituting the Gaussian likelihood and the Gaussian prior into
+the posterior, taking the log, and dropping the terms constant in $w$ gives
+$\log p(w\mid X,y)=-\tfrac{1}{2\sigma^2}\|Xw-y\|^2-\tfrac12\|w\|^2+\text{const}$ — a sum of two
+terms, the data-fit term and the prior penalty. Multiplying through by $-2\sigma^2$ (which flips the
+$\arg\max$ to an $\arg\min$ and relocates the $\sigma^2$ onto the penalty) gives
+\[
+w_\ast=\arg\min_w\big(\|Xw-y\|^2+\sigma^2\|w\|^2\big)\;=\;(X^\top X+\sigma^2 I)^{-1}X^\top y.
+\]
+The second equality is just Week 8's differentiate-and-set-to-zero applied to the new objective:
+$\nabla=2X^\top Xw-2X^\top y+2\sigma^2 w=0$ rearranges to $(X^\top X+\sigma^2 I)w_\ast=X^\top y$.
+\examflag{}\kw{``MAP with a Gaussian prior $\equiv$ ridge / $L_2$-regularised least squares, with
+regularisation strength $\sigma^2$ (the noise variance).''} Forward link to Wk21.
+
+\begin{notebox}[why $\sigma^2$ appears in MAP but cancels in ML]
+\kw{ML}: only goal is to fit the data; with no prior to balance against, $\sigma^2$ is just the
+\emph{unit} the error is measured in $\Rightarrow$ it scales the objective uniformly and
+\kw{cancels out of the $\arg\min$}. \\
+\kw{MAP}: a \kw{tug-of-war} — likelihood pulls $w$ to fit the data, prior pulls $w$ toward $0$.
+$\sigma^2$ is the \kw{trust factor} setting who wins. Large $\sigma^2$ (noisy data) $\Rightarrow$
+stronger penalty $\Rightarrow$ lean on the prior. Small $\sigma^2$ (clean data) $\Rightarrow$ penalty
+vanishes $\Rightarrow$ behaves like OLS.
+\end{notebox}
+
+\textbf{What the prior buys:} (i) \kw{numerical stability} — $X^\top X+\sigma^2 I$ is \emph{always}
+invertible for $\sigma^2>0$ (every eigenvalue lifted by $\sigma^2$), even when $X^\top X$ is singular;
+(ii) \kw{bias toward small weights} $\Rightarrow$ smoother fit, less overfitting.
+
+\begin{pitfallbox}[ML and MAP are point estimates — no uncertainty]
+Both return a single best $w_\ast$ $\Rightarrow$ a single-number prediction, \kw{no margin of error}.
+\kw{Full Bayesian inference} keeps the whole posterior over $w$ and integrates it out to give a
+\kw{predictive distribution} (``most likely 5, plausibly 3–7''). Optional / non-examinable.
+\end{pitfallbox}
+
+\begin{exambox}[Wk10 — the two derivations]
+\textbf{ML $\to$ least squares (4 marks):} model $y_i\mid x_i,w\sim\mathcal N(w^\top x_i,\sigma^2)$;
+likelihood $\propto\exp(-\|Xw-y\|^2/2\sigma^2)$; log-likelihood $=-\tfrac{1}{2\sigma^2}\|Xw-y\|^2+$const;
+drop constants, flip sign $\Rightarrow\arg\min\|Xw-y\|^2$. \\
+\textbf{MAP $\to$ ridge (5 marks):} posterior $\propto$ likelihood $\times$ prior $\mathcal N(0,I)$;
+log-posterior $=-\tfrac{1}{2\sigma^2}\|Xw-y\|^2-\tfrac12\|w\|^2+$const; $\times(-2\sigma^2)$
+$\Rightarrow\arg\min(\|Xw-y\|^2+\sigma^2\|w\|^2)$; differentiate, set $0$
+$\Rightarrow w_\ast=(X^\top X+\sigma^2 I)^{-1}X^\top y$.
+\end{exambox}
+
+% =====================================================================
+\section{Week 11 — Logistic Regression}
+
+Logistic regression is the unit's first dedicated classifier built on the linear-model machinery.
+Decision trees and random forests classified by recursively partitioning the input space; logistic
+regression instead fits a smooth probability function over it. The trick is to take the familiar
+linear score $w^\top x$ and squash it through a sigmoid so the output becomes a probability in
+$(0,1)$, which can then be thresholded into a class. Everything else — the i.i.d.\ likelihood, the
+$\arg\max$ on the log-likelihood, the gradient-ascent loop — is recycled from Weeks 8 and 10; Week 11
+adds only the squashing step, the binomial likelihood, and the resulting linear decision boundary.
+
+\begin{setupbox}[binary classification]
+Data $\{(x_i,y_i)\}$, labels $y_i\in\{0,1\}$. Goal: predict $\hat y\in\{0,1\}$ for a new $x$.
+Logistic regression squashes the linear score $w^\top x$ through a sigmoid to a probability.
+Despite the name it is a \kw{classifier} — ``regression'' refers to regressing the \emph{log-odds}
+on the features. Formulae below assume the $\{0,1\}$ convention; a $\{-1,+1\}$ label convention
+changes them — check first.
+\end{setupbox}
+
+\subsection{Why not linear regression}
+
+The natural first thought is to fit a plain linear model $f(x)=w^\top x$ to the $\{0,1\}$ labels and
+threshold at $0.5$. It fails for two structural reasons, and the obvious patches fail too.
+
+\begin{itemize}
+  \item \kw{Unbounded output}: $w^\top x$ returns any real number — for an extreme input the
+  prediction can be $-3$ or $+12$, which is meaningless as a probability or a class label. The model
+  has no notion that the output should be confined.
+  \item \kw{Outlier tilt}: squared loss penalises an extreme correct point (predicts $5$ for label
+  $1$ $\Rightarrow$ loss $(5-1)^2=16$) $\Rightarrow$ the line tilts flatter to reduce that fake error
+  $\Rightarrow$ the $0.5$-crossing decision boundary shifts $\Rightarrow$ normal middle points
+  misclassified. The subtlety worth holding onto: the point was classified \emph{correctly}
+  ($5>0.5$), yet squared loss still charges a huge error for it, and relieving that fake error
+  sabotages the threshold for everyone else. The classifier is wrecked by a point it got right.
+  \item Hacks fail: \kw{clipping} to $[0,1]$ discards variance info — a prediction of $5$ and one of
+  $1.01$ both flatten to $1$, losing all sense of confidence, and the clipped regions have zero
+  gradient; \kw{hard thresholding} at $0.5$ makes the function a discontinuous step
+  $\Rightarrow$ non-differentiable at the jump and flat elsewhere, so gradient descent has no slope
+  to follow.
+  \item \kw{Fix}: compose $w^\top x$ with a smooth monotone squashing function that maps
+  $\mathbb R\to(0,1)$ — the sigmoid. It saturates gently towards $0$ and $1$ so far-out points stop
+  generating runaway error, yet it stays differentiable everywhere so training still works. The
+  result is logistic regression.
+\end{itemize}
+
+\subsection{Sigmoid and logit}
+
+\begin{defbox}[sigmoid / logistic function]
+$\sigma(z)=\dfrac{1}{1+e^{-z}}$, maps $\mathbb R\to(0,1)$. Monotone, smooth ($C^\infty$),
+$\sigma(0)=0.5$, $\sigma(z)+\sigma(-z)=1$. \\
+\kw{Self-derivative}: $\sigma'(z)=\sigma(z)(1-\sigma(z))$ — memorise; used in every gradient.
+\end{defbox}
+
+The sigmoid's six properties are not trivia — each earns its place. The range $(0,1)$ makes the
+output a valid probability; monotonicity preserves the order of inputs as an order of
+probabilities; $\sigma(0)=0.5$ means the decision boundary $\sigma(w^\top x)=0.5$ is the clean
+hyperplane $w^\top x=0$; smoothness ($C^\infty$) is what lets gradient-based training work;
+the symmetry $\sigma(z)+\sigma(-z)=1$ says class-0 probability mirrors class-1; and the
+self-derivative is the algebraic gift that makes every gradient collapse to something clean.
+
+\begin{defbox}[logit / log-odds — inverse sigmoid]
+$\text{logit}(p)=\log\dfrac{p}{1-p}$, maps $(0,1)\to\mathbb R$. \kw{Odds} $=p/(1-p)$; logit = log of
+the odds. The model asserts $\;\log\dfrac{P(y{=}1\mid x)}{P(y{=}0\mid x)}=w^\top x$.
+\end{defbox}
+
+The logit is the sigmoid run backwards: where the sigmoid squashes a real score into a probability,
+the logit recovers the score from the probability. Building it up in two steps makes its meaning
+clear — the odds $p/(1-p)$ rescale a probability to $(0,\infty)$ (a $p=0.75$ becomes odds of 3,
+``3 to 1 on class 1''), and the logarithm then stretches $(0,\infty)$ out to the whole real line.
+So the assertion ``the log-odds of class 1 are linear in the features'' is the actual modelling
+claim logistic regression makes.
+
+\begin{exbox}[deriving $\sigma'$ and the logit]
+\kw{Self-derivative}: $\sigma(z)=(1+e^{-z})^{-1}$, so by the chain rule
+$\sigma'(z)=\dfrac{e^{-z}}{(1+e^{-z})^2}=\dfrac{1}{1+e^{-z}}\cdot\dfrac{e^{-z}}{1+e^{-z}}
+=\sigma(z)\,(1-\sigma(z))$ — since $\dfrac{e^{-z}}{1+e^{-z}}=1-\sigma(z)$.
+\kw{Logit} = invert $p=\sigma(x)$: $p(1+e^{-x})=1\Rightarrow e^{-x}=\tfrac{1-p}{p}
+\Rightarrow e^{x}=\tfrac{p}{1-p}\Rightarrow x=\log\tfrac{p}{1-p}$.
+\end{exbox}
+
+\begin{notebox}[what the real-number score $z=w^\top x$ means]
+$z$ is the model's confidence in \kw{log-odds} units. $z=0\Rightarrow$ odds $1\Rightarrow p=0.5$ =
+the \kw{decision boundary}. $z>0\Rightarrow p>0.5$ (class 1), larger $z$ = more confident.
+$z<0\Rightarrow p<0.5$ (class 0). Each weight $w_j$: a 1-unit rise in $x_j$ raises the log-odds of
+class 1 by $w_j$ — linear interpretability.
+\end{notebox}
+
+\subsection{Model, likelihood, training}
+
+The model itself is just the linear score fed through the sigmoid; everything below is the standard
+maximum-likelihood pipeline applied to that model, with one or two pieces of pleasant algebra.
+
+\begin{itemize}
+  \item \kw{Model}: $f_w(x)=\sigma(w^\top x)$; $P(y{=}1\mid x)=f_w(x)$, $P(y{=}0\mid x)=1-f_w(x)$.
+  Conventionally $x$ is augmented with a leading $1$ so that $w_0$ acts as a bias.
+  \item \kw{Compact likelihood} (exponent trick): $p(y\mid x;w)=[f_w(x)]^y[1-f_w(x)]^{1-y}$ — the
+  exponent picks the right factor for $y\in\{0,1\}$. When $y=1$ the second factor's exponent is $0$
+  so that factor becomes $1$, leaving $f_w(x)$; when $y=0$ the first factor vanishes, leaving
+  $1-f_w(x)$. The exponents act as on/off switches, and writing it this way is what avoids an ugly
+  case-split inside the log-likelihood.
+  \item \kw{Log-likelihood}: $\log L(w)=\sum_i[y_i\log f_w(x_i)+(1-y_i)\log(1-f_w(x_i))]$. Take the
+  i.i.d.\ product of compact likelihoods and log it — the product becomes a sum. This is the same
+  object as the \kw{negative cross-entropy} loss used in deep learning, only with the sign flipped.
+  \item \kw{Gradient}: $\nabla\log L(w)=X^\top(y-\boldsymbol\sigma)$ — feature matrix times prediction
+  errors; same structural form as linear regression's gradient. \emph{Why}: differentiating one term
+  needs $\partial f/\partial w_j=\sigma'(z)x_{ij}=f(1-f)x_{ij}$; the $1/f$ from $\log f$ then cancels
+  the $f$, and the $-1/(1-f)$ from $\log(1-f)$ cancels the $(1-f)$, leaving the clean residual
+  $\partial_{w_j}\log L=\sum_i(y_i-f_w(x_i))\,x_{ij}$. The gradient is the input matrix times the
+  vector of prediction errors — read it as feature-weighted residuals, exactly as in linear
+  regression, only with sigmoid residuals.
+  \item \kw{No closed form} ($\sigma$ is transcendental in $w$, so $\nabla\log L=0$ is not a linear
+  system) $\Rightarrow$ train iteratively: gradient ascent $w_{t+1}=w_t+\alpha\nabla\log L$, or
+  Newton/IRLS (few iterations, $H=-X^\top S X$, $S=\text{diag}(\sigma_i(1-\sigma_i))$). IRLS —
+  iteratively reweighted least squares — is what most statistics software actually runs.
+  \item \kw{Concave} log-likelihood (Hessian negative semi-definite) $\Rightarrow$ every local
+  maximum is global, so gradient ascent cannot get trapped the way it can on a non-convex loss.
+  Caveat: concavity gives a global max but not a \emph{unique} one — uniqueness needs strict
+  concavity, i.e.\ $X$ of full column rank.
+\end{itemize}
+
+\subsection{Decision boundary and threshold}
+
+The natural decision rule is to predict class 1 whenever $f_w(x)\ge0.5$. By the sigmoid's symmetry
+$f_w(x)=0.5$ exactly when $w^\top x=0$, so the \kw{decision boundary} is the hyperplane $w^\top x=0$
+(a line in 2-D, a plane in 3-D, an $(M{-}1)$-dimensional hyperplane in general) — \kw{linear in input
+space}, the same shape as the SVM boundary you meet in Weeks 25--26. Two things follow that students
+routinely confuse: the bias $w_0$ \emph{shifts} where that hyperplane sits, whereas the slope (the
+magnitude of $w$) only controls how sharply confidence changes \emph{across} the boundary — it does
+\kw{not} relocate the boundary itself.
+
+\begin{notebox}[weight tuning under class imbalance — still fitting $\sigma(w^\top x)$]
+With imbalanced data, MLE \emph{learns} a shifted/shallower curve (large bias, smaller slope) to give
+the minority class fair probability space. The model form never changes — it is always
+$\sigma(w^\top x)$; ``tuning'' = gradient ascent naturally finding the best $w$ for skewed data.
+\end{notebox}
+
+\begin{notebox}[moving the $0.5$ threshold is a choice, not retraining]
+Changing the cutoff (e.g.\ to $0.2$ or $0.9$) does not move the sigmoid or retrain — it only changes
+how strictly confidence is acted on, trading FP against FN. \kw{Lower} (cancer screening: a false
+negative is disastrous $\Rightarrow$ flag at $p\ge0.2$). \kw{Raise} (spam filter: a false positive
+loses a real email $\Rightarrow$ flag only at $p\ge0.9$).
+\end{notebox}
+
+\subsection{What it buys you, and its limitations}
+
+\kw{Advantages}: (i) \kw{probabilistic output} — a calibrated $P(y{=}1\mid x)$, not just a label, so
+downstream decisions can act on a confidence rather than a bare yes/no; (ii) \kw{efficient training}
+— the log-likelihood is concave, the gradient is well-behaved, and Newton/IRLS converges in a
+handful of iterations; (iii) \kw{interpretability} — each weight $w_j$ is the log-odds effect of
+feature $j$, so the model can be read and explained to a non-expert.
+
+\kw{Limitations}:
+\begin{itemize}
+  \item \kw{Linear boundary only} — the boundary is always the hyperplane $w^\top x=0$, so data with
+  genuinely non-linear structure (e.g.\ a class enclosed in a circular ring) cannot be perfectly
+  separated by any $w$. Fix: feature engineering ($x\to[\dots,x_1^2,x_1x_2,\dots]$ makes the
+  boundary linear in the \emph{new} feature space) or a richer model (RF, kernel SVM, NN).
+  \item \kw{Overfitting on (near-)separable data}: on separable data some $w$ classifies every
+  point correctly, but maximum likelihood is greedy for confidence — it does not just want
+  $p>0.5$, it wants $p$ as close to $1$ as possible because that is what makes $\log L$ larger. To
+  push the sigmoid output to exactly $1$ needs $z=w^\top x=+\infty$, and since the inputs are fixed
+  the only lever is to scale $\|w\|$ up without bound. So the optimiser drives $\|w\|\to\infty$,
+  \kw{no finite maximiser} exists, and the smooth S-curve hardens into a brittle near-vertical step.
+  Fix: \kw{regularisation} $\arg\max(\log L(w)-\tfrac\lambda2\|w\|^2)$ — the penalty grows without
+  bound as $\|w\|$ grows, restoring a finite trade-off point. This is exactly MAP with a Gaussian
+  prior (Wk10).
+\end{itemize}
+
+\begin{trapbox}[binary only? — softmax is the multi-class generalisation]
+Standard logistic regression is \kw{binary} (sigmoid gives one $p$, the other is $1-p$).
+\kw{Multinomial logistic regression}: one linear score $z_k=w_k^\top x$ per class, combined by
+\kw{softmax} $P(k)=e^{z_k}/\sum_j e^{z_j}$ — guarantees the class probabilities are positive and sum
+to 1. Sigmoid = binary case of softmax.
+\end{trapbox}
+
+\subsection{Sensitivity to scaling and outliers}
+
+\kw{Scaling} — features on different scales cause: (i) an \kw{elliptical loss surface}
+$\Rightarrow$ gradient ascent zig-zags, slow; (ii) \kw{unfair L2 penalty} — the regulariser treats
+all weights equally, so a small-scale feature's (necessarily large) weight is over-penalised.
+\kw{Fix}: standardise features (mean 0, variance 1).
+
+\kw{Outliers / noisy labels} — cross-entropy loss is $-\log p$; as $p\to0$ the penalty $\to\infty$.
+A mislabelled extreme point gets a huge penalty $\Rightarrow$ the decision boundary shifts to
+accommodate one bad point. \kw{Fix}: robust losses that cap the penalty for confidently-wrong points.
+
+\begin{center}
+\renewcommand{\arraystretch}{1.25}
+\begin{tabularx}{\linewidth}{l X X}
+\toprule
+\thead{Model} & \thead{Scaling sensitivity} & \thead{Outlier sensitivity} \\
+\midrule
+Linear regression & yes — GD zig-zags; regulariser unfair $\Rightarrow$ standardise &
+yes — squared error, one outlier drags the line \\
+Logistic regression & yes — same two reasons $\Rightarrow$ standardise &
+yes — $-\log p$ penalty unbounded, boundary shifts \\
+Bayesian regression & yes — one prior on all weights only fair if features comparably scaled &
+yes — Gaussian noise model; needs heavy-tailed (Student-$t$) noise to be robust \\
+Decision trees / RF & \kw{no} — splits depend only on value \emph{order}, scale-invariant &
+\kw{robust} — an outlier is isolated in its own leaf, rest of tree unaffected \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\begin{exambox}[Wk11 — past-paper Q4 reflexes]
+\textbf{Why not linear regression}: unbounded output; squared-loss outlier tilt; clipping/thresholding
+brittle $\Rightarrow$ use sigmoid. \quad
+\textbf{$\sigma'$}: chain rule on $(1+e^{-z})^{-1}$ $\Rightarrow\sigma(z)(1-\sigma(z))$. \quad
+\textbf{logit}: invert $p=\sigma(x)$ $\Rightarrow x=\log(p/(1-p))$. \quad
+\textbf{log-likelihood}: i.i.d.\ product of $[f]^y[1-f]^{1-y}$, take log. \quad
+\textbf{overfitting}: regularisation (L2 / Gaussian-prior MAP) stops $\|w\|\to\infty$.
+\end{exambox}
+
+\begin{center}\large\bfseries\color{defBd} PART IV — Unsupervised Learning (Week 19)\end{center}
+
+% =====================================================================
+\section{Week 19 — Clustering \& K-means}
+
+Everything in the unit so far has been \emph{supervised}: every data point came with a label, and
+the job was to predict that label for unseen inputs. Week 19 drops the labels. Now the dataset is
+just inputs, and the task is to discover structure that nobody told the algorithm to look for.
+
+\begin{setupbox}[unsupervised learning]
+Data $D=\{x_1,\dots,x_N\}$ — \kw{inputs only, no labels $y$}. Goal: discover structure. Main tasks:
+clustering, dimensionality reduction, density estimation. \kw{Why it matters}: most real data is
+unlabelled — labels are expensive, often noisy, and frequently unavailable — so a method that needs
+no labels is widely applicable.
+\end{setupbox}
+
+The reason unsupervised learning matters in practice is sheer availability: labelling requires human
+annotation, which is slow and expensive, so the overwhelming majority of real-world data arrives
+without labels. Unsupervised methods are what you reach for when you have abundant data but no
+targets, or when the goal is to \emph{discover} structure rather than predict a known quantity.
+Clustering — grouping similar samples — is the focus of this week.
+
+\begin{defbox}[cluster]
+A group of samples \kw{similar} to each other and \kw{less similar} to other groups, by some
+distance criterion. \kw{$L_2$ / Euclidean} = default; \kw{$L_1$ / Manhattan} = robust to outliers.
+\end{defbox}
+
+Notice the definition is only as precise as the distance function it rests on — ``similar'' has no
+meaning until you choose a metric. Euclidean ($L_2$) is the default and pairs naturally with
+K-means (see below); Manhattan ($L_1$) sums absolute rather than squared differences, so it does not
+amplify extreme coordinates and is the robust choice when outliers are a concern. Clustering shows
+up in image segmentation (each pixel a data point), market segmentation, data compression (replace
+each point by its cluster centre), anonymisation, and missing-value imputation. Algorithms come in
+four families: \kw{centroid-based} (K-means), \kw{hierarchical} (agglomerative/divisive),
+\kw{density-based} (DBSCAN — optional), \kw{distribution-based} (GMM/EM — optional).
+
+\subsection{K-means algorithm}
+
+K-means answers the clustering problem with a strikingly simple alternating loop: guess $K$ group
+centres, assign every point to its nearest centre, then move each centre to the average of the
+points that chose it — and repeat until nothing moves.
+
+\begin{defbox}[K-means]
+\textbf{1. Init} — pick $K$ random data points as centroids $c_k$. \\
+\textbf{2. Assign} — each point to its nearest centroid: $\text{ind}_i=\arg\min_k\|x_i-c_k\|^2$. \\
+\textbf{3. Update} — move each centroid to the mean of its cluster: $c_k=\frac{1}{|C_k|}\sum_{x\in C_k}x$. \\
+\textbf{4. Converge} — repeat 2–3 until centroids stop changing.
+\end{defbox}
+
+Read in plain English: the initial centroids are $K$ randomly chosen data points acting as ``team
+captains''; the assignment step puts each point on the team of its nearest captain (the $\arg\min$
+returns the \emph{index} of the winner, not the distance); the update step walks each captain to the
+middle of its current team; and the loop stops when no captain needs to move.
+
+\begin{notebox}[why $L_2$ ``pairs naturally'' with K-means]
+K-means minimises the \kw{within-cluster sum of squares} $J=\sum_k\sum_{x\in C_k}\|x-c_k\|^2$. The
+squared $L_2$ distance has a \kw{clean (linear) gradient}, and the point minimising the summed squared
+$L_2$ distance of a group \kw{is exactly its mean} — which is what the update step computes. With
+$L_1$ the minimiser is the \kw{median} instead (a different algorithm, \kw{K-medians}).
+\end{notebox}
+
+\begin{notebox}[why K-means converges]
+$J$ is the ``score''. \kw{Assignment} step minimises $J$ over memberships (centroids fixed);
+\kw{update} step minimises $J$ over centroids (memberships fixed) — so \kw{every step decreases $J$ or
+leaves it unchanged}. $J$ is \kw{bounded below by 0}, and there are only finitely many ($K^N$)
+possible assignments $\Rightarrow$ K-means terminates — at a \kw{local} minimum (not necessarily
+global). Practical termination: max iteration count, or centroid-movement below a threshold.
+\end{notebox}
+
+After convergence, the input space has been carved into $K$ regions — a \kw{Voronoi partition} in
+which each point belongs to whichever centroid is nearest, and the cell boundaries are the
+perpendicular bisectors between centroid pairs. A new point is then classified in $O(K)$ distance
+checks, making prediction cheap.
+
+\begin{itemize}
+  \item Result = a \kw{Voronoi partition} (each point to nearest centroid; boundaries = perpendicular
+  bisectors). Complexity \kw{$O(KNM)$} per iteration — for each of $N$ points, a distance to each of
+  $K$ centroids in $M$ dimensions. The number of iterations is typically small (tens to hundreds).
+  \item \kw{Advantages}: guaranteed finite convergence; simple to implement (two alternating steps,
+  very few hyperparameters); scales linearly in $N$; adaptive — a new point is assigned to its
+  nearest centroid without re-running the whole algorithm.
+  \item \examflag{}\kw{Disadvantages} (examinable): need $K$ in advance (no automatic mechanism — a
+  wrong $K$ gives bad clusters); non-deterministic (the result depends on random init, so different
+  seeds give different clusterings); sensitive to outliers (squared $L_2$ amplifies them and the
+  mean update drags the centroid towards a far-flung point); poor on varying size/density (K-means
+  implicitly assumes roughly spherical, equal-density clusters); scales badly in high dimension $M$
+  (the curse of dimensionality makes all pairwise distances become similar and uninformative).
+  \item \kw{Best-of-$N$}: run K-means $N$ times with different inits, keep the run with smallest
+  total point-to-centroid distance — the standard fix for the local-minimum / bad-init problem. It
+  is cheap precisely because one K-means run is fast, so even $N=100$ restarts stay affordable; this
+  is what industry actually does.
+\end{itemize}
+
+\subsection{Hierarchical clustering}
+
+Where K-means commits to a single flat partition into a fixed $K$, hierarchical clustering builds a
+whole \kw{dendrogram} — a tree of nested clusters — which you then cut at any level to read off a
+clustering of \emph{any} $K$, chosen \emph{after} you have seen the data rather than before.
+\begin{itemize}
+  \item \kw{Agglomerative} (bottom-up): start with $N$ singleton clusters and repeatedly merge the
+  two closest. Cheaper, because it works greedily on local distances; it is the practical default.
+  \item \kw{Divisive} (top-down): start with one cluster containing everything and repeatedly split
+  the most heterogeneous (largest average internal dissimilarity). Expensive — it must weigh all
+  possible splits — but each split decision uses a global view of the data.
+  \item \kw{Linkage} = how cluster–cluster distance is measured: single (the minimum pairwise
+  distance — causes \kw{chaining}), complete (the maximum pairwise distance — produces compact
+  clusters), average (mean pairwise distance), centroid (distance between centroids).
+  \item \kw{Chaining} (single linkage) — because single linkage merges on the closest \emph{pair}
+  of members, a cluster can grow link-by-link with no control over its overall shape: each new
+  point is absorbed for being near just \emph{one} member, so the cluster straggles outward into a
+  chain and can even curl into a ring. Mitigate with semi-supervised guide points (a few known
+  members per intended cluster), best-of-$N$ random starts, or manually-spread seed points (e.g.\
+  convex-hull / polygon-corner seeding to cover the whole region). \kw{Trap}: the lecturer's term
+  ``nearest-neighbour clustering'' means single-linkage clustering — it is \emph{not} KNN.
+\end{itemize}
+
+\subsection{Evaluating a clustering}
+
+Without ground-truth labels, judging a clustering is itself a hard question. The lecture gives the
+standard intuition and three metrics that formalise it.
+
+\begin{defbox}[good clustering]
+\kw{Low intra-cluster distance} (points within a cluster close) \kw{and} \kw{high inter-cluster
+distance} (clusters well-separated) — both at once.
+\end{defbox}
+
+\begin{itemize}
+  \item \kw{WCSS / inertia} $=\sum_k\sum_{x\in C_k}\|x-c_k\|^2$ — K-means' own objective; lower is
+  better. But it \emph{always} falls as $K$ rises (reaching exactly $0$ when every point is its own
+  cluster), so minimising WCSS alone would absurdly recommend $K=N$ — it cannot itself pick $K$.
+  \item \kw{Silhouette score} (per point): $s=\dfrac{b-a}{\max(a,b)}$, where $a$ is the point's mean
+  distance to others in its own cluster (how well it fits where it is) and $b$ its mean distance to
+  the nearest \emph{other} cluster (how well it would fit the best alternative). Range $[-1,1]$;
+  \kw{higher is better} — you want $b\gg a$, which pushes $s$ towards $+1$; $s\approx0$ means a
+  boundary point and $s<0$ flags a likely mis-assignment.
+  \item \kw{Davies–Bouldin index}: $DB=\dfrac{1}{K}\sum_i\max_{j\ne i}\dfrac{S_i+S_j}{M_{ij}}$,
+  where $S_i$ is cluster $i$'s dispersion and $M_{ij}$ the separation of centroids $i$ and $j$.
+  \kw{Lower is better} — you want tight clusters (small $S$ in the numerator) that are far apart
+  (large $M$ in the denominator). Mnemonic: for each cluster take its \emph{worst} (most
+  overlapping) neighbour, then average those worst-case ratios.
+\end{itemize}
+
+\begin{defbox}[elbow method — choosing $K$]
+Plot WCSS vs $K=1,2,3,\dots$. The curve drops steeply then bends; the \kw{elbow} (the bend) marks a
+good $K$. Beyond it, extra clusters give only diminishing WCSS reduction (just slicing real clusters).
+\end{defbox}
+
+The logic of the elbow: at small $K$ each new cluster captures a genuine natural grouping, so WCSS
+falls sharply; once the real structure has been captured, extra clusters only slice already-tight
+clusters and buy a tiny WCSS reduction each. The bend between those two regimes is the recommended
+$K$ — it reads a sensible answer off the \emph{shape} of the curve, sidestepping the fact that the
+WCSS \emph{value} would always prefer more clusters.
+
+\begin{center}\large\bfseries\color{defBd} PART V — Parametric \& Non-parametric (Week 20)\end{center}
+
+% =====================================================================
+\section{Week 20 — Parametric \& Non-parametric Models}
+
+Week 19's split — supervised vs unsupervised — asked whether you have labels. Week 20 introduces a
+second, completely independent split that asks a different question: how does the model's complexity
+scale with the amount of data? The two splits are \kw{orthogonal} — the same task can be tackled by
+a parametric or a non-parametric method, supervised or unsupervised — so they form a 2×2 grid rather
+than a single ranking.
+
+\begin{defbox}[parametric vs non-parametric]
+\kw{Parametric} — commits to a fixed functional form (linear, Gaussian, sigmoid\,\dots) with a
+\kw{fixed, finite} number of parameters; \#params does \emph{not} grow with $N$.
+e.g.\ linear/Bayesian/logistic regression, MLP, Laplace approximation. \\
+\kw{Non-parametric} — no/weak distributional assumption; model complexity (effective \#params)
+\kw{grows with $N$}. e.g.\ KDE, K-nearest-neighbours, kernel SVM, Gaussian processes.
+\end{defbox}
+
+The distinction is about \emph{commitment}. A parametric model decides on a functional shape before
+it sees the data — linear regression commits to $w^\top x$, with $M$ parameters whatever $N$ is —
+and training only fits the parameters of that shape. A non-parametric model makes no such
+commitment: feeding it more data lets it become a genuinely richer function, because its effective
+parameter count climbs with $N$.
+
+\begin{trapbox}[``non-parametric'' is a misleading name]
+It does \emph{not} mean ``no parameters'' — these models often have many. It means the parameter
+count is \kw{not bounded in advance}: it scales with the training set.
+\end{trapbox}
+
+\begin{itemize}
+  \item \kw{Parametric}: + faster (training is parameter estimation — a closed form or a few
+  iterations), + a small training set is enough (the functional form does the heavy lifting via its
+  inductive bias), + robust to overfit (a low-capacity form cannot memorise idiosyncrasies anyway);
+  $-$ constrained to the assumed form (if the truth is not linear, no $w$ can fix that), $-$ leans
+  on strong distributional assumptions whose correctness it cannot check.
+  \item \kw{Non-parametric}: + fits many functional forms, including ones you could not have
+  specified in advance, + makes no/weak assumptions, + often higher performance on hard problems
+  with abundant data; $-$ data-hungry (without prior structure you need many samples), $-$ slow
+  (often $O(N^2)$ or $O(N^3)$), $-$ higher capacity means higher overfitting risk.
+  \item \examflag{}Past-paper MCQ: non-parametric \emph{is} flexible (TRUE — the headline benefit)
+  and \emph{is} overfitting-prone (TRUE — the headline cost); it is \emph{not} fast to converge
+  (FALSE — the model grows with the data) and does \emph{not} need small datasets (FALSE — the
+  opposite).
+\end{itemize}
+
+\begin{trapbox}[parametric $\ne$ simple; the hybrid middle]
+``Parametric'' is not ``low-capacity'': a high-degree polynomial has a fixed parameter count yet
+overfits wildly. Random forests (fixed-depth trees, but the forest grows with data) and deep nets
+(fixed architecture, millions of params) sit in the \kw{hybrid middle} — for an MCQ ``which is
+non-parametric'', answer from the canonical list (KDE, KNN, kernel SVM, GP).
+\end{trapbox}
+
+\subsection{K-Nearest Neighbours}
+
+\begin{defbox}[KNN]
+Supervised. A \kw{lazy learner}: training just memorises the dataset. Predict for new $x$: compute
+distance to every stored point, take the $k$ nearest, then \kw{majority vote} (classification) or
+\kw{average} (regression). Non-parametric — the ``model'' is the training set, so its size grows
+with $N$.
+\end{defbox}
+
+KNN is the cleanest illustration of what ``non-parametric'' means: it never compresses the data into
+a fixed equation at all. There is no training computation — the algorithm just stores everything —
+and a prediction directly consults the stored points. With $N$ training points a prediction
+references $N$ points, so the model's size grows exactly with the data, which is the defining
+property.
+
+\begin{trapbox}[$k$ is a hyperparameter; KNN $\ne$ K-means]
+\kw{Parameters} are learned from data (e.g.\ regression weights); \kw{hyperparameters} are set by you
+beforehand ($k$ in KNN, bandwidth $h$ in KDE). The parametric/non-parametric label depends only on
+\emph{parameters} — so ``non-parametric'' still has settings to choose.
+\kw{KNN} (supervised; $k$ = neighbours to vote) is \emph{not} \kw{K-means} (Wk19; unsupervised;
+$K$ = clusters, fixed in advance).
+\end{trapbox}
+
+\subsection{Kernel Density Estimation}
+
+KDE is the canonical non-parametric \emph{density} estimator: given samples from an unknown
+distribution, estimate the density at any test point. The starting point is the humble histogram —
+bin the space, count samples per bin, divide by $N\cdot h$ to turn counts into a density. That works
+but is rough: the estimate is piecewise constant, jumps at bin edges, and depends sensitively on
+where the bins fall. KDE is the smooth generalisation that cures all three.
+
+\begin{defbox}[KDE]
+Density at $x$ is $f(x)=\lim_{h\to0}\tfrac{F(x+h)-F(x-h)}{2h}$ (derivative of the CDF). With finite
+data and fixed $h$ this becomes a histogram (count in $[x{-}h,x{+}h]$ over $2hN$). Replace the hard
+in/out count with a smooth \kw{kernel} $G$ weighting by distance:
+\[
+\bar f_h(x)=\frac{1}{Nh}\sum_{i=1}^N G\!\Big(\frac{x-x_i}{h}\Big).
+\]
+A smooth bump at every sample, summed. Non-parametric: $N$ terms, grows with data.
+\end{defbox}
+
+The key move is to replace the histogram's hard ``in or out of $[x-h,x+h]$'' indicator with a smooth
+weight that decays with distance from $x$ — that weight is the \kw{kernel} $G$. Each sample then
+contributes a smooth bump centred on itself rather than a hard count, and the density estimate at
+$x$ is the sum of all those bumps. Common kernels are the Gaussian (the standard choice), the
+uniform/box kernel (which recovers the histogram), and the Epanechnikov kernel (mean-squared-error
+optimal). Because the estimate has one term per sample, adding data adds capacity — the training set
+literally is the model.
+
+\begin{exbox}[KDE — worked example, box kernel]
+Samples $\{-2.1,-1.3,-0.4,1.9,5.1,6.2\}$, $N=6$; uniform box kernel ($G=\tfrac12$ on $[-1,1]$, so
+$\bar f_h(x)=\frac{\text{count}}{2hN}$ where count $=\#\{x_i:|x-x_i|\le h\}$).
+\kw{At $x=0$, $h=2$}: $-1.3,-0.4,1.9$ lie within distance $2$ — count $=3$, so
+$\bar f_2(0)=\frac{3}{2\cdot2\cdot6}=0.125$. \kw{At $x=-1$, $h=1$}: the window $[-2,0]$ contains
+$-1.3,-0.4$ — count $=2$, so $\bar f_1(-1)=\frac{2}{2\cdot1\cdot6}=\tfrac16\approx0.167$. A Gaussian
+kernel replaces the hard in/out count with a smooth distance-weighted bump from \emph{every} sample.
+\end{exbox}
+
+\begin{notebox}[bandwidth $h$ — what it does and why it is a hyperparameter]
+$h$ sets the \kw{width} of each bump (not the number of points — that is $N$). It cannot be fixed at
+$1$: it must rescale the kernels to the data's units, and it is the \kw{bias-variance knob} (small
+$h$ = spiky/overfit, large $h$ = over-smoothed/underfit). It appears twice: inside $G$ as a distance
+scaler, in the $1/Nh$ prefactor to renormalise area to 1. KDE never \emph{learns} $h$ — it is a
+\kw{hyperparameter}, set by \kw{Silverman's rule} $h\approx1.06\,\sigma\,N^{-1/5}$ ($\sigma$ = scale,
+$N^{-1/5}$ shrinks $h$ as data grows) or by cross-validation.
+\end{notebox}
+
+\kw{Curse of dimensionality}: to keep the same point density as dimensions grow, the required sample
+count scales as $k^M$ — $k$ points cover a line, $k^2$ a square, $k^3$ a cube, $k^M$ an $M$-D space
+— so the requirement is \emph{exponential} in dimension $M$. A fixed-width kernel window is a
+segment in 1-D, a small disc in 2-D, a small ball in 3-D; as $M$ climbs that window shrinks to a
+negligible fraction of the space and captures few or zero neighbours, so KDE outputs near-zero
+everywhere unless $N$ also grows exponentially. This is the central reason non-parametric methods
+``need a lot of data,'' and why practical KDE is limited to small $M$.
+
+\subsection{Laplace approximation}
+
+\begin{defbox}[Laplace approximation]
+The \kw{parametric exemplar}: approximate an intractable target $P^\ast(\theta)$ by a \kw{Gaussian}
+$Q^\ast$ centred at its \kw{mode}, with width set by the curvature (Hessian) there. Parametric — a
+Gaussian is fixed by a mean and a spread. \examflag{}Principle only; the maths is non-examinable.
+\end{defbox}
+
+The intuition: take an unwieldy target distribution you can evaluate but not handle analytically,
+find its mode (the peak), and pretend the log-density is locally a downward parabola there — which
+is exactly a Gaussian. It is the parametric exemplar because once you commit to ``Gaussian,'' the
+whole approximation is pinned down by a fixed handful of numbers (a mean and a spread) that do not
+grow with the data — the polar opposite of KDE.
+
+\begin{itemize}
+  \item \kw{Limitations} — all three stem from forcing one symmetric Gaussian onto the target:
+  bad on \kw{multimodal} targets (a Gaussian has one peak, so it locks onto a single mode and
+  ignores the rest of the mass); bad on \kw{heavy-tailed / skewed} targets (a Gaussian is perfectly
+  symmetric with thin, fast-decaying tails, so it cannot bend to a lopsided density or cover a long
+  tail); only as good as the \kw{local Hessian at the mode} — it is nearsighted, drawing the whole
+  Gaussian from the curvature at one point and ignoring the global shape, so a sharp peak on an
+  otherwise broad distribution yields a Gaussian that is far too narrow.
+\end{itemize}
+
+\begin{notebox}[KL divergence and Variational Inference]
+\kw{KL divergence} = a number scoring the mismatch between two distributions ($0$ = identical,
+larger = worse). \kw{Variational Inference (VI)} generalises Laplace: it picks $Q^\ast$ by
+\kw{minimising the KL divergence} to $P^\ast$ — KL is the measuring stick, VI the search. Unlike
+Laplace it fits the \emph{whole shape} (not just curvature at the mode) and is \kw{not restricted to
+Gaussians}.
+\end{notebox}
+
+\begin{center}\large\bfseries\color{defBd} PART VI — Regularisation (Week 21)\end{center}
+
+% =====================================================================
+\section{Week 21 — Regularisation}
+
+Week 10 already showed one route to regularisation — MAP with a Gaussian prior produces an $L_2$
+penalty. Week 21 widens the picture: it gives the non-probabilistic motivations for regularising at
+all, and adds the $L_1$ (lasso) and combined ($L_1{+}L_2$, elastic net) variants. The starting
+intuition is the four-point regression: four data points lying almost on a line can be fitted with
+\emph{zero} training error by a line, a sine curve, a step function, or a wild polynomial — squared
+error cannot tell them apart. A human instantly picks the line, but the data alone does not justify
+that choice. Regularisation is how we write that human preference for simplicity into the
+optimisation as an equation.
+
+\begin{defbox}[regularised loss]
+$L(\theta)=\underbrace{L_{\text{data}}(\theta)}_{\text{data fit}}+\lambda\underbrace{R(\theta)}_{\text{penalty on }\theta}$.
+$\lambda\ge0$ = regularisation strength, a \kw{hyperparameter} (tuned on validation, not learned).
+$\lambda=0$ = unregularised; $\lambda\to\infty$ collapses $\theta$ to the regulariser's preference
+(usually $0$).
+\end{defbox}
+
+The two terms pull against each other: $L_{\text{data}}$ rewards fitting the training data, while
+$\lambda R(\theta)$ fines complexity, and $\lambda$ sets who wins. Note $\theta$ is found by the
+optimisation but $\lambda$ is \emph{not} — it is held fixed during training and tuned externally on
+a validation set. Different choices of $R$ encode different definitions of ``simple.''
+
+\kw{Four reasons to regularise} — you should be able to name and one-sentence each: (1) avoid
+\kw{overfitting} — without a penalty a high-capacity model memorises noise as if it were signal and
+generalises poorly; (2) \kw{ill-posed problem} — when many parameter values fit the data equally
+well, the optimiser can drift between them and never settle, so the penalty supplies a tiebreaker;
+(3) \kw{human understanding} — a penalty that pushes toward sparse or interpretable parameters makes
+the model readable; (4) \kw{easier optimisation} — a smooth convex penalty removes flat regions and
+spurious local minima from the loss surface, so gradient methods converge more reliably. Often
+several apply at once.
+
+\begin{notebox}[Occam's razor]
+``The simplest explanation is usually the correct one.'' The 4-point regression: a line, a sine, a
+wild polynomial all fit 4 near-collinear points with \kw{zero training error} — the data alone
+cannot choose. Occam's razor is the tiebreaker (pick the line); \kw{regularisation is Occam's razor
+written as an equation} — the $\lambda R(\theta)$ term fines complexity. Overfitting = ``an
+unjustifiably complex explanation''.
+\end{notebox}
+
+\subsection{Ridge ($L_2$) and Lasso ($L_1$)}
+
+The two workhorse regularisers differ only in the norm they penalise — squared $L_2$ versus
+absolute $L_1$ — but that single change of norm has consequences that run all the way through to
+whether the solution is sparse and whether a closed form exists.
+
+\begin{defbox}[ridge vs lasso]
+\kw{Ridge / $L_2$}: $L=\|Xw-y\|^2+\lambda\|w\|^2$; closed form
+$w_\ast=(X^\top X+\lambda I)^{-1}X^\top y$. \\
+\kw{Lasso / $L_1$}: $L=\|Xw-y\|^2+\lambda\|w\|_1$; \kw{no closed form} ($|w|$ non-differentiable at
+$0$) — solved iteratively (coordinate descent, LARS).
+\end{defbox}
+
+Ridge has a closed form because its penalty $\|w\|^2$ is smooth: differentiating the loss and
+setting it to zero gives the linear system $(X^\top X+\lambda I)w_\ast=X^\top y$, the normal
+equation with $\lambda I$ added to the Gram matrix. Lasso has none, because $|w|$ has a kink at the
+origin where the gradient is undefined — so $\nabla L=0$ is not a clean equation and the problem
+must be solved iteratively.
+
+\kw{Why $L_2$ helps}: (i) \kw{numerical stability} — adding $\lambda I$ lifts every eigenvalue of
+$X^\top X$ by $\lambda$, so $X^\top X+\lambda I$ is always invertible for $\lambda>0$ even when
+$X^\top X$ is rank-deficient; (ii) reduces overfitting — penalising large $\|w\|$ means the model
+cannot memorise idiosyncrasies that require large coefficients, so the fit is smoother; (iii)
+\kw{shrinks but does not zero out} — each weight is pulled towards zero but never reaches it
+exactly, so $L_2$ is \kw{not sparse}.
+
+\begin{trapbox}[why $L_1$ is sparse and $L_2$ is not]
+\examflag{}Past-paper: ``increasing $\lambda$ in lasso $\Rightarrow$ sparser coefficients'' — TRUE. \\
+\kw{Geometric}: the optimum is where the data-fit ellipse meets the penalty ball. The $L_1$ ball is a
+\kw{diamond} with corners \emph{on the axes} ($w_j=0$); as $\lambda$ grows the diamond shrinks and
+the optimum lands on a corner $\Rightarrow$ exact zeros. The $L_2$ ball is a \kw{circle} (no corners)
+— the optimum slides along it, never snapping to an axis. \\
+\kw{Algebraic}: $L_1$'s slope is a \kw{constant $\lambda$} everywhere (even at $0$) — enough to
+cancel a small data-fit gradient and pin a coordinate at $0$. $L_2$'s slope is $2w\to0$ as $w\to0$ —
+the push fades, so weights shrink but never reach $0$. \\
+$\Rightarrow$ Lasso does \kw{feature selection} (zeroed features are dropped); ridge keeps all.
+\end{trapbox}
+
+\subsection{Elastic net, sample size, interpretation}
+
+\begin{itemize}
+  \item \kw{Elastic net}: $L=\|Xw-y\|^2+\lambda(\gamma\|w\|_1+(1-\gamma)\|w\|^2)$ — two
+  hyperparameters ($\lambda$ = overall strength, $\gamma$ = $L_1$/$L_2$ mix; $\gamma=0$ is pure
+  ridge, $\gamma=1$ pure lasso). It blends the two because pure lasso has a quirk: faced with a
+  group of correlated features it arbitrarily keeps one and zeros the rest, whereas the $L_2$
+  component encourages correlated features to share similar coefficients. Elastic net thus combines
+  $L_1$ sparsity-on-irrelevant-features with $L_2$ stability-on-correlated-features; $\gamma=0.5$ is
+  a sensible default if you do not want to sweep it.
+  \item \examflag{}\kw{$\lambda$ vs sample size}: $N\uparrow\Rightarrow\lambda\downarrow$. The
+  data-fit term is a sum over $N$ samples while the penalty is fixed, so as $N$ grows the data-fit
+  term increasingly dominates and a smaller $\lambda$ achieves the same balance. Equivalently: more
+  data means less need for the prior bias the regulariser supplies — the data alone is informative
+  enough to pin down a good $w$. (The marker also accepts a computational-stability framing.)
+  \item \kw{Probabilistic view}: ridge $=$ MAP with a \kw{Gaussian} prior on $w$ (Wk10); lasso $=$
+  MAP with a \kw{Laplace} prior. The same $\lambda R$ term is read as a negative log-prior — the
+  non-probabilistic view treats $\lambda$ as a free knob, the probabilistic view as a prior
+  parameter.
+  \item $\lambda$ is swept on the \kw{validation} set (train fits $\theta$, validation tunes
+  $\lambda$, test is touched once at the end; train/val/test discipline, §4). The validation curve
+  is U-shaped — too small $\lambda$ overfits, too large underfits — so pick the bottom of the U.
+  The \kw{bias/intercept $w_0$ is conventionally not penalised}, since shrinking it would pull the
+  average prediction towards zero for no good reason.
+\end{itemize}
+
+\begin{notebox}[other forms of regularisation — and their limits]
+\kw{Early stopping}: halt iterative training before the training error bottoms out — model
+complexity is implicitly capped by how long you trained. Common in deep learning, but the lecturer
+calls it a ``bad hack'': if you need it your explicit regularisation is too weak — though it may
+still be the least-bad option. \kw{Model limits}: a restricted model class is itself regularisation
+(logistic regression can only draw a linear boundary). \emph{Limitation}: the amount is fixed by the
+class — rarely the right amount, with no $\lambda$ to tune. \kw{Data quantity}: more data needs less
+regularisation; infinite data needs none. Models have a goldilocks range — too little data fails,
+beyond a point extra data stops helping.
+\end{notebox}
+
+\begin{center}\large\bfseries\color{defBd} PART VII — Graphical Models \& Inference (Weeks 22–23)\end{center}
+
+% =====================================================================
+\section{Week 22 — Graphical Models}
+
+Up to now every model has been a single conditional $P(y\mid x)$ — features in, label out, all
+features treated symmetrically. Week 22 steps back and asks how to encode \emph{structure}: the
+domain knowledge that some variables influence each other and others do not. A graphical model is
+that knowledge drawn as a picture and read as a probability distribution. The running lecture
+example is train derailment: rather than learn $P(\text{crash}\mid 6\text{ features})$ as one giant
+table, you notice that three driver features cause the train's \emph{speed}, and speed plus three
+hardware features cause the crash — so the joint factorises into two smaller, more learnable
+conditionals. The graph is just the bookkeeping for that factorisation.
+
+\begin{setupbox}[graphical model]
+A graph encoding the structure of a joint distribution over random variables (RVs). Nodes = RVs;
+edges encode \kw{conditional (in)dependence}. The structure is a \kw{modelling assumption} from
+domain knowledge — a conditional independence is a property of \emph{the graph you drew}, not an
+intrinsic fact (add an edge and the claim changes).
+\end{setupbox}
+
+The "property of the graph you drew" point is worth dwelling on. The derailment graph claims that,
+once you know the speed, the speed \emph{limit} tells you nothing extra about the crash — speed
+"screens off" the upstream driver features. But that claim is true only because you drew no direct
+edge from the limit to the crash. Add that edge and the independence evaporates. Conditional
+independence is therefore something you \emph{assert} by your choice of structure, not a fact you
+discover; the graph is a hypothesis about how the data was generated.
+
+\begin{notebox}[why graphical models are useful — the advantages]
+\kw{Lower-dimensional sub-models}: each factor is a conditional with fewer inputs, so the curse of
+dimensionality is cut — $P(\text{speed}\mid\text{3 features})$ is far easier to estimate than
+$P(\text{crash}\mid\text{6 features})$. \kw{More effective use of data}: a moderate dataset trains
+many small factors instead of one giant table. \kw{Missing-data \& latent-variable tolerance}:
+inference still runs with some variables unobserved — even ones \emph{never} observed (latent),
+which a standard supervised model cannot do. \kw{Performance}: baking in domain knowledge
+``hard-removes'' impossibilities, tightening the model. \kw{Headline}: \emph{every} ML algorithm has
+an implicit graphical model — some structural assumption about how the data was generated; graphical
+models simply make it explicit. (A fully-connected graph — every feature into $y$ — encodes no
+conditional independence and is therefore useless; the useful graphical models are the ones that
+impose structure.)
+\end{notebox}
+
+\subsection{Three representations}
+
+The same joint distribution can be drawn in three notations, each emphasising a different aspect of
+the structure. They are not rival theories — they describe the same conditional-independence facts —
+but the choice matters in practice because some operations (learning, inference, sampling) are
+easier in one notation than another.
+
+\begin{defbox}[BN / factor graph / Markov network]
+\kw{Bayesian network} — directed acyclic graph; joint $=\prod_v P(v\mid\text{parents}(v))$. \\
+\kw{Factor graph} — bipartite: circles (RVs) + squares (factors); joint $\propto\prod_f F_f(\text{its RVs})$. \\
+\kw{Markov network} — undirected; joint $\propto\prod_{(i,j)}F_{ij}(x_i,x_j)\prod_i A_i(x_i)$
+(pairwise + unary potentials).
+\end{defbox}
+
+A Bayesian network reads naturally as "cause $\to$ effect" — though strictly the arrow only encodes a
+conditional dependency, and "arrow $=$ causation" is an intuition pump, not a theorem. Its great
+virtue is that \emph{the graph is the factorisation}: one local conditional per node. A Markov
+network drops all direction and is the right tool for symmetric, spatial relationships — adjacent
+pixels in an image, where no pixel "causes" its neighbour. A factor graph is the most explicit of
+the three: it draws the factor functions as their own square nodes, so multi-variable dependencies
+are visible directly without needing arrows. Code typically uses factor graphs precisely because the
+data structure is uniform.
+
+\kw{Conversions}: BN$\to$FG and MN$\to$FG are \kw{always possible}; FG$\to$BN/MN is \kw{not}. The
+asymmetry is because the factor graph is the most general of the three — collapsing a directed or
+undirected graph into explicit factors never loses information, but the reverse may not have an
+unambiguous answer.
+
+\begin{trapbox}[why FG$\to$Markov network can fail — even though both are undirected]
+(i) \kw{Pairwise-only}: a Markov network allows only 2-variable potentials; a factor graph can have
+\kw{higher-order factors} ($G(a,c,d)$) — an irreducible 3-way factor cannot be rebuilt from edges.
+(ii) \kw{Loss of explicitness}: one 3-way factor $F(a,b,c)$ and three pairwise $f(a,b)f(b,c)f(a,c)$
+are different factor graphs but map to the \emph{same} Markov triangle — reversing is ambiguous.
+\end{trapbox}
+
+\subsection{Reading the graph}
+
+\kw{Shaded} = observed, \kw{unshaded} = unobserved. Shading means only "do we have the value" — not
+cause vs effect, not graph position. This is the subtle part: an observed effect at the bottom of
+the graph can be shaded (you \emph{hear} the sirens) while an unobserved cause at the top is unshaded
+(you cannot see the weather). That asymmetry is exactly what makes a graphical model powerful — it
+can take observed effects and infer \emph{backwards} to unobserved causes, something a standard
+feed-forward model cannot do. The topology never changes; only the shading does, and different modes
+re-shade the same graph: \kw{training} (all data RVs shaded), \kw{testing} (inputs shaded, target
+unshaded), \kw{missing data} (some inputs unshaded). A \kw{latent} variable is one that is
+\emph{always} unobserved in every mode, and splits into two flavours: \kw{hidden} (a real quantity
+we know exists but cannot measure — the train's true speed, with no track sensor) versus
+\kw{hypothetical} (a construct the model posits that may have no measurable physical counterpart — a
+topic in a topic model).
+
+\subsection{Naive Bayes}
+
+\begin{defbox}[Naive Bayes]
+Assumes features are \kw{conditionally independent given the label}:
+$P(x\mid y)=\prod_i P(x_i\mid y)$. Star structure ($y\to x_i$). Predict via Bayes' rule:
+$P(y\mid x)\propto P(y)\prod_i P(x_i\mid y)$.
+\end{defbox}
+
+Naive Bayes flips ordinary classification on its head. A plain regression/classification model has
+every feature pointing into $y$ — fully connected, no conditional independence, so the graphical
+model says nothing useful. Naive Bayes instead makes $y$ the \emph{parent} and each $x_i$ a leaf, a
+star with arrows $y\to x_i$, and reads it causally as "the class label generates the features." The
+assumption that the features are independent once you know the label is strong and rarely literally
+true, but it buys a tractable factorisation that works surprisingly well as a baseline (text
+classification is the standard example).
+
+\begin{notebox}[discriminative vs generative]
+\kw{Discriminative} models learn $P(y\mid x)$ directly (logistic regression, NN, SVM).
+\kw{Generative} models learn $P(x\mid y)$ and $P(y)$, then invert with Bayes' rule — Naive Bayes.
+It flips the usual direction because $P(x_i\mid y)$ is just a count, sidestepping the curse of
+dimensionality of estimating $P(y\mid x_1,\dots,x_n)$ jointly. The licence to go this way is that the
+joint expands two ways — $P(y)P(x\mid y)=P(x)P(y\mid x)$ — so estimating the easy side
+($P(x\mid y)$) recovers the side you actually want ($P(y\mid x)$).
+\end{notebox}
+
+\begin{notebox}[expert systems = a Bayesian network with Bernoulli factors]
+An \kw{expert system} is a Bayesian network whose structure and probabilities are elicited from a
+human expert rather than learned from data. If every variable is binary, every local conditional is
+a \kw{Bernoulli}: with $\theta_{v\mid\text{pa}}=P(v{=}1\mid\text{parents})$, each factor is
+$P(v\mid\text{pa})=\theta^{v}(1-\theta)^{1-v}$ (the exponent picks the right value for $v\in\{0,1\}$).
+The full joint is the product over nodes, e.g.\
+$P(s,c,b,x,d)=P(s)\,P(c\mid s)\,P(b\mid s)\,P(x\mid c)\,P(d\mid c,b)$ — each factor a Bernoulli with a
+handful of expert-supplied parameters.
+\end{notebox}
+
+Learning Naive Bayes is therefore just counting, and predicting is just adding logs.
+
+\begin{itemize}
+  \item \kw{MLE}: $p_{iy}=C_i(1,y)/[C_i(0,y)+C_i(1,y)]$ — the empirical frequency of feature $i$
+  being on within class $y$. It falls straight out of differentiating the Bernoulli log-likelihood
+  $C_i(1,y)\log p_{iy}+C_i(0,y)\log(1-p_{iy})$ and setting the derivative to zero. The danger: the
+  prediction is a \emph{product} of per-feature probabilities, so a single zero count anywhere
+  zeroes the whole thing — a feature that never co-occurred with a class in training would veto that
+  class entirely. Hence smoothing is needed.
+  \item \kw{Test-time}: work in \kw{log space} —
+  $\log P(y\mid x)=\log P(y)+\sum_i[x_i\log p_{iy}+(1-x_i)\log(1-p_{iy})]$. A long product of small
+  probabilities underflows to zero in floating point; taking logs turns the product into a sum,
+  which is numerically safe, and you simply pick the $y$ with the largest log-score.
+\end{itemize}
+
+\begin{trapbox}[Laplace smoothing = posterior \emph{mean} of a uniform Beta prior]
+Beta is the \kw{conjugate prior} for Bernoulli: posterior $=\text{Beta}(\alpha+C_1,\beta+C_0)$ —
+conjugacy meaning prior and posterior have the same functional form, so updating just adds the
+counts to the shape parameters.
+\kw{Laplace (add-one)} $p_{iy}=\frac{C_1+1}{C_0+C_1+2}$ is the posterior \kw{mean} with
+$\alpha=\beta=1$. It is \kw{not the mode}: the mode with $\alpha=\beta=1$ cancels back to the
+unsmoothed MLE — you would need $\alpha=\beta=2$. So Laplace smoothing is not an arbitrary hack; it
+is exactly Bayesian estimation under a uniform prior, read off as the posterior mean. (The lecture
+slide misstates this as the mode.)
+\end{trapbox}
+
+\subsection{Explaining away and d-separation}
+
+The single most counter-intuitive pattern in graphical models — and a favourite of MCQs — is the
+V-structure. The everyday rule of thumb is "two competing causes are independent," and marginally
+that is true. The unfamiliar move is that \emph{conditioning on a common effect creates dependence}
+— the opposite of the usual "conditioning makes things independent" reflex that holds for chains and
+forks.
+
+\begin{defbox}[V-structure / collider — explaining away]
+$a\to z\leftarrow b$: parents $a,b$ are \kw{marginally independent} but become \kw{conditionally
+dependent} once the child $z$ (or any descendant) is observed. Observing a common effect makes its
+causes \emph{compete} — confirming one explains away the others.
+\end{defbox}
+
+The intuition is "explanatory work": if a wet lawn could be due to rain or sprinklers, observing wet
+grass raises both. But once you confirm the sprinkler was on, it already accounts for the wet grass
+— there is less explanatory work left for the rain to do, so rain's probability falls back. The two
+causes compete for the same evidence.
+
+\begin{exbox}[explaining away — the wet-grass numbers worked]
+Priors $P(r{=}1)=0.20$, $P(s{=}1)=0.40$ (rain, sprinkler — marginally independent). CPT for wet
+grass: $P(w{=}1\mid r,s)=0.95$ if rain \emph{or} sprinkler is on, $0.0125$ if neither. The joint of
+each $w{=}1$ case is $P(r)P(s)P(w{=}1\mid r,s)$:
+\[
+(1,1)\!:0.076,\quad(0,1)\!:0.304,\quad(1,0)\!:0.114,\quad(0,0)\!:0.006
+\;\;\Rightarrow\;\; P(w{=}1)=0.50.
+\]
+\kw{Observe wet grass}: $P(r{=}1\mid w)=\tfrac{0.076+0.114}{0.50}=0.38$ and
+$P(s{=}1\mid w)=\tfrac{0.076+0.304}{0.50}=0.76$ — both rise above their priors.
+\kw{Also observe $s{=}1$}: $P(r{=}1\mid w,s{=}1)=\tfrac{0.076}{0.076+0.304}=0.20$ — rain drops back
+to its prior, ``explained away'' by the confirmed sprinkler.
+\end{exbox}
+
+d-separation is the calculus that lets you read \emph{any} conditional independence directly off the
+graph by walking every path and applying one of three rules at each middle node.
+
+\begin{defbox}[d-separation]
+$a\perp b\mid z$ iff \kw{every} path between them is blocked.
+\kw{Chain} $a\to z\to b$ — blocked iff $z$ observed.
+\kw{Fork} $a\leftarrow z\to b$ — blocked iff $z$ observed.
+\kw{Collider} $a\to z\leftarrow b$ — open iff $z$ \emph{or any descendant} observed
+(\kw{reversed} from chain/fork).
+\end{defbox}
+
+For a chain, information about $a$ flows through $z$ to $b$; pinning $z$ down (observing it) stops
+that flow. For a fork, $z$ is a common cause, so if you do not know $z$ then $a$ tells you about $z$
+which tells you about $b$ — observing $z$ severs the link. The collider is the odd one out:
+observing the middle node \emph{opens} the path (explaining-away). The standard memory aid is to
+think of information as a ball bouncing — it bounces only off arrow-heads, so the V's two arrowheads
+at $z$ only conduct when $z$ is observed. The "or any descendant" clause matters: if a collider's
+child is observed, partial information about $z$ leaks through it and the path is still open. Two
+RVs are d-separated iff \emph{every} path between them is blocked — if any single path is open they
+are dependent.
+
+\begin{notebox}[why the rules hold — idea only (proofs non-examinable)]
+\kw{Chain}: $P(a,z,b)=P(a)P(z|a)P(b|z)$; divide by $P(z)$, rewrite $P(a)P(z|a)=P(z)P(a|z)$, $P(z)$
+cancels $\Rightarrow P(a,b|z)=P(a|z)P(b|z)$. \kw{Collider} $z$ unobserved: $\sum_z P(z|a,b)=1$ so
+$P(a,b)=P(a)P(b)$; $z$ observed: the term $P(z|a,b)$ binds $a$ and $b$ and cannot be split into a
+factor in $a$ alone times a factor in $b$ alone — so they are dependent. The takeaway: marginal
+independence and conditional independence are genuinely different regimes, and the graph encodes
+both.
+\end{notebox}
+
+% =====================================================================
+\section{Week 23 — Message Passing}
+
+Week 22 gave us graphical models as compact representations of joint distributions; Week 23 supplies
+the algorithmic engine that makes them usable. Once you have a model and some evidence, the question
+you actually want answered is "what is the probability of this one RV?" — and answering it naively
+means summing the joint over every assignment of every other variable, which is exponential.
+Message passing is the dynamic-programming trick that brings this down to polynomial time, exactly
+on chains and trees.
+
+\begin{setupbox}[the inference problem]
+Given a graphical model + evidence, compute the marginal / \kw{belief} of any RV. Naive enumeration
+is \kw{$O(n^N)$} ($n$ states, $N$ RVs) — exponential. \kw{Message passing} (sum--product) does it in
+\kw{$O(Nn^2)$} for chains and trees.
+\end{setupbox}
+
+\subsection{Markov chains}
+
+A Markov chain is the simplest graphical model with temporal structure: a 1D chain of RVs in which
+each new state depends only on the previous one (the Markov property — "the state has no memory of
+the past"). It is cleanest to understand by contrast with the finite state machine it generalises.
+
+\begin{defbox}[FSM vs Markov chain]
+\kw{Finite state machine} — deterministic: an \kw{external input} (an observed outside event) chooses
+the next state with certainty; no probabilities. \kw{Markov chain} — probabilistic: advances
+autonomously, the next state drawn from the \kw{transition matrix} $T$ ($T_{ab}=P(s_a\to s_b)$, rows
+are categorical distributions).
+\end{defbox}
+
+\begin{notebox}[an FSM ``runs on'' a Markov chain]
+Replace the explicit external inputs with \kw{how often they occur} — the input frequencies become
+the transition probabilities. The FSM topology (which transitions are allowed) is the skeleton; $T$
+is the engine that now advances the system on its own. A Markov chain = an autonomous, input-free FSM.
+\end{notebox}
+
+Three operations on a Markov chain matter for the exam — learning the matrix, sampling from it, and
+extending its memory.
+
+\begin{itemize}
+  \item \kw{Learning $T$}: each row of $T$ is a categorical distribution, so you initialise every
+  cell to 1 (a uniform Dirichlet prior, equivalently $+1$ Laplace smoothing), count every observed
+  transition $s_a\to s_b$, and normalise each row to sum to 1. The result is the MAP estimate;
+  Dirichlet is the conjugate prior for the categorical, mirroring the Beta--Bernoulli conjugacy of
+  Week 22.
+  \item \kw{Sampling}: draw a start state from $P_{\text{start}}$ (fitted from training first-states),
+  draw a length $L\sim\text{Poisson}(\bar L)$ from the mean training length, then step
+  $x_i\sim T_{x_{i-1},\cdot}$. This is used for generative modelling and as a sanity check — bad
+  samples reveal a bad model.
+  \item \kw{$n$-gram}: a 1-character-memory chain produces phoneme-like nonsense ("ackilin,
+  ckleryhtz") because each adjacent letter-pair looks plausible while the word as a whole drifts.
+  Crucially the fix is a longer \emph{generation-time} memory window — make the state the last $n$
+  characters — \kw{not} more training data, since at generation time the model has already forgotten
+  everything but the last character. The cost is $26^n$ states, so each step up demands
+  exponentially more data to fit reliably (the curse of dimensionality again).
+\end{itemize}
+
+\subsection{Inference and the message rule}
+
+\kw{Marginal} $P(x_i)=\sum_{\text{others}}P(x_1,\dots,x_N)$; \kw{belief} = the same with evidence
+applied. \kw{Notation} $b_j(x_j)$: subscript $j$ = \emph{which node}, argument $x_j$ = \emph{which
+state} — it is a \emph{vector}, the global updated distribution for node $j$ (not ``predict the next
+state'', which would be $P(x_j\mid x_{j-1})$).
+
+Naive marginalisation is $O(n^N)$ — a nested sum over every assignment of the other RVs (for $n=26$,
+$N=10$ that is $\approx 1.4\times10^{14}$ operations, hopeless). The \kw{fix} rests on one
+observation: most terms in the joint do not depend on most summation variables, so push each $\sum$
+inside the products that do not depend on its variable. On a chain
+$b_3=\sum_{x_1,x_2,x_4,x_5}\prod P$, the sum over $x_1$ touches only $P(x_1)P(x_2|x_1)$, so
+$\sum_{x_1}$ moves inward and collapses to a function of $x_2$ alone — once you have summed over
+every value of a variable, the result simply no longer depends on it. Continue down the chain and
+every sum becomes a single-variable sum with a two-term summand. This is \kw{dynamic programming}:
+cache each partial sum (a \kw{message}) and reuse it. Each is an $O(n^2)$ sum, $O(N)$ of them
+$\Rightarrow O(Nn^2)$ total — ten orders of magnitude cheaper for the example above.
+
+\begin{defbox}[sum--product message passing]
+A \kw{message} $m_{i\to j}(x_j)$ is a vector, one entry per state of $j$. Chain/tree rule:
+\[
+m_{i\to j}(x_j)=\sum_{x_i}U(x_i)\,F(x_i,x_j)\!\!\prod_{k\in N_i\setminus j}\!\! m_{k\to i}(x_i).
+\]
+\kw{Belief}: $b_j(x_j)=U(x_j)\prod_{i\in N_j}m_{i\to j}(x_j)$ — local unary $\times$ \emph{all}
+incoming messages.
+\end{defbox}
+
+\begin{notebox}[reading the message rule — right to left]
+$\prod m_{k\to i}$ = the \kw{inbox} (all messages into $i$ \emph{except} from $j$ — excluding $j$
+stops an echo chamber); $U(x_i)$ = \kw{local context} ($i$'s own unary factor); $F(x_i,x_j)$ = the
+\kw{bridge} translating $i$'s belief into $j$'s states; $\sum_{x_i}$ = \kw{sum out} $x_i$, leaving a
+clean vector in $x_j$. Slogan: \kw{multiply incoming, sum out the rest}. Edges are undirected (a
+forward + a backward pass cover both directions) but a single message never feeds back to its sender.
+\end{notebox}
+
+\begin{exbox}[message passing on a 5-node chain — computing $b_3$]
+Chain $x_1\!-\!x_2\!-\!x_3\!-\!x_4\!-\!x_5$, query the middle node.
+\kw{Forward}: $m_{1\to2}(x_2)=\sum_{x_1}U(x_1)F(x_1,x_2)$, then
+$m_{2\to3}(x_3)=\sum_{x_2}U(x_2)F(x_2,x_3)\,m_{1\to2}(x_2)$.
+\kw{Backward}: $m_{5\to4}(x_4)=\sum_{x_5}U(x_5)F(x_4,x_5)$, then
+$m_{4\to3}(x_3)=\sum_{x_4}U(x_4)F(x_3,x_4)\,m_{5\to4}(x_4)$.
+\kw{Belief}: $b_3(x_3)=U(x_3)\,m_{2\to3}(x_3)\,m_{4\to3}(x_3)$ — the node's own term times
+left-context times right-context. One forward + one backward pass ($2(N{-}1)$ messages, each
+$O(n^2)$) yields \emph{every} node's belief — $O(Nn^2)$ total, against $O(n^N)$ for naive
+enumeration.
+\end{exbox}
+
+The reuse is the key economy. Once every message on the chain has been computed, the belief at
+\emph{every} node falls out as a product of incoming messages — you do not redo the work per node.
+
+\begin{itemize}
+  \item \kw{Two messages per edge} (one each direction, because the two directions carry different
+  information — left-side context vs right-side context). One forward pass plus one backward pass
+  computes all $2(N{-}1)$ messages, after which every node's belief comes "for free" — $O(Nn^2)$
+  total, versus $O(N\cdot n^N)$ for naive marginalisation at every node.
+  \item \kw{Factor graph} (two message types, because circles and squares alternate):
+  variable$\to$factor $m_{v\to F}=\prod_{G\ne F}m_{G\to v}$ (a variable forwards what every
+  \emph{other} factor told it); factor$\to$variable
+  $m_{F\to v}=\sum_{x\setminus v}F(x)\prod_{u\ne v}m_{u\to F}$ (a factor combines its own function
+  with incoming variable messages, then marginalises out everything but the destination). The two
+  rules are still "multiply then sum" — the algorithm's name, sum--product, comes from exactly this
+  pair of operations.
+\end{itemize}
+
+\begin{notebox}[HMM — the voice-recognition example]
+Hidden phonemes $x_i$, observed audio frames $y_i$. Two factors: \kw{unary} $U_i(x_i)\propto P(y_i|x_i)$
+— the per-frame acoustic guess (instantaneous, no context); \kw{pairwise} $P_{i,i+1}$ — the phoneme
+transition statistics (temporal context). Belief $b_j=U_j\times$ forward message $\times$ backward
+message = local audio fit fused with left- and right-context. This model is a \kw{Hidden Markov Model}.
+\end{notebox}
+
+\begin{trapbox}[message passing is exact only on trees / chains]
+The whole method relies on each message summarising "everything I know from my side." On a tree
+every edge cleanly partitions the graph into two sides, so a message can summarise one side
+perfectly. A loop breaks that partition — information flowing round the loop returns to its origin
+and double-counts. Loopy graphs need approximate variants (loopy belief propagation — iterate and
+hope for convergence; junction tree — cluster RVs to break loops, exact but exponential in cluster
+size; sampling). Exact and $O(Nn^2)$ only for tree-structured factor graphs.
+\end{trapbox}
+
+\begin{center}\large\bfseries\color{defBd} PART VIII — Support Vector Machines (Weeks 25–26)\end{center}
+
+% =====================================================================
+\section{Week 25 — Linear Support Vector Machines}
+
+For linearly separable data there are infinitely many hyperplanes that classify the training set
+perfectly — and squared error or accuracy cannot tell them apart, just as in the Week 21 four-point
+regression. Some of those separators sit right against one class and would misclassify the next
+point that arrives; others keep a comfortable gap. The SVM operationalises "comfortable gap" as a
+precise criterion: pick the separator whose distance to the nearest training point is largest. That
+single idea — maximise the margin — turns classification into a clean convex optimisation problem.
+
+\begin{setupbox}[hard-margin SVM]
+Binary classification, labels $y_i\in\{-1,+1\}$. A \kw{separating hyperplane}
+$H=\{x:w^\top x+b=0\}$ satisfies $y_i(w^\top x_i+b)>0$ for all $i$. Infinitely many exist — the SVM
+picks the \kw{maximum-margin} one (furthest from the closest point of either class).
+\end{setupbox}
+
+The product $y_i(w^\top x_i+b)$ is positive exactly when the prediction sign matches the label: on
+the $+1$ side the score is positive and $y_i=+1$, on the $-1$ side the score is negative and
+$y_i=-1$, and a negative times a negative is positive. So "$>0$ for all $i$" is a compact way to
+say "every point correctly classified."
+
+\begin{pitfallbox}[SVM labels are $\{-1,+1\}$, not $\{0,1\}$]
+The constraint $y_i(w^\top x_i+b)\ge1$ relies on $y_i$ to flip the sign. With the logistic-regression
+convention $y_i=0$, the left side collapses to $0$ and $0\ge1$ is impossible — the constraint is
+destroyed. Always convert labels first.
+\end{pitfallbox}
+
+\subsection{Canonical rescaling and the margin}
+
+The hyperplane $w^\top x+b=0$ is \kw{scale-invariant} — $(cw,cb)$ for $c>0$ is the same boundary, so
+the raw score $y_i(w^\top x_i+b)$ can be inflated freely. \kw{Canonical rescaling}: use that freedom
+to divide $(w,b)$ by the closest point's score, so $y_i(w^\top x_i+b)\ge1$ for all $i$ with equality
+on the closest points. The ``$1$'' is an artificial calibration of the scale, not a law of nature.
+
+\begin{notebox}[$w^\top x_i+b$ can never be 0 for a training point]
+Since $|y_i|=1$, the constraint $y_i(w^\top x_i+b)\ge1$ is equivalent to $|w^\top x_i+b|\ge1$ — the
+score has magnitude $\ge1$, so no training point can sit on $H$. Pure algebra; the margin-band
+geometry is its consequence.
+\end{notebox}
+
+With the scale fixed, the margin becomes a concrete distance you can derive (both proofs are past
+paper Q6(a)/(b) and worth knowing cold).
+
+\begin{itemize}
+  \item \kw{$w\perp H$}: for any two points $x_1,x_2\in H$, both satisfy $w^\top x+b=0$; subtracting
+  gives $w^\top(x_1-x_2)=0$. The vector $x_1-x_2$ lies \emph{within} the hyperplane, and its dot
+  product with $w$ is zero — so $w$ is perpendicular to every direction in $H$, i.e.\ $w$ is the
+  normal vector. This is why the shortest path between the two margin hyperplanes runs along $w$.
+  \item \kw{Margin} $m=2/\|w\|$ — the distance between $H_+:w^\top x+b=1$ and $H_-:w^\top x+b=-1$.
+  \emph{Derivation}: take $z_1\in H_+$, $z_2\in H_-$; since the shortest path is along the normal,
+  write $z_1-z_2=\lambda w$. Substituting $z_1=z_2+\lambda w$ into $w^\top z_1+b=1$ and using
+  $w^\top z_2+b=-1$ gives $-1+\lambda\|w\|^2=1\Rightarrow\lambda=2/\|w\|^2$, so
+  $m=\|z_1-z_2\|=\lambda\|w\|=2/\|w\|$. Therefore maximising the margin $m$ is exactly the same as
+  minimising $\|w\|$, and equivalently minimising $\tfrac12\|w\|^2$ — the half and the square are
+  conventions that make the gradient clean.
+  \item \kw{Functional margin} $y_i(w^\top x_i+b)$ = the raw signed score, positive iff correctly
+  classified but \emph{scale-dependent} (inflating $(w,b)$ inflates it); \kw{geometric margin}
+  $1/\|w\|$ = the true perpendicular distance from a margin hyperplane to $H$, \emph{scale-independent}.
+  The optimisation cares about the geometric one; the functional one is just a calibration artefact.
+\end{itemize}
+
+\subsection{Optimisation, Lagrangian, KKT}
+
+\begin{defbox}[hard-margin SVM problem]
+\[
+\min_{w,b}\;\tfrac12 w^\top w \quad\text{s.t.}\quad y_i(w^\top x_i+b)\ge1\ \ \forall i.
+\]
+Convex \kw{quadratic program} (quadratic objective + linear constraints) $\Rightarrow$ unique optimum.
+\end{defbox}
+
+\begin{notebox}[a linear SVM is the last layer of a deep network]
+A full deep net is non-convex (stacked non-linear layers) $\Rightarrow$ needs SGD/Adam and
+learning-rate tuning. Strip the hidden layers, keep only the final linear classifier, and you get the
+SVM — a convex QP where every local minimum is global, so a QP solver suffices.
+\end{notebox}
+
+To solve a constrained problem like this you roll the constraints into the objective with a
+\kw{Lagrangian}, one multiplier $\mu_i$ per constraint:
+$L(w,b,\mu)=\tfrac12 w^\top w+\sum_i\mu_i(1-y_i(w^\top x_i+b))$, with $\mu_i\ge0$. (Here the
+constraint is written in the standard $g_i\le0$ form $g_i=1-y_i(w^\top x_i+b)$.)
+
+\begin{notebox}[why $\mu_i\ge0$ — three readings]
+\kw{Penalty}: $\mu_i g_i$ must \emph{raise} $L$ when a constraint is violated ($g_i>0$) — a negative
+$\mu_i$ would reward cheating. \kw{Normal force}: the constraint ``wall'' can only push, not pull.
+\kw{Shadow price}: $\mu_i$ = how much the optimum worsens if the constraint is tightened — tightening
+never helps, so $\mu_i\ge0$; an inactive constraint has price $0$.
+\end{notebox}
+
+\begin{defbox}[KKT conditions]
+$\theta^\ast$ is optimal iff $\exists\,\mu^\ast\ge0$ with: \kw{stationarity} $\nabla_\theta L=0$;
+\kw{primal feasibility} $g_i(\theta^\ast)\le0$; \kw{dual feasibility} $\mu_i^\ast\ge0$;
+\kw{complementary slackness} $\mu_i^\ast\,g_i(\theta^\ast)=0$ (per constraint).
+\end{defbox}
+
+The four conditions are each necessary, and because the SVM problem is convex they are jointly
+sufficient — a $(\theta^\ast,\mu^\ast)$ satisfying all four is genuinely optimal. Complementary
+slackness is the load-bearing one: for each $i$, either the multiplier is zero or the constraint is
+tight, never both strict.
+
+Applying KKT to the SVM, \kw{stationarity in $w$} gives $w^\ast=\sum_i\mu_i^\ast y_i x_i$ — the
+optimal hyperplane is a signed linear combination of the input points. \kw{Stationarity in $b$}: of
+the Lagrangian, only the term $-b\sum_i\mu_i y_i$ contains $b$, so
+$\partial L/\partial b=-\sum_i\mu_i y_i=0\Rightarrow\sum_i\mu_i^\ast y_i=0$ — the positive- and
+negative-class multipliers must balance.
+
+\subsection{Support vectors and sparsity}
+
+\begin{trapbox}[why the SVM solution is sparse — the full exam answer]
+Two KKT lines combine. \kw{Stationarity}: $w^\ast=\sum_i\mu_i^\ast y_i x_i$. \kw{Complementary
+slackness}: any point strictly inside its half-plane has $g_i<0$, which forces $\mu_i^\ast=0$. Those
+points \kw{drop out of the sum} — $w^\ast$ is built only from the boundary points
+($y_i(w^{\ast\top}x_i+b^\ast)=1$), the \kw{support vectors}. Sparsity is not a bonus property; it is
+the direct algebraic consequence of complementary slackness zeroing $\mu_i$ for every non-margin point.
+\end{trapbox}
+
+\begin{itemize}
+  \item Only support vectors define the hyperplane: $w^\ast=\sum_{i\in\mathcal S}\mu_i^\ast y_i x_i$
+  is a sum over the margin points alone, so removing any non-support point leaves the optimum
+  unchanged. The bias is then recovered from any single support vector via
+  $b^\ast=y_{i_0}-w^{\ast\top}x_{i_0}$, since that point sits exactly on its margin hyperplane.
+  (In practice the equality $y_i(w^{\ast\top}x_i+b^\ast)=1$ is never met exactly in floating point,
+  so support vectors are identified within a small tolerance.)
+  \item \kw{Three payoffs of sparsity}: \kw{robustness} — the boundary is fixed by the hardest
+  examples right at the margin, so adding or moving easy interior points cannot perturb it;
+  \kw{test-time memory} — only the support vectors need storing, the rest of the training set can be
+  discarded; and it is what makes the kernel trick (Wk26) efficient, since predictions reduce to a
+  short sum over support vectors.
+  \item \kw{Multi-class}: the binary SVM extends via one-vs-rest — train $K$ binary SVMs, the
+  $k$-th treating class $k$ as positive and all others as negative, then predict the class whose
+  score $w_k^{\ast\top}x+b_k^\ast$ is largest.
+\end{itemize}
+
+% =====================================================================
+\section{Week 26 — Non-linear SVM}
+
+The Week 25 hard-margin SVM assumed the data was linearly separable. Real data rarely is, in two
+distinct ways: it may need a linear boundary but with a few points on the wrong side, or it may need
+a genuinely curved boundary. Week 26 lifts both restrictions — slack variables for the first,
+feature maps and kernels for the second — and in doing so rebuilds the SVM as the \emph{dual}
+problem, which is what makes the kernel trick possible.
+
+\begin{setupbox}[two extensions of the hard-margin SVM]
+\kw{Soft-margin} — handle non-separable data with slack variables. \kw{Feature map / kernel} —
+non-linear decision boundaries.
+\end{setupbox}
+
+\subsection{Soft-margin SVM and hinge loss}
+
+If no hyperplane can satisfy $y_i(w^\top x_i+b)\ge1$ for every point, the hard-margin problem is
+infeasible. The fix is to give each point a non-negative \kw{slack} $\xi_i$ that lets it violate the
+constraint — but slack is not free, or it could be made arbitrarily large and the constraint would
+become vacuous, so it is paid for in the objective.
+
+\begin{defbox}[soft-margin SVM]
+\[
+\min_{w,b,\xi}\;\tfrac12 w^\top w + C\sum_i\xi_i \quad\text{s.t.}\quad
+y_i(w^\top x_i+b)\ge1-\xi_i,\ \ \xi_i\ge0.
+\]
+\kw{Slack} $\xi_i\ge0$ allows constraint violation; $C$ = the error/margin trade-off hyperparameter.
+\end{defbox}
+
+Reading the slack: $\xi_i=0$ is hard-margin behaviour (correctly classified, outside the margin);
+$0<\xi_i\le1$ means the point is correct but has crept inside the margin band; $\xi_i>1$ means it is
+outright misclassified.
+
+\begin{notebox}[$C$ vs $\lambda$ — a structural flip]
+A standard regularised model is $\text{Loss}+\lambda\cdot\text{Reg}$ — the penalty is on the
+\emph{regularisation} term. The soft-margin SVM is
+$\underbrace{\tfrac12 w^\top w}_{\text{reg}}+C\underbrace{\sum\xi_i}_{\text{loss}}$ — the penalty $C$
+is on the \emph{loss} term. Hence they are inverses: large $C$ punishes errors hard $\Rightarrow$
+small margin, near-hard-margin (\emph{less} regularisation, small $\lambda$); small $C$ $\Rightarrow$
+wide margin, more slack tolerated (more regularisation).
+\end{notebox}
+
+The slack variables can be eliminated entirely. For fixed $(w,b)$ the constraint forces
+$\xi_i\ge1-y_i(w^\top x_i+b)$ when that right-hand side is positive, and the objective is increasing
+in $\xi_i$, so the optimal choice is the smallest feasible value
+$\xi_i=\max(0,1-y_i(w^\top x_i+b))$. Substituting it back gives the unconstrained form
+$\min_{w,b}\tfrac12 w^\top w + C\sum_i\max(0,1-y_i(w^\top x_i+b))$. The \kw{hinge loss}
+$L_{\text{hinge}}(y\hat y)=\max(0,1-y\hat y)$ is the \kw{per-point loss term only} — \emph{not} the
+whole objective (which is regularisation $+\,C\times$ hinge). It is zero for $y\hat y\ge1$ (the
+model is "done" with a confidently correct point) and rises linearly for $y\hat y<1$; note it
+penalises points that are correctly classified but not confident enough — anything inside the
+margin still incurs loss. The name is geometric: flat at zero, then bending linearly, like a hinge.
+
+\begin{trapbox}[hinge vs 0--1 loss]
+\kw{0--1 loss} ($1$ if $y\hat y<0$, else $0$) is the true classification metric, but it is
+\kw{non-convex and non-differentiable} — a step function — so optimising it directly is NP-hard.
+\kw{Hinge} is a \kw{convex upper bound} on 0--1: it lies above the step everywhere and the two
+coincide at $y\hat y=0$ and for $y\hat y\ge1$. Minimising hinge therefore minimises an upper bound
+on the misclassification rate, and being convex it is solvable by standard convex optimisation, with
+a decision boundary close to the (inaccessible) 0--1 optimum. Other convex surrogates exist
+(logistic, squared hinge); hinge is the canonical SVM choice.
+\end{trapbox}
+
+\subsection{Soft-margin KKT and feature maps}
+
+The soft-margin Lagrangian carries a second multiplier $\lambda_i$ for the $\xi_i\ge0$ constraint.
+Stationarity in $\xi_i$ gives $C-\mu_i-\lambda_i=0$, i.e.\ $\lambda_i=C-\mu_i$; combining with
+$\lambda_i\ge0$ and $\mu_i\ge0$ yields the \kw{box constraint} $0\le\mu_i\le C$ — the one structural
+change from hard-margin (which had only $\mu_i\ge0$). The upper bound caps how much any single
+training point can influence the optimum. Reading off the three regimes per point:
+\begin{itemize}
+  \item \kw{$\mu_i=0$}: outside the margin, well-classified — \emph{not} a support vector, ignored;
+  most points are here.
+  \item \kw{$0<\mu_i<C$, $\xi_i=0$}: exactly on the margin — a standard support vector, and these
+  are the points used to recover $b^\ast$.
+  \item \kw{$\mu_i=C$, $\xi_i>0$}: inside the margin or misclassified — a "hard" support vector,
+  whose slack absorbs the violation.
+\end{itemize}
+In every case the support vectors are the challenging examples; comfortable interior points
+contribute nothing.
+
+For curved boundaries the move is a \kw{feature map} $\phi:\mathbb R^d\to\mathbb R^D$ ($D\gg d$):
+lift the inputs into a higher-dimensional space and run a \emph{linear} SVM there. A linear boundary
+in feature space corresponds to a non-linear surface in input space — for instance a $\phi$ carrying
+an $x_1x_2$ term separates the XOR pattern, since $x_1x_2$ is positive in two opposite quadrants and
+negative in the other two, and the resulting input-space boundary is a hyperbola. The SVM algorithm
+is unchanged; only the representation is. This hand-crafting of features is exactly the job that
+deep learning later automates — which is why deep learning is also called representation learning.
+
+\subsection{The dual and the kernel trick}
+
+The \kw{dual} is obtained by minimising the Lagrangian over the primal variables and then maximising
+what remains over the multipliers. The primal has $d+1+n$ variables; the dual has only $n$, and —
+more importantly — it expresses everything through inner products. Tracing the collapse: distribute
+$\mu_i$ through the Lagrangian, then apply the two stationarity results. The bias term
+$-b\sum_i\mu_i y_i$ vanishes because $\sum_i\mu_i y_i=0$. The cross term
+$-w^\top(\sum_i\mu_i y_i\phi(x_i))$ becomes $-w^\top w$ because the bracket \emph{is} $w$. With
+$\tfrac12 w^\top w-w^\top w=-\tfrac12 w^\top w$, and expanding the surviving $w^\top w$ into a double
+sum:
+\[
+\max_{\mu}\;\sum_i\mu_i - \tfrac12\sum_{i,j}\mu_i\mu_j y_i y_j\,\phi(x_i)^\top\phi(x_j),
+\qquad \sum_i\mu_i y_i=0,\ \ 0\le\mu_i\le C.
+\]
+Every primal variable is gone. The dual is a maximisation because each $g(\mu)$ is a valid
+\emph{lower bound} on the primal optimum, and maximising chases the tightest (highest) such bound —
+like guessing a number with only "higher/lower" feedback. \kw{Strong duality} holds for the SVM
+(it is convex with a feasible interior, Slater's condition), so primal optimum $=$ dual optimum and
+solvers may use whichever is convenient — usually the dual, both for the smaller variable count and
+because it accommodates kernels.
+
+\begin{notebox}[the kernel trick]
+The dual — and prediction $w^{\ast\top}\phi(x)=\sum_{i\in S}\mu_i^\ast y_i\,\phi(x_i)^\top\phi(x)$ —
+uses $\phi$ \kw{only as inner products} $\phi(x_i)^\top\phi(x_j)$, never $\phi$ on its own. So
+replace each inner product by a \kw{kernel} $K(x_i,x_j)=\phi(x_i)^\top\phi(x_j)$ computed directly
+from the raw inputs — $\phi$ is never formed. The RBF kernel $\exp(-\|x-z\|^2/2\tau^2)$ has an
+\emph{infinite}-dimensional $\phi$ yet costs $O(d)$ per evaluation.
+\end{notebox}
+
+Prediction is kernelised too: substituting $w^\ast=\sum_{i\in S}\mu_i^\ast y_i\phi(x_i)$ makes the
+test point interact with the support vectors only through inner products, and $b^\ast$ likewise
+reduces to kernel evaluations — so the entire model, training and test, runs without ever forming
+$\phi$.
+
+\kw{The kernel trick — three advantages}: \kw{statistical} — non-linear boundaries lift accuracy on
+data with non-linear structure; \kw{computational} — kernels avoid ever forming the (possibly
+infinite-dimensional) feature space, an $O(d)$ kernel evaluation standing in for an inner product in
+a space too large to construct; \kw{sparsity preserved} — the optimum still depends only on the
+support vectors, so the model stays sparse in training points. Without the dual restructuring SVMs
+would remain linear-only; the dual is what \emph{enables} the kernel trick.
+
+\begin{center}\large\bfseries\color{defBd} PART IX — Kernel Methods (Week 29)\end{center}
+
+% =====================================================================
+\section{Week 29 — Kernel Methods}
+
+\begin{setupbox}[the kernel idea]
+Week 26 showed that the SVM dual — and its predictions — depend on the feature map $\phi$ \emph{only}
+through inner products $\phi(x_i)^\top\phi(x_j)$. A \kw{kernel} is a function that returns exactly
+that inner product, computed straight from the raw inputs, so the high-dimensional $\phi$ never has
+to be built. Week 29 makes this rigorous: what \emph{is} a kernel, and how do you prove a given
+function is one.
+\end{setupbox}
+
+\subsection{Why kernels exist — the cost they remove}
+
+This is the ``why'' of the whole topic. A non-linear feature map deliberately \emph{inflates} the
+dimensionality — taking, say, $10^3$ raw features up to $10^5$ or more — so that a problem which was
+not linearly separable becomes separable by a hyperplane in the enlarged space. The catch: the SVM
+dual sums $\phi(x_i)^\top\phi(x_j)$ over \emph{every pair} of training points, so the cost is
+\kw{quadratic in the number of points $n$} and \kw{linear in the (exploded) feature dimension}.
+Explicitly forming $\phi$ is therefore the bottleneck. \kw{A kernel removes exactly this cost}: it
+computes the same inner product directly, without ever constructing $\phi$. Historically $n$ was
+small (pre-big-data, pre-GPU), so the high feature dimension was the binding constraint — precisely
+what kernels relieve.
+
+\subsection{Formal definition}
+
+\begin{defbox}[kernel]
+A function $k:\mathcal X\times\mathcal X\to\mathbb R$ is a \kw{kernel} iff there exists a feature
+space $\mathcal H$ (a \emph{Hilbert space} — a vector space, possibly infinite-dimensional, with a
+well-defined inner product) and a feature map $\phi:\mathcal X\to\mathcal H$ such that
+\[
+k(x,x')=\langle\phi(x),\phi(x')\rangle_{\mathcal H}\qquad\text{for all }x,x'.
+\]
+\end{defbox}
+
+\kw{Why this is powerful}: $\mathcal X$ \emph{need not be a vector space}. It can be a set of
+documents, graphs, strings, or time series — objects with no natural geometry and no notion of
+addition or dot product. The kernel \emph{imposes} an inner-product (similarity) structure on them,
+which is what lets an SVM be run on non-vector data at all. The Hilbert-space requirement on
+$\mathcal H$ is just "a vector space, possibly infinite-dimensional, where inner products make
+sense"; when $\mathcal H$ is infinite-dimensional the inner product is an infinite sum, and the
+Hilbert condition is precisely what guarantees that sum converges. The feature map is also \kw{not
+unique}: e.g.\ the linear kernel admits both $\phi(x)=x$ in $\mathbb R$ and
+$\phi(x)=(x,x)/\sqrt2$ in $\mathbb R^2$ — so "provide a feature map" always has several valid
+answers, and two SVMs with the same kernel but different $\phi$ are computationally identical.
+
+\subsection{Construction rules — building kernels from kernels}
+
+Constructing a feature map by hand is hard for anything beyond the simplest kernels, so you rarely
+do it. Instead you treat known kernels as building blocks and combine them with a small calculus of
+rules — each rule is proved once by exhibiting the new feature map, after which it can be applied
+freely:
+\begin{itemize}
+  \item \kw{Positive scalar}: $\alpha k$ is a kernel for $\alpha>0$, with new map
+  $\sqrt\alpha\,\phi$. A \emph{negative} $\alpha$ fails because $\sqrt\alpha$ is not real and
+  $\alpha\|\phi(x)\|^2<0$ would break the positive-definiteness any inner product must satisfy.
+  \item \kw{Conic sum}: $\sum_j\alpha_j k_j$ is a kernel for $\alpha_j>0$ — concatenate (direct-sum)
+  the feature maps, so the new map stacks the individual feature vectors.
+  \item \kw{Product}: $k_1\cdot k_2$ is a kernel (stated without proof — it needs tensor-product
+  Hilbert spaces — but usable as given).
+  \item \kw{Mapping wrap}: $f(x)\,k(x,x')\,f(x')$ is a kernel for \emph{any} function $f$, with new
+  map $f(x)\phi(x)$ in the same Hilbert space. This is the rule that handles the Gaussian kernel.
+  \item \kw{Difference} $k_1-k_2$ is \emph{not} generally a kernel — and the way to see why is the
+  next box.
+\end{itemize}
+
+\begin{trapbox}[the $x=x'$ trick — how to disprove a candidate kernel]
+A genuine kernel must satisfy $k(x,x)=\langle\phi(x),\phi(x)\rangle=\|\phi(x)\|^2\ge0$ (the
+positive-definiteness of any inner product). So if you can find a single $x$ with $k(x,x)<0$, no
+feature map can exist and the candidate is not a kernel. This is how $k_1-k_2$ fails, and how
+$\cos(x+x')$ is disproved.
+\end{trapbox}
+
+\subsection{Canonical kernels and their proofs}
+
+The standard kernels are all proved the same way — rewrite them as a combination of simpler kernels
+and invoke the construction rules — and each proof doubles as a description of the feature space it
+implies.
+
+\begin{itemize}
+  \item \kw{Linear} $k=\langle x,x'\rangle$ — trivially a kernel ($\phi=$ identity).
+  \item \kw{Polynomial} $k=(\langle x,x'\rangle+c)^m$, $c\ge0$. \emph{Proof}: binomial-expand into
+  $\sum_i\binom mi c^{m-i}\langle x,x'\rangle^i$ — a conic sum (positive coefficients) of products of
+  the linear kernel. Its feature space is all monomial feature interactions up to degree $m$.
+  \item \kw{Cosine} $k=\cos(x-x')=\cos x\cos x'+\sin x\sin x'$ $\Rightarrow$ explicit map
+  $\phi(x)=(\cos x,\sin x)$. \kw{Trap}: $\cos(x{+}x')$ is \emph{not} a kernel — at $x=x'=\pi/3$ it is
+  $\cos(2\pi/3)=-0.5<0$.
+  \item \kw{Exponential} $k=\exp(\langle x,x'\rangle)$. \emph{Proof}: Taylor-expand
+  $e^z=\sum z^i/i!$ — a conic sum of polynomial kernels. Feature space is infinite-dimensional.
+  \item \kw{Gaussian / RBF} $k=\exp(-\|x-x'\|^2/2\sigma^2)$. \emph{Proof}: expand
+  $\|x-x'\|^2=\|x\|^2+\|x'\|^2-2\langle x,x'\rangle$, giving
+  $k=f(x)\cdot\exp(\langle x,x'\rangle/\sigma^2)\cdot f(x')$ with $f(x)=\exp(-\|x\|^2/2\sigma^2)$ —
+  a mapping wrap of the exponential kernel. Its feature space is \kw{infinite-dimensional}: $\phi$
+  can never be formed, yet $k$ is a one-line computation. \emph{That} is the magic of kernels.
+\end{itemize}
+
+\begin{notebox}[the RBF bandwidth $\sigma$ — a tunable knob, and its limitation]
+\kw{Small $\sigma$}: each training point's influence is highly localised $\Rightarrow$ a wiggly
+decision boundary that overfits. \kw{Large $\sigma$}: broad influence $\Rightarrow$ a smooth,
+near-linear boundary that underfits. $\sigma$ is a hyperparameter, cross-validated like $C$ — and a
+poor choice undermines the model regardless of how much data you have.
+\end{notebox}
+
+\subsection{Kernel methods vs deep learning — strengths and limitations}
+
+The cleanest way to place kernel methods is against the technology that displaced them. Both produce
+non-linear classifiers, but they get there in opposite ways, and the trade-off explains why each
+dominated its era.
+
+\begin{center}
+\renewcommand{\arraystretch}{1.2}
+\begin{tabularx}{\linewidth}{l X X}
+\toprule
+& \thead{Kernel SVM} & \thead{Deep neural network} \\
+\midrule
+Feature representation & fixed by the kernel choice & learned end-to-end from data \\
+Optimisation & convex (QP) — one global optimum & non-convex — many local optima \\
+Sample efficiency & high — works on small datasets & low — needs large labelled datasets \\
+Scaling in $n$ & $O(n^2)$ or worse & $O(n)$ per pass \\
+Non-linearity from & the kernel feature map & non-linear activation functions \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\kw{Strengths of kernel methods}: convex (a unique optimum, no initialisation sensitivity);
+sample-efficient; and they handle high-dimensional \emph{and} non-linear data \emph{simultaneously}
+(past-paper MCQ — the answer is ``both''). \kw{Limitations}: the feature map is \emph{fixed} — chosen
+by the practitioner, not learned, so it cannot adapt to the specific problem; and training scales
+\kw{$O(n^2)$ or worse} in the number of points, so kernels do not reach massive datasets. Deep
+learning's central advance is to \emph{learn} the feature representation — paying for it with a
+non-convex problem and a large data requirement. Kernels dominated ML from the early 1990s to the
+mid-2010s; deep learning since.
+
+% =====================================================================
+\section*{One-line recall checklist}
+
+\begin{tldrbox}[Keyword prompts]
+\begin{itemize}[leftmargin=*]
+  \item Tree training: greedy per node; global-optimal tree NP-hard.
+  \item IG \& Gini: same weighted-child template; IG $\to$ variance reduction for regression, Gini cannot.
+  \item 0--1 loss useless inside a tree (blind to ``less wrong'') and for GD (zero gradient, NP-hard).
+  \item Quantised inputs split at bin boundaries; categorical = one-left-rest-right, $O(n)$.
+  \item Overfit = high train / low test acc.
+  \item Naive variance biased $\to$ divide by $n-1$.
+  \item MSE = Bias$^2$ + Variance + irreducible $\sigma^2$; proof non-examinable, components examinable.
+  \item Regularisation $+\lambda\Omega(w)$: shrinks weights $\to$ less variance, slight bias; L1 = sparsity.
+  \item Three-way split train/validation/test; never tune on test.
+  \item Bootstrap: size $n$, $S$ datasets, $\approx1/e$ OOB; random subspace $\sqrt n$ / $n/3$;
+  bagging variance $V/S$.
+  \item Bayes classifier uses true $P$; noise floor = Bayes error = aleatoric uncertainty.
+  \item Bayes-optimal threshold $x_0$ = curve crossover; errors are region integrals; $\hat x$ adds excess risk.
+  \item Convex surrogates: hinge, logistic; squared loss over-penalises confident-correct.
+  \item Confusion matrix rows = predicted, cols = actual; balanced accuracy = \emph{mean} of recalls;
+  accuracy misleads on imbalanced data.
+  \item Generic optimiser: direction $p=-\nabla f$, step $\alpha$, termination ($T_{\max}$ / $\|\nabla f\|$ / progress).
+  \item Stationary point $\ne$ minimum unless convex; convexity is about $L(w)$, not the data.
+  \item SGD update $w_t-2\alpha(w^\top x_{i_s}-y_{i_s})x_{i_s}$; mini-batch averages $B$ gradients.
+  \item BGD: convex + step size $\Rightarrow$ global; SGD only with decaying step.
+  \item Hessian PSD $\iff$ convex; PD $\Rightarrow$ unique min; $(X^\top X)^{-1}$ needs full column rank.
+  \item Near-collinear $\to$ $\det\to0$ $\to$ ill-conditioned $\to$ amplified rounding noise.
+  \item Anisotropic loss $\to$ GD zig-zags (still convex).
+  \item Newton: quadratic loss $\to$ one shot; higher-order $\to$ iterate (quadratic convergence).
+  \item Newton fails: singular Hessian / non-differentiable / far start; damp with $(H+\lambda I)$, $\lambda>-e_{\min}$.
+  \item GD beats Newton at scale: $O(M)$ vs $O(M^2)$ memory, $O(M^3)$ inversion.
+  \item Likelihood = P(observed data $\mid$ $w$), a function of $w$ — not P($w$ correct).
+  \item ML + i.i.d.\ Gaussian noise $\equiv$ ordinary least squares.
+  \item Posterior $\propto$ likelihood $\times$ prior; MAP maximises the posterior.
+  \item MAP + Gaussian prior $\equiv$ ridge, regularisation strength $=\sigma^2$.
+  \item $\sigma^2$ cancels in ML (no prior to balance), is the trust factor in MAP's tug-of-war.
+  \item ML/MAP = point estimates, no uncertainty; full Bayesian = predictive distribution.
+  \item Logistic regression = $\sigma(w^\top x)$, output is P($y{=}1$); sigmoid squashes $\mathbb R\to(0,1)$.
+  \item $\sigma'=\sigma(1-\sigma)$; logit = log-odds, the inverse; score $z=w^\top x$ in log-odds units.
+  \item Log-likelihood concave; gradient $X^\top(y-\sigma)$; no closed form, train iteratively.
+  \item Decision boundary $w^\top x=0$, linear; threshold $0.5$ is a choice (FP vs FN trade-off).
+  \item Separable data $\Rightarrow\|w\|\to\infty$, no finite maximiser $\Rightarrow$ regularise (= MAP Gaussian prior).
+  \item Sigmoid = binary; softmax = multi-class generalisation.
+  \item Scaling/outliers hurt linear, logistic, Bayesian regression; trees/forests are immune.
+  \item Unsupervised = no labels; cluster = similar within, dissimilar across.
+  \item K-means: init / assign / update / converge; minimises WCSS $J$; $O(KNM)$ per iteration.
+  \item K-means converges (local min): every step lowers $J$, $J\ge0$, finite assignments.
+  \item $L_2$ pairs with K-means (mean minimises it); $L_1$ $\to$ median = K-medians.
+  \item K-means weaknesses: need $K$, random init, outliers, varying size/density, high $M$; fix init with best-of-$N$.
+  \item Hierarchical = dendrogram; agglomerative bottom-up, divisive top-down; single linkage chains.
+  \item Good clustering = low intra + high inter; Silhouette $(b{-}a)/\max(a,b)$ higher better, DBI lower better.
+  \item Elbow method: WCSS-vs-$K$ bend picks $K$.
+  \item Parametric = fixed \#params; non-parametric = \#params grows with $N$ (misleading name).
+  \item Non-parametric: flexible + overfit-prone (TRUE); not fast, not small-data (FALSE).
+  \item KNN = lazy learner, vote of $k$ nearest; $k$ is a hyperparameter; KNN $\ne$ K-means.
+  \item KDE $\bar f_h(x)=\frac{1}{Nh}\sum G((x-x_i)/h)$; $h$ = bandwidth hyperparameter (Silverman / CV).
+  \item Curse of dimensionality: samples needed scale $k^M$.
+  \item Laplace = Gaussian at the mode; bad on multimodal / skewed / heavy-tailed targets.
+  \item VI minimises KL divergence to the target; not Gaussian-restricted.
+  \item Regularised loss = data fit + $\lambda R(\theta)$; $\lambda$ a validation-tuned hyperparameter.
+  \item Four reasons to regularise: overfitting, ill-posed, interpretability, easier optimisation.
+  \item Occam's razor = prefer the simplest model; regularisation is it written as an equation.
+  \item Ridge $L_2$: closed form, shrinks but never zeros (not sparse). Lasso $L_1$: no closed form, sparse.
+  \item $L_1$ sparse — diamond corners on axes + constant-$\lambda$ slope; $L_2$ — circle + fading $2w$ slope.
+  \item Increasing $\lambda$ in lasso $\to$ sparser (TRUE); $N\uparrow\Rightarrow\lambda\downarrow$.
+  \item Elastic net = $L_1{+}L_2$ blend; ridge = Gaussian prior, lasso = Laplace prior.
+  \item Graphical model: nodes = RVs, edges = conditional (in)dependence; structure is an assumption.
+  \item BN = directed $\prod P(\text{node}|\text{parents})$; factor graph = circles+squares; Markov net = undirected pairwise+unary.
+  \item BN/MN $\to$ factor graph always; reverse not (pairwise limit + loss of explicitness).
+  \item Shaded = observed; modes re-shade; latent = hidden vs hypothetical.
+  \item Naive Bayes: $P(x|y)=\prod P(x_i|y)$, generative; MLE = count; predict in log space.
+  \item Laplace smoothing = posterior \emph{mean} of a uniform Beta prior (not the mode).
+  \item Collider/explaining away: marginally independent parents $\to$ conditionally dependent given the child.
+  \item d-separation: chain/fork blocked iff middle observed; collider open iff middle/descendant observed (reversed).
+  \item Message passing = inference for graphical models; naive $O(n^N)\to O(Nn^2)$ (dynamic programming).
+  \item FSM = deterministic + external input; Markov chain = probabilistic; FSM runs on a MC by baking input frequencies into $T$.
+  \item Learn $T$: count transitions + Laplace/Dirichlet, normalise rows; $n$-gram = longer memory, $26^n$ states.
+  \item Belief $b_j(x_j)$: subscript = node, argument = state; global distribution, not next-state prediction.
+  \item Message rule: multiply incoming (except sender) $\times$ unary $\times$ bridge factor, sum out; belief = unary $\times$ all incoming.
+  \item Two messages per edge; one forward + one backward pass gives every node's belief.
+  \item HMM = hidden states + unary acoustic factor + pairwise transition factor.
+  \item Message passing exact only on trees/chains; loops $\to$ approximate.
+  \item SVM labels $\{-1,+1\}$; constraint $y(w^\top x+b)\ge1$; $\{0,1\}$ breaks it.
+  \item Hyperplane scale-invariant; canonical rescaling pins the closest point to 1; $|w^\top x+b|\ge1$.
+  \item $w\perp H$; margin $=2/\|w\|$; maximise margin $\equiv$ minimise $\tfrac12\|w\|^2$.
+  \item Functional margin scale-dependent; geometric margin $1/\|w\|$ scale-independent.
+  \item SVM = convex QP = the last linear layer of a deep net.
+  \item $\mu_i\ge0$: penalty / normal force / shadow price. KKT: stationarity, primal \& dual feasibility, complementary slackness.
+  \item $w^\ast=\sum\mu_i y_i x_i$, $\sum\mu_i y_i=0$; complementary slackness zeros non-margin $\mu_i$ $\Rightarrow$ sparse, support vectors only.
+  \item Soft-margin SVM: slack $\xi_i$, objective $\tfrac12 w^\top w+C\sum\xi_i$; $C$ on the loss term $\Rightarrow$ inverse of $\lambda$.
+  \item Hinge loss $\max(0,1-y\hat y)$ = the per-point loss term only; convex upper bound on 0--1 loss.
+  \item Soft-margin KKT: box constraint $0\le\mu_i\le C$; three regimes ($\mu{=}0$ / $0{<}\mu{<}C$ / $\mu{=}C$).
+  \item Feature map $\phi$: linear SVM in feature space = non-linear boundary in input space.
+  \item Dual uses $\phi$ only as inner products $\Rightarrow$ kernel trick: $K(x_i,x_j)=\phi(x_i)^\top\phi(x_j)$; RBF = infinite-dim $\phi$, $O(d)$ to evaluate.
+  \item Kernel = $k(x,x')=\langle\phi(x),\phi(x')\rangle$ for some Hilbert space; works because the dual needs only inner products.
+  \item $\mathcal X$ need not be a vector space (graphs, strings, documents); feature map non-unique.
+  \item Construction rules: positive scalar, conic sum, product, mapping wrap; difference is NOT a kernel.
+  \item Disprove a kernel with the $x{=}x'$ trick ($k(x,x)\ge0$ required); $\cos(x{-}x')$ yes, $\cos(x{+}x')$ no.
+  \item Kernels: linear, polynomial (binomial), exponential (Taylor), Gaussian/RBF (mapping wrap, infinite-dim $\phi$).
+  \item Kernel SVM = fixed feature map, convex, $O(n^2)$; deep net = learned features, non-convex, big data.
+\end{itemize}
+\end{tldrbox}
+
+\end{document}

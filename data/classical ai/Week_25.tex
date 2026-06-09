@@ -1,0 +1,800 @@
+\documentclass[11pt, a4paper]{article}
+
+\usepackage{fontspec}
+\setmainfont{Helvetica Neue}
+\setmonofont{Menlo}
+\usepackage{unicode-math}
+\setmathfont{STIX Two Math}
+
+\usepackage[margin=2cm, top=2cm, bottom=2.5cm]{geometry}
+\usepackage{microtype}
+\usepackage{parskip}
+\setlength{\parskip}{0.6em}
+\setlength{\parindent}{0pt}
+
+\usepackage[colorlinks=true, linkcolor=NavyBlue, urlcolor=NavyBlue, citecolor=NavyBlue]{hyperref}
+\usepackage{xcolor}
+\usepackage[dvipsnames]{xcolor}
+
+\usepackage{amsmath}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{tabularx}
+\newcommand{\thead}[1]{\textbf{#1}}
+
+% --- Graphics ---
+\usepackage{graphicx}
+\graphicspath{{figures/week25/}}
+
+\usepackage{enumitem}
+\setlist[itemize]{leftmargin=1.5em, itemsep=0.2em, topsep=0.3em}
+\setlist[enumerate]{leftmargin=1.5em, itemsep=0.2em, topsep=0.3em}
+
+\usepackage[most]{tcolorbox}
+\tcbuselibrary{breakable, skins, theorems}
+
+\definecolor{defBg}{HTML}{EAF2FB}
+\definecolor{defBd}{HTML}{1F4E79}
+\definecolor{exBg}{HTML}{F4F4F4}
+\definecolor{exBd}{HTML}{555555}
+\definecolor{tipBg}{HTML}{E8F5E9}
+\definecolor{tipBd}{HTML}{2E7D32}
+\definecolor{trapBg}{HTML}{FCE4EC}
+\definecolor{trapBd}{HTML}{AD1457}
+\definecolor{pitBg}{HTML}{FFF8E1}
+\definecolor{pitBd}{HTML}{B27600}
+\definecolor{noteBg}{HTML}{F3E5F5}
+\definecolor{noteBd}{HTML}{6A1B9A}
+\definecolor{tldrBg}{HTML}{E1F5FE}
+\definecolor{tldrBd}{HTML}{0277BD}
+
+\newtcolorbox{defbox}[1][]{enhanced, breakable, colback=defBg, colframe=defBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={Definition: #1}}
+\newtcolorbox{exbox}[1][]{enhanced, breakable, colback=exBg, colframe=exBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={Worked example: #1}}
+\newtcolorbox{exambox}[1][]{enhanced, breakable, colback=tipBg, colframe=tipBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={Exam-mode answer #1}}
+\newtcolorbox{trapbox}[1][]{enhanced, breakable, colback=trapBg, colframe=trapBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={MCQ trap #1}}
+\newtcolorbox{pitfallbox}[1][]{enhanced, breakable, colback=pitBg, colframe=pitBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={Pitfall #1}}
+\newtcolorbox{notebox}[1][]{enhanced, breakable, colback=noteBg, colframe=noteBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={Lecturer aside #1}}
+\newtcolorbox{tldrbox}[1][]{enhanced, breakable, colback=tldrBg, colframe=tldrBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={TL;DR #1}}
+
+\usepackage{titlesec}
+\titleformat{\section}[block]{\Large\bfseries\color{defBd}}{\thesection.}{0.6em}{}
+\titleformat{\subsection}[block]{\large\bfseries\color{defBd!80!black}}{\thesubsection}{0.5em}{}
+\titleformat{\subsubsection}[block]{\normalsize\bfseries}{}{0pt}{}
+\titlespacing*{\section}{0pt}{1.6em}{0.6em}
+\titlespacing*{\subsection}{0pt}{1.2em}{0.4em}
+
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small CM52078 — Week 7}
+\fancyhead[R]{\small Logical Agents — Propositional Logic}
+\fancyfoot[C]{\small\thepage}
+\renewcommand{\headrulewidth}{0.3pt}
+
+\newcommand{\examflag}{\textcolor{tipBd}{\textbf{[EXAM]}}\,}
+\newcommand{\trapflag}{\textcolor{trapBd}{\textbf{[TRAP]}}\,}
+\newcommand{\doflag}{\textcolor{defBd}{\textbf{[DO]}}\,}
+
+\title{\vspace{-1cm}{\Huge\bfseries Week 7 — Logical Agents: Propositional Logic} \\[0.4em]{\large Atomic sentences, connectives, models, entailment, model checking, resolution}}
+\author{\large CM52078 Classical Artificial Intelligence \\[0.2em]\normalsize University of Bath}
+\date{Revision notes}
+
+\begin{document}
+
+\maketitle
+\thispagestyle{empty}
+
+\vspace{1em}
+
+\begin{tldrbox}
+\begin{itemize}[leftmargin=*]
+  \item This unit's core stance is \textbf{acting rationally} (rational agents). Logic adds the \textbf{thinking rationally} dimension: how do we represent knowledge so an agent can deduce new facts before it acts?
+  \item \textbf{Wumpus world} is the running example. Search alone (BFS/DFS/A*) gets killed by pits. Logical reasoning over sensory clues (breeze, stench) identifies safe squares before the agent commits to moving.
+  \item \textbf{Propositional logic} = atomic sentences (irreducible, true/false) joined by connectives: $\neg$ (not), $\land$ (and), $\lor$ (or, \emph{inclusive}), $\rightarrow$ (implies), $\leftrightarrow$ (iff).
+  \item \textbf{Truth tables} define connective semantics. Watch two: $\lor$ is \emph{inclusive} (true when both are true); $P \rightarrow Q$ is true \emph{except} when $P$ is true and $Q$ is false (so vacuously true when $P$ is false).
+  \item A \textbf{model} is a full truth-value assignment to all atomic sentences. A \textbf{knowledge base} is a set of sentences. \textbf{Entailment}: $KB \models \alpha$ iff $\alpha$ is true in every model where every $KB$ sentence is true.
+  \item \textbf{Model checking} = brute-force enumerate models. Sound and complete, but $O(2^n)$ in the number of atoms — intractable for non-trivial knowledge bases.
+  \item \textbf{Proof systems} apply \textbf{inference rules} to derive entailed sentences directly. \emph{Sound:} only derives entailed conclusions. \emph{Complete:} every entailed conclusion can be derived.
+  \item \textbf{Resolution} is one such proof system, with a single rule (a generalisation of modus ponens). To prove $KB \models \alpha$: show $KB \cup \{\neg\alpha\}$ is inconsistent (derives the empty clause). Requires \textbf{Conjunctive Normal Form (CNF)} input.
+  \item \textbf{CNF} = conjunction of clauses; each clause = disjunction of literals; each literal = atom or its negation. Every propositional sentence has an equivalent CNF (constructed via a deterministic conversion algorithm).
+\end{itemize}
+\end{tldrbox}
+
+% =====================================================================
+\section{From acting rationally to thinking rationally}
+
+The unit started in the ``acting rationally'' quadrant of the four-way AI definitions table — rational agents, behaviour-based, easy to formalise. Search (BFS/A*), CSPs, adversarial search all fit there.
+
+This week we expand into ``thinking rationally,'' the quadrant defined by Winston (1992) as the study of \emph{computations that make it possible to perceive, reason and act}. We focus on the middle component: \textbf{reasoning} — taking the perceptual data we have and inferring new facts from it.
+
+\begin{center}
+
+\footnotesize\textit{The four classic definitions of AI, split on two axes: thinking vs.\ acting (rows) and humanly vs.\ rationally (columns). The \textbf{green} cell, ``acting rationally'' (rational agents), is the quadrant the unit has worked in so far — search, CSPs, adversarial search. The \textbf{amber} cell, ``thinking rationally,'' is where this week sits: Winston's ``computations that make it possible to perceive, reason and act.'' Note this week does not abandon rational agents; it adds the reasoning machinery an agent uses before it acts.}
+\end{center}
+
+\subsection{Why we need a logical agent}
+
+The Wumpus world makes this concrete. The agent moves on a 4$\times$4 grid; the goal is the gold; the dangers are pits and the Wumpus. Crucially:
+
+\begin{itemize}
+  \item The map is \textbf{hidden} at the start.
+  \item Sensory information: every square adjacent to a pit has a \textbf{breeze}; every square adjacent to the Wumpus has a \textbf{stench}; the gold has \textbf{glitter} in its square.
+  \item Stepping into a pit or Wumpus square loses the game.
+\end{itemize}
+
+\textbf{What goes wrong with pure search?}
+\begin{itemize}
+  \item BFS expands neighbouring squares first. Some of those have pits. The agent dies trying to explore.
+  \item No useful heuristic, since the goal location is hidden.
+\end{itemize}
+
+\begin{center}
+
+\footnotesize\textit{The Wumpus world. The agent starts in the corner $(1,1)$ and seeks the gold (which \emph{glitters} in its square). Two dangers: \textbf{pits} and the \textbf{Wumpus}, both fatal to step on. The percepts are local clues — a \emph{breeze} appears in every square orthogonally adjacent to a pit, a \emph{stench} in every square adjacent to the Wumpus. The agent never sees the map; it sees only the percepts of its current square and must \emph{reason} backwards from them to locate the hazards.}
+\end{center}
+
+A human player, however, reasons: \emph{the start square has no breeze and no stench, so its neighbours are safe}. We want the AI to do the same — encode that reasoning explicitly. That's what propositional logic gives us.
+
+\textbf{Propositional logic in 30 seconds:} build complex sentences out of \emph{atomic} (irreducible) ones using \emph{connectives} (not / and / or / implies / iff). Define truth via \emph{truth tables}. Combine logical sentences into a \emph{knowledge base}, then derive new facts that the KB \emph{entails}.
+
+% =====================================================================
+\section{Atomic sentences and connectives}
+
+\subsection{Atomic sentences}
+
+\begin{defbox}[Atomic sentence]
+A logically irreducible statement that is either \emph{true} or \emph{false} (i.e.\ a \textbf{proposition}). It cannot be broken down into simpler sentences within propositional logic.
+\end{defbox}
+
+Wumpus-world atoms (with $X$ a square index):
+
+\begin{center}
+\begin{tabular}{@{}cc@{}}
+\toprule
+\thead{Atom} & \thead{English} \\
+\midrule
+$P_X$ & ``There is a stench in square $X$.'' \\
+$Q_X$ & ``There is a breeze in square $X$.'' \\
+$R_X$ & ``There is a Wumpus in square $X$.'' \\
+$S_X$ & ``There is a pit in square $X$.'' \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\begin{center}
+
+\footnotesize\textit{The four Wumpus-world atom families, each tied to a percept icon: $P_X$ (stench in $X$), $Q_X$ (breeze in $X$), $R_X$ (Wumpus in $X$), $S_X$ (pit in $X$). Each is a \textbf{proposition} — irreducible, and either true or false. The subscript $X$ ranges over the 16 squares, so each icon stands for a whole family of 16 distinct atoms. These atoms are the raw vocabulary; everything else in propositional logic is built from them with connectives.}
+\end{center}
+
+A 4$\times$4 Wumpus map encodes $5 \times 16 = 80$ atomic propositions: five per square (stench, breeze, Wumpus, pit, gold) across the 16 squares. Each atom is either true or false in the world.
+
+\begin{notebox}[: not every English sentence is a proposition]
+``How are you doing?'' is a question, not a proposition — it has no truth value. ``Hi!'' is an exclamation, not a proposition. Most scientific or factual English statements \emph{are} propositions. Logic deals only with the latter.
+\end{notebox}
+
+\subsection{Connectives}
+
+Propositional logic has \textbf{five} connectives: one unary, four binary.
+
+\begin{center}
+\renewcommand{\arraystretch}{1.25}
+\begin{tabular}{@{}cccp{6.5cm}@{}}
+\toprule
+\thead{Symbol} & \thead{Name} & \thead{English} & \thead{Wumpus example} \\
+\midrule
+$\neg$         & negation     & not         & $\neg R_X$ — there is \emph{not} a Wumpus in $X$ \\
+$\land$        & conjunction  & and         & $P_X \land Q_X$ — stench and breeze in $X$ \\
+$\lor$         & disjunction  & or (inclusive) & $R_X \lor R_Y$ — Wumpus in $X$ or in $Y$ (or both) \\
+$\rightarrow$  & implication  & if\dots then & $S_X \rightarrow Q_Y$ — pit in $X$ implies breeze in $Y$ \\
+$\leftrightarrow$ & biconditional & if and only if & $P_X \leftrightarrow R_Y$ — stench in $X$ iff Wumpus in $Y$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\begin{center}
+
+\footnotesize\textit{The five connectives shown as Wumpus-world sentences. The one \textbf{unary} connective, $\neg$ (negation), turns ``Wumpus in $X$'' into ``\emph{not} a Wumpus in $X$.'' The four \textbf{binary} connectives each join two atoms: $\land$ (and), $\lor$ (or), $\rightarrow$ (if\dots then), $\leftrightarrow$ (if and only if). Notice $\rightarrow$ and $\leftrightarrow$ can link atoms about \emph{different} squares ($S_X \rightarrow Q_Y$, $R_X \leftrightarrow R_Y$) — this is exactly how the rules linking a hazard to its neighbouring percepts get written.}
+\end{center}
+
+\subsubsection*{Connective precedence}
+
+Standard precedence (tightest binding to loosest):
+\[
+\neg \quad > \quad \land \quad > \quad \lor \quad > \quad \rightarrow \quad > \quad \leftrightarrow.
+\]
+
+So $A \lor \neg B \land C$ parses as $A \lor (\neg B \land C)$, and $A \rightarrow B \lor C$ parses as $A \rightarrow (B \lor C)$. \textbf{Always use parentheses anyway} to avoid ambiguity in your written work.
+
+% =====================================================================
+\section{Models and truth tables}
+
+\subsection{Models}
+
+\begin{defbox}[Model]
+A complete assignment of truth values to every atomic sentence. Equivalently, ``a possible world.''
+\end{defbox}
+
+A fully-described Wumpus map \emph{is} a model — it tells you the truth value of every atom. With $n$ atoms, there are $2^n$ possible models (each atom independently true or false).
+
+\subsection{Truth tables}
+
+Truth tables define connective semantics. The canonical table:
+
+\begin{center}
+\renewcommand{\arraystretch}{1.2}
+\begin{tabular}{@{}cccccccc@{}}
+\toprule
+$P$ & $Q$ & $\neg P$ & $P \land Q$ & $P \lor Q$ & $P \rightarrow Q$ & $P \leftrightarrow Q$ \\
+\midrule
+T & T & F & T & T & T & T \\
+T & F & F & F & T & F & F \\
+F & T & T & F & T & T & F \\
+F & F & T & F & F & T & T \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Two cells deserve attention.
+
+\subsection{Disjunction is inclusive}
+
+\begin{trapbox}[: $P \lor Q$ is true when both are true]
+Propositional ``or'' is \textbf{inclusive} — true if either or \emph{both} are true. English ``or'' is sometimes exclusive (``soup or salad with your meal'' = pick one), but logic is unambiguous: $\lor$ allows both. The exclusive version is \textbf{XOR} (true only when exactly one is true). XOR is not one of the five standard connectives; you'd write it as $(P \lor Q) \land \neg (P \land Q)$, or equivalently $P \leftrightarrow \neg Q$.
+\end{trapbox}
+
+\subsection{Implication has a counterintuitive truth table}
+
+The line that catches everyone: $P \rightarrow Q$ is \textbf{true} when $P$ is false (regardless of $Q$).
+
+\begin{exbox}[Reading the implication table]
+\textit{``If it rains, the ground gets wet.''} ($P \rightarrow Q$).\\[0.3em]
+\begin{itemize}[leftmargin=*, itemsep=0pt, topsep=0pt]
+  \item $P$ true, $Q$ true: rains, ground wet. Statement holds. \textbf{True.}
+  \item $P$ true, $Q$ false: rains, ground dry. Statement violated. \textbf{False.}
+  \item $P$ false, $Q$ true: doesn't rain, ground wet (sprinkler?). Doesn't violate the implication — could be other reasons. \textbf{True (vacuously).}
+  \item $P$ false, $Q$ false: doesn't rain, ground dry. Implication isn't tested. \textbf{True (vacuously).}
+\end{itemize}
+\textit{The only definitively-false case is when $P$ is true and $Q$ is false.}
+\end{exbox}
+
+\textbf{Mental shortcut:} ``$P \rightarrow Q$ is false \emph{only} when $P$ is true and $Q$ is false.''
+
+\textbf{Useful equivalence:} $P \rightarrow Q \;\equiv\; \neg P \lor Q$. Verify it from the truth table — the columns match exactly.
+
+\subsection{Worked complex sentence}
+
+\begin{exbox}[Evaluating a complex sentence]
+$\Phi := R_X \rightarrow (P_Y \land P_Z)$ — ``If there's a Wumpus in $X$, then there are stenches in both $Y$ and $Z$.''\\[0.3em]
+\textbf{Assume} $R_X = F$, $P_Y = T$, $P_Z = F$.\\[0.3em]
+Antecedent $R_X = F$, so $\Phi$ is \textbf{vacuously true}, regardless of the consequent. (We don't even need to evaluate $P_Y \land P_Z = F$.)\\[0.3em]
+\textbf{What would make $\Phi$ false?} Only $R_X = T$ \emph{and} $P_Y \land P_Z = F$ (i.e.\ at least one of $P_Y, P_Z$ is false). That would be a counter-example to the rule.
+\end{exbox}
+
+\begin{center}
+
+\footnotesize\textit{The same complex sentence $R_X \rightarrow (P_Y \land P_Z)$ evaluated visually. The crossed-out icons read off the assumed model: \textbf{no} Wumpus in $X$ ($R_X = F$), a stench in $Y$ ($P_Y = T$), \textbf{no} stench in $Z$ ($P_Z = F$). Because the antecedent $R_X$ is false, look at the $P \rightarrow Q$ column of the truth table: an implication with a false antecedent is true on \emph{both} of its rows. So the whole sentence is true — \textbf{vacuously}, without the consequent ever having to be checked.}
+\end{center}
+
+\subsection{Tautologies, contradictions, and contingent sentences}
+
+\begin{defbox}[Three categories of sentence]
+\begin{itemize}[itemsep=0pt, topsep=0pt]
+  \item \textbf{Tautology}: true in every model. Example: $P \lor \neg P$.
+  \item \textbf{Contradiction}: false in every model. Example: $P \land \neg P$.
+  \item \textbf{Contingent}: true in some models, false in others. Example: $P$.
+\end{itemize}
+\end{defbox}
+
+These are useful concepts: $\alpha$ entails $\beta$ iff $\alpha \rightarrow \beta$ is a tautology. $KB$ is consistent iff $\bigwedge_{s \in KB} s$ is not a contradiction.
+
+\subsection{Common logical equivalences}
+
+Equivalences let you transform sentences without changing their meaning:
+
+\begin{itemize}
+  \item \textbf{Double negation}: $\neg \neg P \equiv P$.
+  \item \textbf{De Morgan's laws}: $\neg(P \land Q) \equiv \neg P \lor \neg Q$ \quad and \quad $\neg(P \lor Q) \equiv \neg P \land \neg Q$.
+  \item \textbf{Implication equivalence}: $P \rightarrow Q \equiv \neg P \lor Q$.
+  \item \textbf{Contrapositive}: $P \rightarrow Q \equiv \neg Q \rightarrow \neg P$.
+  \item \textbf{Biconditional}: $P \leftrightarrow Q \equiv (P \rightarrow Q) \land (Q \rightarrow P) \equiv (P \land Q) \lor (\neg P \land \neg Q)$.
+  \item \textbf{Distributivity}: $P \land (Q \lor R) \equiv (P \land Q) \lor (P \land R)$ \quad and dually for $\land/\lor$.
+  \item \textbf{Commutativity}: $P \land Q \equiv Q \land P$, etc.
+  \item \textbf{Associativity}: $(P \land Q) \land R \equiv P \land (Q \land R)$, etc.
+\end{itemize}
+
+\textbf{Verify any of these by truth table.} The first time you see them, work through one truth table to confirm — they're not magic, just truth-preserving rewrites.
+
+% =====================================================================
+\section{Entailment and knowledge bases}
+
+\subsection{Entailment}
+
+\begin{defbox}[Entailment]
+$\alpha \models \beta$ if in \textbf{every model} where $\alpha$ is true, $\beta$ is also true. ``$\alpha$ entails $\beta$.''\\[0.3em]
+$KB \models \alpha$ if every model satisfying every sentence in $KB$ also satisfies $\alpha$.
+\end{defbox}
+
+Entailment is what we want from logic: given everything we know ($KB$), what new sentences ($\alpha$) must be true?
+
+\begin{notebox}[: $\models$ vs $\rightarrow$]
+$\models$ is a meta-symbol about \emph{semantics} — true in every model where $KB$ is true. $\rightarrow$ is a connective — a specific syntactic structure inside sentences. These are different but related; the deduction theorem connects them: $KB \models \alpha$ iff $KB \rightarrow \alpha$ is a tautology. For exam purposes: $\models$ is the semantic truth-preservation relation; $\rightarrow$ lives inside sentences.
+\end{notebox}
+
+\subsection{Knowledge base}
+
+\begin{defbox}[Knowledge base $KB$]
+A set of sentences in propositional logic that together encode what an agent knows about the world. Implicitly, $KB$ is treated as the conjunction of its sentences.
+\end{defbox}
+
+Wumpus knowledge base example: rules about how breezes/stenches relate to pits/Wumpus, plus the agent's accumulated sensory observations as it explores.
+
+\subsection{Quick examples of entailment}
+
+\begin{exbox}[Three entailment quizzes]
+\textbf{Does $\{P, P \rightarrow Q\} \models Q$?}\\
+Models where both $P$ and $P \rightarrow Q$ are true: $P = T$, and the implication is true with $Q = T$ (since $P$ is $T$, the implication forces $Q = T$). So in every such model, $Q$ is true. \textbf{Yes, entailed.} (This is the modus ponens inference rule.)\\[0.3em]
+\textbf{Does $\{P \lor Q\} \models P$?}\\
+Model with $P = F, Q = T$ satisfies $P \lor Q$ but $P$ is false. \textbf{No, not entailed.}\\[0.3em]
+\textbf{Does $\{P, \neg P\} \models Q$?}\\
+There are no models satisfying both $P$ and $\neg P$ — the KB is contradictory. By a vacuously-true argument, the entailment holds for any $Q$. \textbf{Yes, entailed} (a contradiction entails anything — this is called \emph{ex falso quodlibet}).
+\end{exbox}
+
+% =====================================================================
+\section{Model checking}
+
+\subsection{The brute-force algorithm}
+
+\begin{defbox}[Model checking]
+To check $KB \models \alpha$, enumerate every possible model and verify: \emph{in every model where every $KB$ sentence is true, is $\alpha$ also true?} If yes, the entailment holds.
+\end{defbox}
+
+\subsubsection*{Pseudocode}
+
+\begin{exbox}[Truth-table model checking]
+\begin{verbatim}
+function TT-Entails(KB, alpha):
+    symbols <- atoms in KB and alpha
+    return TT-Check-All(KB, alpha, symbols, {})
+
+function TT-Check-All(KB, alpha, remaining_symbols, model):
+    if remaining_symbols is empty:
+        if PL-True(KB, model): return PL-True(alpha, model)
+        else: return True  # vacuous case
+    P <- pop a symbol from remaining_symbols
+    return TT-Check-All(KB, alpha, remaining_symbols, model + {P=T}) AND
+           TT-Check-All(KB, alpha, remaining_symbols, model + {P=F})
+\end{verbatim}
+Recursively try every truth assignment; for each one, if KB holds, check that alpha also holds.
+\end{exbox}
+
+\subsection{Worked example: Wumpus inference}
+
+The agent has explored two squares (1,1) and (2,1). Sensory results:
+
+\begin{itemize}
+  \item $(1,1)$: no stench, no breeze.
+  \item $(2,1)$: breeze (so a pit is adjacent), no stench.
+\end{itemize}
+
+Question: is $(1,2)$ safe? (No pit, no Wumpus there.)
+
+The frontier (unexplored adjacent squares) is $(1,2), (2,2), (3,1)$. Each can have a pit or not — 3 atoms, $2^3 = 8$ possible models for these atoms. Combined with KB rules (a pit at $X$ implies breeze at every neighbour of $X$), \textbf{only 3 models are consistent} with the observations:
+
+\begin{exbox}[Models consistent with the agent's KB]
+The breeze at $(2,1)$ requires a pit in at least one of $(2,2), (3,1)$ (the squares adjacent to $(2,1)$ in the frontier; $(1,1)$ is already known pit-free).\\[0.3em]
+The 3 consistent models are:
+\begin{itemize}[leftmargin=*, itemsep=0pt, topsep=0pt]
+  \item Pit at $(2,2)$ only.
+  \item Pit at $(3,1)$ only.
+  \item Pit at $(2,2)$ AND $(3,1)$.
+\end{itemize}
+The other 5 are all eliminated: 1 (pits nowhere) violates the breeze at (2,1); 4 others place a pit at (1,2), but then (1,1) would have a breeze (it doesn't).\\[0.3em]
+\textbf{In every one of these 3 models, $(1,2)$ has no pit.} So $KB \models \neg S_{1,2}$ (and similarly $\neg R_{1,2}$, since no stench means no neighbouring Wumpus). \textbf{$(1,2)$ is safe.}
+\end{exbox}
+
+\begin{center}
+
+\footnotesize\textit{Model checking in action. \textbf{Left:} the agent's situation — a breeze observed at $(2,1)$, and three unexplored frontier squares marked ``?''. \textbf{Right:} all $2^3 = 8$ candidate worlds, one per way of placing pits in the three frontier squares. Model checking keeps only those worlds in which every $KB$ sentence holds; the three \textbf{red-bordered} worlds are the survivors consistent with the observed breeze. Because every surviving world has $(1,2)$ pit-free (and stench-free), the entailment $KB \models \neg S_{1,2} \land \neg R_{1,2}$ holds: $(1,2)$ is provably safe. The cost is the catch — the right-hand grid doubles in size with each extra atom.}
+\end{center}
+
+The agent can move to $(1,2)$ with full confidence. \emph{Logic just kept the agent alive without it taking a step.}
+
+\subsection{Soundness, completeness, and the complexity catastrophe}
+
+\begin{defbox}[Sound and complete inference]
+For an inference algorithm $i$ that derives sentences from $KB$, written $KB \vdash_i \alpha$:
+\begin{itemize}[itemsep=0pt, topsep=0pt]
+  \item \textbf{Sound}: $KB \vdash_i \alpha \implies KB \models \alpha$. (Only derives true things.)
+  \item \textbf{Complete}: $KB \models \alpha \implies KB \vdash_i \alpha$. (Derives every true thing.)
+\end{itemize}
+\end{defbox}
+
+\textbf{Model checking is both sound and complete.} It can't lie about entailment, and it never misses an entailed conclusion.
+
+But: with $n$ atoms, there are $2^n$ models. The Wumpus world has $\approx 80$ atoms — that's $2^{80}$ models, more than the number of seconds since the Big Bang, by a wide margin. \textbf{Intractable for non-trivial problems.}
+
+\begin{notebox}[: SAT-solving]
+Model checking is essentially the same problem as SAT (Boolean satisfiability). SAT is NP-complete — the canonical NP-complete problem, in fact. But modern SAT solvers (using techniques like DPLL with conflict-driven clause learning) handle problems with millions of variables in practice. Theory and practice diverge dramatically here. Modern propositional reasoning is mostly delegated to a SAT solver rather than naive truth-table enumeration.
+\end{notebox}
+
+% =====================================================================
+\section{Proof systems and inference rules}
+
+To beat $2^n$, we use \textbf{proof systems} — rule-based deduction that doesn't enumerate models.
+
+\subsection{Inference rules}
+
+\begin{defbox}[Inference rule]
+A licensed transformation of sentences: given certain sentences (the \emph{premises} above the line), you may infer another sentence (the \emph{conclusion} below the line).
+\end{defbox}
+
+The most important rules:
+
+\begin{center}
+\renewcommand{\arraystretch}{1.4}
+\begin{tabular}{@{}lll@{}}
+\toprule
+\thead{Rule} & \thead{Premises} & \thead{Conclusion} \\
+\midrule
+And-elimination & $\alpha \land \beta$                 & $\alpha$ (or $\beta$) \\
+And-introduction & $\alpha, \beta$                     & $\alpha \land \beta$ \\
+Modus ponens    & $\alpha \rightarrow \beta, \;\; \alpha$ & $\beta$ \\
+Modus tollens   & $\alpha \rightarrow \beta, \;\; \neg\beta$ & $\neg\alpha$ \\
+Or-introduction & $\alpha$                            & $\alpha \lor \beta$ \\
+Or-elimination  & $\alpha \lor \beta, \;\; \neg\alpha$ & $\beta$ \\
+Double-negation elimination & $\neg \neg \alpha$       & $\alpha$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\textbf{And-elimination:} if you have ``A and B,'' you can conclude $A$. Trivial but essential.
+
+\textbf{Modus ponens:} if you have an implication and its antecedent, conclude the consequent. The bedrock rule of forward reasoning.
+
+\textbf{Modus tollens:} if you have an implication and the negation of its consequent, conclude the negation of the antecedent. ``If P then Q; not Q; therefore not P.''
+
+\subsection{Proof systems}
+
+A \textbf{proof system} chains inference rules into a derivation. Examples:
+
+\begin{itemize}
+  \item \textbf{Natural deduction} (Gentzen, 1930s): tree-like derivations using assumptions and many rules. Closest to ``how mathematicians prove things.''
+  \item \textbf{Tableaux proofs}: a refutation method common in AI. Builds a tree of cases.
+  \item \textbf{Sequent calculus}: a more abstract version of natural deduction.
+  \item \textbf{Resolution}: the focus of this lecture. Uses a single rule.
+  \item \textbf{Open deduction}: 2D graph-style proofs.
+\end{itemize}
+
+\begin{center}
+
+\footnotesize\textit{One proof system at work: a \textbf{tableau} proof that $\{P \lor (Q \lor \neg R),\, P \rightarrow \neg R,\, Q \rightarrow \neg R\} \vdash \neg R$. The three premises are entered as assumptions (``Ass''), then the goal is \emph{negated} ($\neg\neg R$, the ``Conc'' line) — like resolution, the tableau method is a \textbf{refutation}: it assumes the opposite and seeks a contradiction. Each $\lor$ splits the tree into branches (one per disjunct); the $\otimes$ marks a branch that has closed on a contradiction, with the line numbers of the clashing sentences beneath. When \emph{every} branch closes, the original entailment is proved. This is shown only for contrast — resolution, with its single rule, is the system this unit uses.}
+\end{center}
+
+% =====================================================================
+\section{Resolution}
+
+\subsection{The resolution rule}
+
+\begin{defbox}[Resolution rule]
+Given two clauses (disjunctions) where one contains a literal $c$ and the other its negation $\neg c$, you may derive the disjunction of all other literals from both clauses combined.
+\[
+\frac{a_1 \lor a_2 \lor \dots \lor c, \quad b_1 \lor b_2 \lor \dots \lor \neg c}{a_1 \lor a_2 \lor \dots \lor b_1 \lor b_2 \lor \dots}
+\]
+The $c$ and $\neg c$ \textbf{cancel} (because exactly one of them must be true; whichever it is, one parent clause forces another disjunct to hold).
+\end{defbox}
+
+\textbf{Why the cancellation is sound.} A two-line case analysis. Suppose both parent clauses are true. Either $c$ is true or $\neg c$ is true — pick one.
+\begin{itemize}[leftmargin=*, itemsep=0pt, topsep=0pt]
+  \item If $c$ is true: then $\neg c$ is false, so the second clause's truth must come from one of the $b_j$. So $b_1 \lor b_2 \lor \dots$ is true, and the resolvent is true.
+  \item If $\neg c$ is true: then $c$ is false, so the first clause's truth must come from one of the $a_i$. So $a_1 \lor a_2 \lor \dots$ is true, and the resolvent is true.
+\end{itemize}
+Either way, the resolvent is true whenever both parents are true. That is exactly what soundness requires: \emph{any model satisfying the parents also satisfies the resolvent}. The cancelled literal $c$ never appears in the resolvent because in both cases its truth value was already used to satisfy one of the parent clauses.
+
+This is a \emph{generalisation} of modus ponens. To see why, rewrite $P \rightarrow Q$ as $\neg P \lor Q$. Then modus ponens
+\[
+\frac{P \rightarrow Q, \;\; P}{Q}
+\]
+is the same as resolution
+\[
+\frac{\neg P \lor Q, \;\; P}{Q}
+\]
+with $c = P$.
+
+\subsection{Proof by contradiction}
+
+\begin{defbox}[Resolution as proof by contradiction]
+To prove $KB \models \alpha$ by resolution:
+\begin{enumerate}
+  \item Convert $KB \cup \{\neg \alpha\}$ to \textbf{Conjunctive Normal Form (CNF)} — a conjunction of clauses.
+  \item Apply the resolution rule to pairs of clauses, generating new clauses.
+  \item If you derive the \textbf{empty clause} (a clause with no literals, i.e.\ False), you've produced a contradiction $\to$ \textbf{$KB \models \alpha$}.
+  \item If no new clauses can be generated and you haven't derived the empty clause $\to$ \textbf{$KB \not\models \alpha$}.
+\end{enumerate}
+\end{defbox}
+
+\textbf{Why proof-by-contradiction?} Direct derivation is harder. Adding $\neg\alpha$ and looking for a contradiction is mechanically simpler: you only need the single resolution rule, and you stop when you hit the empty clause.
+
+\textbf{Logic of the approach:} we want to show $KB \models \alpha$, i.e., $KB \rightarrow \alpha$ is a tautology, i.e., $KB \land \neg\alpha$ is unsatisfiable. Resolution is a procedure to check unsatisfiability. If we derive $\bot$ (False) by resolution, we've proven unsatisfiability.
+
+\subsection{Conjunctive Normal Form (CNF)}
+
+\begin{defbox}[Conjunctive Normal Form]
+A propositional sentence in CNF has three layers:
+\begin{itemize}[itemsep=0pt, topsep=0pt]
+  \item \textbf{Literal}: an atomic symbol or its negation, e.g.\ $P$ or $\neg P$.
+  \item \textbf{Clause}: a disjunction of literals, e.g.\ $P \lor \neg Q \lor R$. (A clause with one literal is just that literal.)
+  \item \textbf{CNF sentence}: a conjunction of clauses, e.g.\ $(P \lor Q) \land (R \lor \neg S) \land (\neg P \lor T)$. (A CNF with one clause is just that clause.)
+\end{itemize}
+\textbf{Every propositional sentence has an equivalent CNF.}
+\end{defbox}
+
+Each of these is in CNF:
+\begin{itemize}
+  \item $(P \lor Q) \land (R \lor \neg S)$ — a 2-clause CNF.
+  \item $(\neg P \lor R \lor S \lor T) \land \neg Q$ — note that $\neg Q$ counts as a clause of length 1.
+  \item $Q \lor R$ — counts as a CNF with one clause.
+\end{itemize}
+
+\textbf{Key property:} no $\land$ may sit \emph{inside} a $\lor$. The structure is rigid: $\land$ at the top, $\lor$ in the middle, literals at the bottom.
+
+\subsubsection*{CNF conversion algorithm}
+
+To convert any propositional sentence to CNF:
+
+\begin{enumerate}
+  \item \textbf{Eliminate biconditionals.} Replace $\alpha \leftrightarrow \beta$ with $(\alpha \rightarrow \beta) \land (\beta \rightarrow \alpha)$.
+  \item \textbf{Eliminate implications.} Replace $\alpha \rightarrow \beta$ with $\neg \alpha \lor \beta$.
+  \item \textbf{Push negations inward (De Morgan).} Replace $\neg(\alpha \land \beta)$ with $\neg\alpha \lor \neg\beta$, and $\neg(\alpha \lor \beta)$ with $\neg\alpha \land \neg\beta$. Repeat until negations only sit on atoms.
+  \item \textbf{Eliminate double negations.} $\neg\neg\alpha \to \alpha$.
+  \item \textbf{Distribute $\lor$ over $\land$.} Replace $\alpha \lor (\beta \land \gamma)$ with $(\alpha \lor \beta) \land (\alpha \lor \gamma)$. Repeat until no $\land$ is inside a $\lor$.
+\end{enumerate}
+
+\begin{exbox}[CNF conversion: $(P \lor Q) \rightarrow R$]
+\textbf{Step 1.} No biconditional. Skip.\\[0.3em]
+\textbf{Step 2.} Eliminate the implication: $\neg(P \lor Q) \lor R$.\\[0.3em]
+\textbf{Step 3.} Push the negation inward: $(\neg P \land \neg Q) \lor R$.\\[0.3em]
+\textbf{Step 4.} No double negations.\\[0.3em]
+\textbf{Step 5.} Distribute $\lor$ over $\land$: $(\neg P \lor R) \land (\neg Q \lor R)$. \textbf{Done — CNF.}
+\end{exbox}
+
+\begin{exbox}[CNF conversion: $A \leftrightarrow \neg(B \land C)$ (biconditional + nested negation)]
+\textbf{Step 1.} Eliminate biconditional: $\bigl(A \rightarrow \neg(B \land C)\bigr) \land \bigl(\neg(B \land C) \rightarrow A\bigr)$.\\[0.3em]
+\textbf{Step 2.} Eliminate both implications: $\bigl(\neg A \lor \neg(B \land C)\bigr) \land \bigl(\neg\neg(B \land C) \lor A\bigr)$.\\[0.3em]
+\textbf{Step 3.} Push negations inward (De Morgan on the first conjunct, leaving $\neg\neg$ for step 4): $\bigl(\neg A \lor (\neg B \lor \neg C)\bigr) \land \bigl(\neg\neg(B \land C) \lor A\bigr)$.\\[0.3em]
+\textbf{Step 4.} Eliminate double negation: $\bigl(\neg A \lor \neg B \lor \neg C\bigr) \land \bigl((B \land C) \lor A\bigr)$.\\[0.3em]
+\textbf{Step 5.} Distribute the $\lor$ in the second conjunct: $(B \land C) \lor A \;\Rightarrow\; (B \lor A) \land (C \lor A)$.\\[0.3em]
+\textbf{Final CNF:} $(\neg A \lor \neg B \lor \neg C) \land (A \lor B) \land (A \lor C)$. Three clauses; no $\land$ inside any $\lor$. \textbf{Done.}\\[0.3em]
+\textbf{Read-back.} The first clause is the ``$A \rightarrow \neg(B \land C)$'' direction: if $A$ holds, not all of $B, C$ can hold. The pair $(A \lor B) \land (A \lor C)$ together encode ``$\neg A \rightarrow (B \land C)$,'' the contrapositive of $\neg(B \land C) \rightarrow A$. Each conjunct does one direction of the biconditional.
+\end{exbox}
+
+\subsection{The resolution algorithm}
+
+\begin{exbox}[PL-Resolution algorithm (Russell \& Norvig)]
+\textbf{Input:} knowledge base $KB$, query sentence $\alpha$.\\[0.3em]
+\begin{enumerate}[itemsep=0pt, topsep=0pt]
+  \item $\textit{clauses} \leftarrow $ CNF representation of $KB \land \neg\alpha$.
+  \item $\textit{new} \leftarrow \emptyset$.
+  \item Loop:
+    \begin{itemize}[itemsep=0pt, topsep=0pt]
+      \item For each pair $(C_i, C_j)$ in $\textit{clauses}$, compute $\textit{resolvents} = \mathrm{PL\text{-}Resolve}(C_i, C_j)$.
+      \item If $\textit{resolvents}$ contains the empty clause $\to$ \textbf{return true} ($KB \models \alpha$).
+      \item Add $\textit{resolvents}$ to $\textit{new}$.
+    \end{itemize}
+  \item If $\textit{new} \subseteq \textit{clauses}$ (no new resolvents) $\to$ \textbf{return false} ($KB \not\models \alpha$).
+  \item $\textit{clauses} \leftarrow \textit{clauses} \cup \textit{new}$. Loop.
+\end{enumerate}
+\textbf{Sound and complete} on CNF inputs.
+\end{exbox}
+
+The algorithm has the same flavour as a search algorithm: from a set of clauses (states), generate all reachable clauses (successors) by applying the resolution rule, until you reach the empty clause (goal) or run out of moves.
+
+\subsection{Worked example}
+
+\begin{exbox}[Resolution proof: pit-free in Wumpus]
+\textbf{KB} (already in CNF):
+\begin{itemize}[itemsep=0pt, topsep=0pt]
+  \item C1: $\neg P_{1,2} \lor B_{1,1}$ \quad (pit at (1,2) implies breeze at (1,1))
+  \item C2: $\neg B_{1,1}$ \quad (no breeze at (1,1) — observed)
+\end{itemize}
+\textbf{Query:} $\alpha = \neg P_{1,2}$. Add $\neg \alpha = P_{1,2}$ to the clause set.\\[0.3em]
+\textbf{Resolutions:}
+\begin{enumerate}[itemsep=0pt, topsep=0pt]
+  \item Resolve C1 with C2 on $B_{1,1}$: from $\neg P_{1,2} \lor B_{1,1}$ and $\neg B_{1,1}$, get $\neg P_{1,2}$.
+  \item Resolve $\neg P_{1,2}$ with $P_{1,2}$ on $P_{1,2}$: get the \textbf{empty clause}.
+\end{enumerate}
+\textbf{Done.} $KB \models \neg P_{1,2}$.
+\end{exbox}
+
+\subsubsection*{A second resolution example}
+
+\begin{exbox}[Resolution: $\{A \lor B, \neg A \lor C, \neg B \lor C\} \models C$?]
+Add $\neg C$ to the clause set:\\[0.3em]
+Clauses: $\{A \lor B, \;\; \neg A \lor C, \;\; \neg B \lor C, \;\; \neg C\}$.\\[0.3em]
+\textbf{Resolutions:}
+\begin{enumerate}[itemsep=0pt, topsep=0pt]
+  \item Resolve $\neg A \lor C$ with $\neg C$ on $C$: get $\neg A$.
+  \item Resolve $\neg B \lor C$ with $\neg C$ on $C$: get $\neg B$.
+  \item Resolve $A \lor B$ with $\neg A$ on $A$: get $B$.
+  \item Resolve $B$ with $\neg B$ on $B$: get the \textbf{empty clause}.
+\end{enumerate}
+\textbf{So $\{A \lor B, \neg A \lor C, \neg B \lor C\} \models C$.} (The original KB says: $A$ or $B$ holds; either way $C$ holds; therefore $C$ holds.)
+\end{exbox}
+
+\textbf{Watch the cancellation pattern.} Each resolution step picks a literal that appears positively in one clause and negatively in another, and removes both — the surviving literals form the resolvent. With careful clause selection, you reach the empty clause in a few steps.
+
+\begin{notebox}[: there can be many valid resolution paths]
+The resolution algorithm explores combinations of clauses. Different ordering choices give different sequences of resolvents. Past papers may show a graph of resolutions; the order isn't unique, but if any path leads to the empty clause, the entailment holds.
+\end{notebox}
+
+\begin{center}
+
+\footnotesize\textit{A full resolution-proof graph for the Wumpus query $KB \models \neg P_{1,2}$. The \textbf{top row} holds the starting clauses — the CNF of $KB$ together with the negated query $P_{1,2}$. Each \textbf{arrow} pairs two clauses and resolves them on a complementary literal; the boxes below are the resolvents produced. The derivation fans out because many clause pairs can be resolved, but only one outcome matters: the small \textbf{purple box} at bottom right is the \textbf{empty clause}. Reaching it means $KB \cup \{\neg P_{1,2}\}$ is unsatisfiable, so the entailment holds. Note how cluttered the graph is — the order of resolutions is not unique, and most resolvents are dead ends. Image credit: Russell \& Norvig, AIMA.}
+\end{center}
+
+\subsection{DPLL: a smarter SAT-solving alternative}
+
+Modern SAT solvers usually use \textbf{DPLL} (Davis-Putnam-Logemann-Loveland) instead of pure resolution. DPLL is a backtracking algorithm with two key tricks:
+
+\begin{itemize}
+  \item \textbf{Unit propagation}: if a clause has only one literal left, that literal must be true. Set it and propagate.
+  \item \textbf{Pure literal elimination}: if an atom appears only positively (or only negatively) across all clauses, set it true (or false) — no clause forces otherwise.
+\end{itemize}
+
+DPLL with conflict-driven clause learning (CDCL) is the basis of all modern SAT solvers. \textbf{Out of scope for this exam}, but worth knowing as the practical alternative to resolution.
+
+% =====================================================================
+\section{Exam-mode answers}
+
+\begin{exambox}[(MCQ): Consider the propositional logic sentence $P = (A \land B) \rightarrow (\neg B \lor \neg C)$. In which of the following models is $P$ false?]
+\textit{$P$ is false only when the antecedent $A \land B$ is true AND the consequent $\neg B \lor \neg C$ is false. Antecedent true means $A = T, B = T$. Consequent false means $\neg B = F$ AND $\neg C = F$, i.e.\ $B = T$ AND $C = T$. So $P$ is false iff $A = T, B = T, C = T$.}\\[0.3em]
+\textit{Answer: \textbf{only $(A, B, C) = (T, T, T)$ makes $P$ false.}}
+\end{exambox}
+
+\begin{exambox}[(MCQ, mark all that apply): Which of the following sentences are entailed by $KB = \{(A \lor \neg B) \land (\neg A \lor B), C\}$?]
+\textit{The first conjunct says $(A \lor \neg B) \land (\neg A \lor B)$, equivalent to $A \leftrightarrow B$ (A and B have the same truth value). The second conjunct: $C$ is just true.}\\[0.3em]
+\textit{Models satisfying KB: any in which $A = B$ and $C = T$. So $\{(T,T,T), (F,F,T)\}$.}\\[0.3em]
+\textit{Test each option:}
+\begin{itemize}[leftmargin=*, itemsep=0pt, topsep=0pt]
+  \item \textbf{$A$:} false in $(F, F, T)$ — \textbf{not entailed.}
+  \item \textbf{$\neg A$:} false in $(T, T, T)$ — \textbf{not entailed.}
+  \item \textbf{$B$:} same as $A$ — \textbf{not entailed.}
+  \item \textbf{$\neg B$:} false in $(T,T,T)$ — \textbf{not entailed.}
+  \item \textbf{$C$:} true in both models — \textbf{entailed!}
+  \item \textbf{$A \leftrightarrow B$:} true in both models — \textbf{entailed.}
+\end{itemize}
+\textit{Only $C$ and $A \leftrightarrow B$ are entailed (and any tautologies).}
+\end{exambox}
+
+\begin{exambox}[(MCQ): Consider the Wumpus world below. Which of the following propositional logic sentences are true?]
+\textit{(Setup: known stenches and breezes around the agent's start corner; pits at $(3,1), (3,3), (4,4)$ etc.)}\\[0.3em]
+\textit{Apply the rule: $S_X = T$ iff some neighbour of $X$ has a Wumpus; $Q_X = T$ iff some neighbour has a pit.}\\[0.3em]
+\textit{Examples:}
+\begin{itemize}[leftmargin=*, itemsep=0pt, topsep=0pt]
+  \item ``$\neg \mathrm{Wumpus}_{1,3} \land \mathrm{Stench}_{1,3}$'': true if there's a stench at (1,3) but no Wumpus there. Match against the map.
+  \item ``$\mathrm{Pit}_{4,1} \rightarrow (\mathrm{Breeze}_{3,1} \lor \mathrm{Breeze}_{4,2})$'': vacuously true if there's no pit at (4,1); else need to check breezes at neighbours.
+\end{itemize}
+\textit{General approach: evaluate atoms from the map, then plug into the connectives.}
+\end{exambox}
+
+\begin{exambox}[(MCQ, mark all that apply): For propositional logic, which of the following are correct?]
+\textit{TRUE:}
+\begin{itemize}[leftmargin=*, itemsep=0pt, topsep=0pt]
+  \item ``Disjunction in propositional logic is inclusive.''
+  \item ``$P \rightarrow Q$ is true whenever $P$ is false.''
+  \item ``Every propositional sentence has an equivalent CNF.''
+  \item ``Resolution is sound and complete on CNF inputs.''
+\end{itemize}
+\textit{FALSE:}
+\begin{itemize}[leftmargin=*, itemsep=0pt, topsep=0pt]
+  \item ``Model checking has polynomial complexity'' — exponential, $O(2^n)$.
+  \item ``$P \rightarrow Q$ is logically equivalent to $Q \rightarrow P$'' — no, that's the converse.
+  \item ``Resolution requires all sentences in disjunctive normal form'' — no, conjunctive.
+\end{itemize}
+\end{exambox}
+
+% =====================================================================
+\section*{Key equations / algorithms cheat sheet}
+
+\textbf{Connective truth table:}
+\begin{center}
+\renewcommand{\arraystretch}{1.2}
+\begin{tabular}{@{}cccccccc@{}}
+\toprule
+$P$ & $Q$ & $\neg P$ & $P \land Q$ & $P \lor Q$ & $P \rightarrow Q$ & $P \leftrightarrow Q$ \\
+\midrule
+T & T & F & T & T & T & T \\
+T & F & F & F & T & F & F \\
+F & T & T & F & T & T & F \\
+F & F & T & F & F & T & T \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\textbf{Implication shortcut:} $P \rightarrow Q$ is FALSE \emph{only} when $P$ is true and $Q$ is false.
+
+\textbf{Equivalences (use frequently):}
+\[
+P \rightarrow Q \;\equiv\; \neg P \lor Q, \quad P \rightarrow Q \;\equiv\; \neg Q \rightarrow \neg P, \quad \neg(P \land Q) \;\equiv\; \neg P \lor \neg Q.
+\]
+
+\textbf{Entailment:} $KB \models \alpha$ iff every model satisfying $KB$ also satisfies $\alpha$.
+
+\textbf{Soundness vs completeness:}
+\[
+\text{Sound: } KB \vdash_i \alpha \Rightarrow KB \models \alpha. \qquad
+\text{Complete: } KB \models \alpha \Rightarrow KB \vdash_i \alpha.
+\]
+
+\textbf{Resolution rule:}
+\[
+\frac{a_1 \lor \dots \lor c, \quad b_1 \lor \dots \lor \neg c}{a_1 \lor \dots \lor b_1 \lor \dots}
+\]
+
+\textbf{Resolution proof procedure:} Convert $KB \cup \{\neg\alpha\}$ to CNF $\to$ apply resolution exhaustively $\to$ empty clause means $KB \models \alpha$; saturation without the empty clause means $KB \not\models \alpha$.
+
+\textbf{CNF conversion steps:} (1) eliminate $\leftrightarrow$, (2) eliminate $\rightarrow$, (3) push $\neg$ inward, (4) eliminate $\neg\neg$, (5) distribute $\lor$ over $\land$.
+
+\textbf{CNF structure:}
+\[
+\underbrace{(\overbrace{L_{1,1} \lor L_{1,2} \lor \dots}^{\text{clause 1}}) \land (\overbrace{L_{2,1} \lor \dots}^{\text{clause 2}}) \land \dots}_{\text{conjunction of clauses, each a disjunction of literals}}
+\]
+
+% =====================================================================
+\section*{Pitfalls and MCQ traps consolidated}
+
+\begin{trapbox}[summary]
+\begin{tabular}{@{}p{6.5cm}p{8cm}@{}}
+\toprule
+\thead{Trap} & \thead{Right answer} \\
+\midrule
+$\lor$ is exclusive (XOR)             & \textbf{No} — $\lor$ is inclusive. True when both are true. \\
+$P \rightarrow Q$ false when $P$ false  & \textbf{No} — true (vacuously). \\
+$P \rightarrow Q \equiv Q \rightarrow P$ & \textbf{No} — that's the converse, not equivalent. \\
+$P \rightarrow Q \equiv \neg Q \rightarrow \neg P$ & \textbf{Yes} — that's the contrapositive (equivalent). \\
+``Solution'' = a complete assignment   & \textbf{Complete AND consistent.} \\
+Model checking is fast                  & \textbf{No}, $O(2^n)$ — intractable. \\
+Resolution requires DNF                 & \textbf{No, CNF.} \\
+``Empty clause = trivially true''       & \textbf{No} — empty clause = \emph{contradiction} (False). \\
+Modus ponens and resolution unrelated   & \textbf{No} — resolution generalises modus ponens. \\
+Contradiction entails nothing           & \textbf{Wrong, opposite!} A contradiction entails everything (ex falso). \\
+\bottomrule
+\end{tabular}
+\end{trapbox}
+
+\textbf{Other confusions to watch:}
+
+\begin{itemize}
+  \item \textbf{Atomic $\ne$ unique.} ``Atomic'' refers to logical irreducibility. Several atoms can describe the same square's properties (stench, breeze, pit, Wumpus, gold).
+  \item \textbf{Models are total, not partial.} A model assigns truth values to \emph{every} atom. With $n$ atoms, exactly $2^n$ models exist. ``Partial models'' are sets of models compatible with given knowledge.
+  \item \textbf{$\models$ vs $\vdash$.} $\models$ is the semantic entailment relation; $\vdash$ is the syntactic derivation relation (for some algorithm). A sound and complete algorithm makes them coincide.
+  \item \textbf{Resolution proves entailment by deriving a contradiction from $KB \cup \{\neg\alpha\}$.} Don't try to derive $\alpha$ directly — that's not how resolution is set up.
+  \item \textbf{Bracketing matters.} $A \lor B \land C$ is ambiguous in casual writing; convention says $\land$ binds tighter (so it parses as $A \lor (B \land C)$), but always use parentheses to avoid trouble.
+  \item \textbf{Inference rules don't need to be in CNF.} But \textbf{resolution does.} Other proof systems (natural deduction, tableaux) work on arbitrary sentences.
+  \item \textbf{The empty clause is not the same as the empty knowledge base.} Empty clause = False (an unsatisfiable disjunction of zero literals). Empty KB = no constraints, every model satisfies it.
+\end{itemize}
+
+% =====================================================================
+\section*{Self-check questions}
+
+\begin{enumerate}
+  \item \textbf{Distinguish} the four AI quadrants (thinking/acting $\times$ humanly/rationally). Which characterises this unit's main approach? Which characterises this week's content?
+  \item \textbf{Explain} why pure search (BFS, DFS, A*) is unsuited to the Wumpus world.
+  \item \textbf{Define} atomic sentence, model, knowledge base, and entailment. Use Wumpus-world examples.
+  \item \textbf{Compute} the truth value of $P = (A \rightarrow B) \land (\neg C \lor D)$ for the model $A = T, B = F, C = F, D = T$.
+  \item \textbf{Construct} the truth table for $P \leftrightarrow Q$ and confirm the equivalence $P \leftrightarrow Q \equiv (P \rightarrow Q) \land (Q \rightarrow P)$.
+  \item \textbf{Explain} why $\lor$ is inclusive in propositional logic and how XOR can be expressed using the standard connectives.
+  \item \textbf{Apply} model checking to the following: $KB = \{P \rightarrow Q, P\}$. Does $KB \models Q$? Show your reasoning by enumerating models.
+  \item \textbf{Define} soundness and completeness for an inference algorithm. Is model checking sound and complete? Why is it not the algorithm of choice in practice?
+  \item \textbf{Convert} the sentence $(A \lor B) \rightarrow C$ to CNF, showing each step.
+  \item \textbf{Convert} the sentence $A \leftrightarrow (B \lor C)$ to CNF.
+  \item \textbf{Apply} the resolution rule to the clauses $\neg P \lor Q$ and $P$. What's the resolvent?
+  \item \textbf{Trace} a resolution proof of $KB \models C$ where $KB = \{A \lor B, \neg A \lor C, \neg B \lor C\}$. Show every step.
+  \item \textbf{Trace} a resolution proof of $KB \models \neg P_{1,2}$ for the Wumpus example given in the lecture.
+  \item \textbf{Explain} why resolution is set up as proof-by-contradiction rather than direct derivation.
+  \item \textbf{Distinguish} natural deduction, tableaux proofs, and resolution as proof systems. Which is the focus of this unit, and why?
+  \item \textbf{Argue} that resolution generalises modus ponens.
+  \item \textbf{State} De Morgan's laws and verify them by truth table.
+  \item \textbf{State} the contrapositive equivalence and verify it by truth table.
+\end{enumerate}
+
+\end{document}

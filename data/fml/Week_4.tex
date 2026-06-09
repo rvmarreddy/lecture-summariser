@@ -1,0 +1,810 @@
+\documentclass[11pt, a4paper]{article}
+
+% --- Fonts and engine ---
+\usepackage{fontspec}
+\setmainfont{Helvetica Neue}
+\setmonofont{Menlo}
+\usepackage{unicode-math}
+\setmathfont{STIX Two Math}
+
+% --- Layout ---
+\usepackage[margin=2cm, top=2cm, bottom=2.5cm]{geometry}
+\usepackage{microtype}
+\usepackage{parskip}
+\setlength{\parskip}{0.6em}
+\setlength{\parindent}{0pt}
+
+% --- Typography and links ---
+\usepackage[colorlinks=true, linkcolor=NavyBlue, urlcolor=NavyBlue, citecolor=NavyBlue]{hyperref}
+\usepackage{xcolor}
+\usepackage[dvipsnames]{xcolor}
+
+% --- Math and tables ---
+\usepackage{amsmath}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{tabularx}
+\usepackage{graphicx}
+\graphicspath{{figures/week04/}}
+\newcommand{\thead}[1]{\textbf{#1}}
+
+% --- Lists ---
+\usepackage{enumitem}
+\setlist[itemize]{leftmargin=1.5em, itemsep=0.2em, topsep=0.3em}
+\setlist[enumerate]{leftmargin=1.5em, itemsep=0.2em, topsep=0.3em}
+
+% --- Boxed callouts ---
+\usepackage[most]{tcolorbox}
+\tcbuselibrary{breakable, skins, theorems}
+
+% Color palette
+\definecolor{defBg}{HTML}{EAF2FB}
+\definecolor{defBd}{HTML}{1F4E79}
+\definecolor{exBg}{HTML}{F4F4F4}
+\definecolor{exBd}{HTML}{555555}
+\definecolor{tipBg}{HTML}{E8F5E9}
+\definecolor{tipBd}{HTML}{2E7D32}
+\definecolor{trapBg}{HTML}{FCE4EC}
+\definecolor{trapBd}{HTML}{AD1457}
+\definecolor{pitBg}{HTML}{FFF8E1}
+\definecolor{pitBd}{HTML}{B27600}
+\definecolor{noteBg}{HTML}{F3E5F5}
+\definecolor{noteBd}{HTML}{6A1B9A}
+\definecolor{tldrBg}{HTML}{E1F5FE}
+\definecolor{tldrBd}{HTML}{0277BD}
+
+\newtcolorbox{defbox}[1][]{enhanced, breakable, colback=defBg, colframe=defBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={Definition: #1}}
+\newtcolorbox{exbox}[1][]{enhanced, breakable, colback=exBg, colframe=exBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={Worked example: #1}}
+\newtcolorbox{exambox}[1][]{enhanced, breakable, colback=tipBg, colframe=tipBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={Exam-mode answer #1}}
+\newtcolorbox{trapbox}[1][]{enhanced, breakable, colback=trapBg, colframe=trapBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={MCQ trap #1}}
+\newtcolorbox{pitfallbox}[1][]{enhanced, breakable, colback=pitBg, colframe=pitBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={Pitfall #1}}
+\newtcolorbox{notebox}[1][]{enhanced, breakable, colback=noteBg, colframe=noteBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={Lecturer aside #1}}
+\newtcolorbox{tldrbox}[1][]{enhanced, breakable, colback=tldrBg, colframe=tldrBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={TL;DR #1}}
+
+\usepackage{titlesec}
+\titleformat{\section}[block]{\Large\bfseries\color{defBd}}{\thesection.}{0.6em}{}
+\titleformat{\subsection}[block]{\large\bfseries\color{defBd!80!black}}{\thesubsection}{0.5em}{}
+\titleformat{\subsubsection}[block]{\normalsize\bfseries}{}{0pt}{}
+\titlespacing*{\section}{0pt}{1.6em}{0.6em}
+\titlespacing*{\subsection}{0pt}{1.2em}{0.4em}
+
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small CM52054 — Week 4}
+\fancyhead[R]{\small Random Forests \& Performance Metrics}
+\fancyfoot[C]{\small\thepage}
+\renewcommand{\headrulewidth}{0.3pt}
+
+\newcommand{\examflag}{\textcolor{tipBd}{\textbf{[EXAM]}}\,}
+\newcommand{\trapflag}{\textcolor{trapBd}{\textbf{[TRAP]}}\,}
+\newcommand{\doflag}{\textcolor{defBd}{\textbf{[DO]}}\,}
+
+\title{\vspace{-1cm}{\Huge\bfseries Week 4 — Random Forests, Loss Functions \& Performance Measures} \\[0.4em]{\large Bagging, random subspace, the Bayes classifier, convex surrogates, the confusion matrix and its derived metrics, train/validation/test discipline}}
+\author{\large CM52054 Foundational Machine Learning \\[0.2em]\normalsize University of Bath \,$\cdot$\, Dr Rohit Babbar}
+\date{Revision notes}
+
+\begin{document}
+
+\maketitle
+\thispagestyle{empty}
+
+\vspace{1em}
+
+\begin{tldrbox}
+\begin{itemize}[leftmargin=*]
+  \item \textbf{Random forest = many decision trees + bagging + random subspace.} Train $S$ trees, each on a bootstrap sample of the data and each split using a random subset of features; combine by majority vote (classification) or mean / median (regression). The combination acts on the variance term of the bias--variance decomposition (Wk~3): variance shrinks roughly as $V/S$ for $S$ independent trees while bias is preserved.
+  \item \textbf{Bootstrapping} = create a new dataset of size $n$ by sampling with replacement from the original $n$ points (so $\sim$1/3 of points are repeated, $\sim$1/3 are missing). Cheap way to manufacture diverse training sets from a fixed dataset.
+  \item \textbf{Random subspace} = at each split, only consider a random subset of features as candidates. Forces trees to use different features and increases inter-tree diversity. ``New bootstrap of features for each split.''
+  \item \textbf{Diversity is the engine}; if all trees made the same mistakes, ensembling would do nothing. Bagging $+$ random subspace produce systematically different trees, so their errors partially cancel when averaged.
+  \item \textbf{Three different ``loss''-shaped objects} the lecturer carefully separates:
+  \begin{itemize}
+    \item \textbf{Business objective} — what you actually care about (revenue, user engagement, lives saved, accuracy of medical triage).
+    \item \textbf{Performance metric} — what you measure and report (accuracy, precision, recall, F1, balanced accuracy). Tied loosely to the business objective.
+    \item \textbf{Loss function} — the surrogate you actually optimise during training (squared error, hinge loss, logistic loss). Convex, differentiable, and a convex upper bound on the metric.
+  \end{itemize}
+  \item \textbf{0--1 loss is the right metric but the wrong loss function.} It's a step function — non-convex, non-differentiable, NP-hard to optimise. Convex surrogates (hinge, logistic, squared) sit above it and are tractable; minimising them approximately minimises 0--1 loss.
+  \item \textbf{Bayes classifier} = the optimum classifier that achieves the lowest possible classification error. For binary classes with $P(y = C_1 \mid x) \ge 0.5 \Rightarrow$ predict $C_1$, otherwise $C_2$. Its error rate is the noise floor — no classifier can do better.
+  \item \textbf{The confusion matrix is examinable.} Memorise the layout (rows = predicted, columns = actual), the four cells (TP, FP, TN, FN), and the metric formulas — past-paper Q5 will hand you a confusion matrix and ask for precision, recall, accuracy, F1, and balanced accuracy.
+  \item \examflag{}\textbf{(Q5 owner — memorise these)}: Precision $= \tfrac{TP}{TP+FP}$, Recall $= \tfrac{TP}{TP+FN}$, Accuracy $= \tfrac{TP+TN}{TP+TN+FP+FN}$, F1 $= \tfrac{2 \cdot TP}{2\cdot TP + FP + FN}$, Balanced Accuracy $= \tfrac{1}{|C|}\sum_c \tfrac{|\{y_i = c \wedge \hat y_i = c\}|}{|\{y_i = c\}|}$.
+  \item \trapflag{}\textbf{[Q2.5]} The textbook symptom of overfitting: \emph{low training error, high test error}. Past-paper MCQ confirmed.
+  \item \textbf{Three-way data split}: \emph{train} (fit parameters), \emph{validation} (tune hyperparameters), \emph{test} (final report only — never tune on test). $n$-fold cross-validation rotates the validation slice through the training data when data is scarce.
+\end{itemize}
+\end{tldrbox}
+
+% =====================================================================
+\section{Random forests: motivation and machinery}
+
+\subsection{Why ensemble?}
+
+Wk~3's bias--variance decomposition gave us a precise diagnosis of the decision tree's weakness: a fully-grown tree is low-bias but high-variance — small changes in the training data can produce noticeably different trees, and so noticeably different predictions. The natural intervention is to \emph{average many such trees} so that the random fluctuations partially cancel. That intervention is \textbf{ensemble learning}.
+
+\begin{defbox}[Ensemble learning]
+\textbf{Ensemble learning} combines the predictions of multiple estimators into a single prediction. Two flavours:
+\begin{itemize}
+  \item \textbf{Different model families.} Train, e.g., a decision tree, a logistic regressor, and an SVM on the same data; average their predictions.
+  \item \textbf{Same model family, randomised training.} Train many trees, each trained slightly differently (different bootstrap sample, different feature subset) so they end up different in detail.
+\end{itemize}
+Combining is by majority vote (classification) or by the mean / median (regression).
+\end{defbox}
+
+\textbf{The diversity requirement.} Ensembling only works if the constituent estimators \emph{disagree on some inputs}. If all trees in an ensemble made identical predictions, averaging them would change nothing. A 100-element ensemble of identically-trained trees is no better than a single tree.
+
+\begin{notebox}
+The lecturer's framing: ``increasing estimator diversity at the expense of individual performance gives a better ensemble.'' Each tree is allowed to be slightly worse than a maximally-tuned single tree, as long as the trees collectively cover different mistakes — the ensemble's averaged behaviour is what matters, not any individual member's.
+\end{notebox}
+
+\subsection{The picture-level intuition: ambiguous classifiers}
+
+The slide motivates ensembling with a picture: red and blue training points, a magenta query point sitting near the boundary. Several plausible classifiers — different linear separators, a quadratic curve, a decision tree's staircase — all fit the training data nearly equally well, and they make \emph{different} predictions on the query point.
+
+This non-uniqueness has three sources:
+\begin{itemize}
+  \item \textbf{Noisy data}: small label perturbations move the optimum classifier.
+  \item \textbf{Insufficient data}: too few points to disambiguate which boundary is correct.
+  \item \textbf{Limited model class}: linear classifiers can't capture truly curved boundaries; among the linear options, several are equally plausible.
+\end{itemize}
+
+Picking one classifier and committing to it discards the information in the alternative classifiers. Ensembling preserves it: ``vote across the plausible classifiers, let them adjudicate the magenta point.''
+
+\begin{center}
+
+\footnotesize\textit{The ensemble-learning motivation. Red and blue training points are separated by a roughly vertical gap; the \textbf{magenta dot} sits right at the boundary. Several valid linear decision boundaries are drawn --- all fit the training data nearly equally well, yet they disagree on which class to assign to the magenta point. The lecturer's punchline (bullet list, left): models can be fit in many ways due to insufficient data, noisy labels, or limited model complexity. An ensemble captures this ambiguity by training many estimators and aggregating their votes, so the disagreement itself becomes information rather than noise.}
+\end{center}
+
+\subsection{Bootstrapping}
+
+To train many trees, you need many training sets. Collecting more data is usually impossible; \textbf{bootstrapping} fakes it from what you have.
+
+\begin{defbox}[Bootstrap sample]
+Given a training set of size $n$, a \textbf{bootstrap sample} is a new dataset of size $n$ created by drawing $n$ points \emph{with replacement} from the original. Some original points appear multiple times in the bootstrap sample; some don't appear at all (about $1/e \approx 37\%$ of original points are missing from any given bootstrap draw).
+\end{defbox}
+
+The procedure is dead simple:
+
+\doflag{}
+\begin{verbatim}
+def bootstrap(D, n):
+    sample = []
+    for i in 1 to n:
+        sample.append(D[random_int(0, n-1)])  # WITH replacement
+    return sample
+\end{verbatim}
+
+Every bootstrap sample is the same size as the original ($n$ points), but is a slightly different mix. To train $S$ trees you draw $S$ independent bootstrap samples, one per tree — each is its own size-$n$ dataset.
+
+\textbf{Why $\approx 37\%$ are missing.} A specific point survives one single draw with probability $1 - 1/n$ (it is \emph{not} the point picked). It survives all $n$ draws of a bootstrap sample with probability $(1 - 1/n)^n$, which converges to $1/e \approx 0.37$ as $n$ grows. So on average about a third of the original points are absent from any given bootstrap sample — and those absent points are exactly the resource OOB evaluation exploits.
+
+\begin{defbox}[Out-of-bag (OOB) set and OOB evaluation]
+For tree $s$, the \textbf{out-of-bag set} is the $\approx 37\%$ of original training points that its bootstrap sample $\mathcal{D}_s$ happened to omit. Those points were never seen by tree $s$, so they form a free held-out set \emph{for that tree}.
+
+Two distinct uses of the trained forest must not be confused:
+\begin{itemize}
+  \item \textbf{Final prediction} (on a genuinely new point $\mathbf{x}$): push $\mathbf{x}$ through \emph{all} $S$ trees and aggregate — majority vote or mean. Every tree contributes.
+  \item \textbf{OOB evaluation} (scoring the forest on the training data, for free): for each training point $\mathbf{x}_i$, aggregate the predictions of \emph{only} the trees whose bootstrap sample omitted $\mathbf{x}_i$ (its OOB trees). Average the resulting per-point errors. No tree is ever judged on a point it trained on, so the OOB error is an honest validation-style estimate that costs nothing — no separate validation split needed.
+\end{itemize}
+\end{defbox}
+
+\subsection{Bagging (Bootstrap AGGregatING)}
+
+\begin{defbox}[Bagging]
+\textbf{Bagging} (Bootstrap AGGregatING) is the ensemble technique of (1) generating $S$ bootstrap samples of the original training data, (2) training one estimator on each, and (3) combining their outputs at prediction time. The lecturer's one-line framing: bagging is \emph{bootstrapping applied to the estimator output} — the resampling happens on the data, but what gets aggregated is the prediction of each \emph{fully-trained} estimator (after its parameters have been optimised on its own bootstrap sample), not the raw data.
+\end{defbox}
+
+\doflag{}\textbf{Bagging algorithm:}
+\begin{enumerate}
+  \item Choose $S$, the number of estimators in the ensemble.
+  \item Generate $S$ bootstrap draws of the original dataset: $\mathcal{D}_1, \ldots, \mathcal{D}_S$.
+  \item Train one estimator $\hat{f}_s$ on each $\mathcal{D}_s$, using whatever base algorithm (decision tree, etc.).
+  \item Combine: at query time, aggregate $\{\hat{f}_1(\mathbf{x}), \ldots, \hat{f}_S(\mathbf{x})\}$ — majority vote for classification, mean (or median) for regression.
+\end{enumerate}
+
+The variance reduction comes for free from the central-limit-theorem intuition: averaging $S$ noisy estimates produces an estimate with $1/S$ times the variance of a single estimate (when the estimates are independent — bagging gets you ``approximately independent'' by training on different bootstrap samples).
+
+\subsection{Random subspace}
+
+Bagging alone isn't enough for trees, because the same dominant features keep getting selected at every root split, making bagged trees too similar to each other. The fix:
+
+\begin{defbox}[Random subspace method]
+\textbf{Random subspace} = at each split during tree construction, restrict the feature search to a randomly chosen subset of features (rather than all $n$). Force different trees to base their early decisions on different features.
+\end{defbox}
+
+For a feature space of dimension $n$, a typical choice is a subset of size $\sqrt{n}$ (classification) or $n/3$ (regression) at each split. This restriction is \emph{re-sampled at every split}, not just once per tree — different splits within the same tree consider different features.
+
+\begin{notebox}
+The combination of bagging (vary the data) and random subspace (vary the features) is what gives random forests their characteristic robustness. Either alone produces less diverse trees and less variance reduction.
+\end{notebox}
+
+\subsection{Random forests = trees + bagging + random subspace}
+
+\begin{defbox}[Random forest]
+A \textbf{random forest} combines decision trees with bagging and the random subspace method. The full algorithm:
+\end{defbox}
+
+\doflag{}\textbf{Random forest algorithm:}
+\begin{enumerate}
+  \item Choose $S$, the number of trees (default in \texttt{scikit-learn} is 100).
+  \item Generate $S$ bootstrap draws of the original training data.
+  \item For each bootstrap sample, train a decision tree using the random subspace method (fresh feature subset at every split during construction).
+  \item At prediction time, combine all $S$ trees' outputs:
+        \begin{itemize}
+          \item \emph{Classification}: majority vote — the predicted class is the most common output across the trees.
+          \item \emph{Regression}: take the mean (or median) of the trees' numerical predictions.
+        \end{itemize}
+\end{enumerate}
+
+\subsection{Trade-offs: accuracy vs interpretability vs cost}
+
+The wine-classification example on the slides illustrates the trade-off concretely.
+
+\begin{center}
+\renewcommand{\arraystretch}{1.2}
+\begin{tabularx}{\linewidth}{l c c X}
+\toprule
+\thead{Model} & \thead{Test accuracy} & \thead{Trees} & \thead{Interpretability} \\
+\midrule
+Single decision tree (depth 3) & $\sim$71\% & 1 & High — the tree is inspectable, $\sim$8 leaves, each rule readable. \\
+Single decision tree (deeper) & higher & 1 & Lower — many leaves, harder to read at a glance. \\
+Random forest (32 trees) & $\sim$79\% & 32 & Very low — 32 different trees, each making different splits; no single inspectable rule path. \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\begin{center}
+
+\footnotesize\textit{A real decision tree trained on the red-wine quality dataset (4 classes, 11 features, max depth 3). Each \textbf{grey-outlined node} shows the chosen split feature and threshold (e.g.\ ``alcohol $\le 10.55$''), the entropy of the data reaching it, the sample percentage, and the per-class probability vector. \textbf{Green nodes} lean toward lower-quality classes; \textbf{blue nodes} lean toward higher-quality classes --- the shade signals class majority. The tree is readable and explainable (accuracy 69\%), but a random forest of 32 such trees raises accuracy to 79\% while losing this legibility entirely.}
+\end{center}
+
+The trade-offs in three axes:
+
+\begin{itemize}
+  \item \textbf{Accuracy.} Random forest wins by 5--10 percentage points on most datasets where decision trees are reasonable. Pre-deep-learning, random forests were the \emph{best} general-purpose classifier; deep learning has dethroned them on perceptual tasks (images, speech) but they remain competitive on tabular data.
+  \item \textbf{Interpretability.} A single tree is interpretable — you can trace the path the classifier takes through the tree. A forest is not — there are 100 trees voting, no single rule explains the prediction. For regulated domains (banking, healthcare) this matters.
+  \item \textbf{Compute cost.} Training scales linearly in $S$. Prediction also scales linearly in $S$ (each query is run through every tree). For real-time applications with strict latency budgets, $S = 100$ might be too many.
+\end{itemize}
+
+\textbf{When to use what:}
+\begin{itemize}
+  \item Need interpretability (medical, regulatory): single tree, possibly with cross-validated depth.
+  \item Need accuracy (kaggle leaderboard, internal model where the user doesn't see internals): random forest.
+  \item Need both interpretability and accuracy: tough — try a small forest, or use techniques like SHAP / LIME for post-hoc forest explanations (out of unit scope).
+\end{itemize}
+
+\begin{notebox}
+The lecture's closing summary frames random forests as decision trees ``upgraded'' in three ways: to handle richer input and output types (Wk~3), to ensemble into forests, and to \textbf{output probabilities} rather than just hard labels — each leaf stores the class proportions of the training points reaching it (the per-class vectors visible in the red-wine figure above), and a forest averages those vectors across its $S$ trees to give a soft, probabilistic prediction. Two further asides from that summary: random forests are \textbf{among the fastest algorithms} to train and run; and bagging is only one ensembling style — the other major tree-ensemble family is \textbf{boosting} (e.g.\ \emph{gradient boosting}), which grows trees \emph{sequentially}, each correcting the errors of those before it, rather than independently in parallel.
+\end{notebox}
+
+% =====================================================================
+\section{Loss functions and performance measures: setup}
+
+The second lecture of Wk~4 changes register completely — from algorithms to evaluation. The unifying question: what do we mean when we say a classifier ``performs well''?
+
+\subsection{0--1 loss, formally}
+
+Wk~2 introduced 0--1 loss informally; Wk~4 names it precisely.
+
+\begin{defbox}[0--1 loss]
+For binary classification, the \textbf{0--1 loss} (also called misclassification loss) of classifier $f$ on input--output pair $(\mathbf{x}, y)$ is
+\[
+\ell(y, f(\mathbf{x})) = \begin{cases} 1 & \text{if } f(\mathbf{x}) \ne y \\ 0 & \text{otherwise}. \end{cases}
+\]
+\end{defbox}
+
+\subsection{Empirical vs expected loss}
+
+Two flavours of total loss matter:
+
+\begin{defbox}[Empirical risk]
+The \textbf{empirical risk} (or training/test error) on a sample of size $n$ is the average per-sample loss:
+\[
+R_{\text{emp}}(f) = \frac{1}{n}\sum_{i=1}^n \ell(y_i, f(\mathbf{x}_i)).
+\]
+\end{defbox}
+
+\begin{defbox}[Expected (true) risk]
+The \textbf{expected risk} is the average loss over the full data distribution $P$:
+\[
+R(f) = \mathbb{E}_{(\mathbf{x},y) \sim P}[\ell(y, f(\mathbf{x}))].
+\]
+This is what we actually care about — performance on \emph{any future sample}, not just the ones we have. We can't compute it directly (we don't know $P$); we estimate it by $R_{\text{emp}}$ on a \emph{held-out} test set.
+\end{defbox}
+
+The test-set empirical risk is an unbiased estimate of the true risk, \emph{provided} the test data is drawn from $P$ and was not seen during training. Either of those conditions failing breaks the estimate.
+
+\subsection{The Bayes classifier — the irreducible best}
+
+\begin{defbox}[Bayes classifier]
+The \textbf{Bayes classifier} is the classifier $f_{\text{Bayes}}$ that achieves the minimum possible expected risk:
+\[
+f_{\text{Bayes}} = \arg\min_f R(f) = \arg\min_f \mathbb{E}_P[\ell(y, f(\mathbf{x}))].
+\]
+For binary classification with classes $C_1 = +1$, $C_2 = -1$, the Bayes classifier predicts
+\[
+f_{\text{Bayes}}(\mathbf{x}) = \begin{cases} C_1 & \text{if } P(y = C_1 \mid \mathbf{x}) \ge 0.5 \\ C_2 & \text{otherwise}. \end{cases}
+\]
+\end{defbox}
+
+\textbf{Why this is the optimum.} Given the input $\mathbf{x}$, the best you can do is predict the more probable class. The remaining error rate is $\min\{P(C_1 \mid \mathbf{x}), P(C_2 \mid \mathbf{x})\}$, which is non-zero whenever the two probabilities are non-trivially split — the irreducible noise of the data distribution.
+
+\begin{pitfallbox}[$P(C_1 \mid \mathbf{x})$ is defined over the \emph{true} distribution, not your model]
+A common misreading: that $P(y = C_1 \mid \mathbf{x})$ is something \emph{your model} computes. It is not. The posterior $P(C_1 \mid \mathbf{x})$ in the Bayes classifier is defined over the \textbf{true underlying data distribution} $P$ — the real, fixed mechanism that generates the data. That distribution is \emph{unknown}, so the Bayes classifier is a theoretical benchmark you can reason about but never actually build.
+
+What a real model produces is an \textbf{estimate} $\hat{P}(C_1 \mid \mathbf{x})$, fitted from finite training data. The Bayes classifier uses the true $P$; your classifier uses $\hat{P}$. The gap between them is the \textbf{excess risk}:
+\[
+\underbrace{R(\hat{f})}_{\text{total model error}} = \underbrace{R(f_{\text{Bayes}})}_{\text{Bayes error (noise floor)}} + \underbrace{\big(R(\hat{f}) - R(f_{\text{Bayes}})\big)}_{\text{excess risk (your estimator's fault)}}.
+\]
+Better algorithms and more data shrink the excess risk; nothing shrinks the Bayes error.
+\end{pitfallbox}
+
+\begin{notebox}
+\textbf{Knowing the distribution does not let you predict the outcome.} A second common misconception: that if you knew $P$ exactly you could classify every point perfectly. You cannot. The map $\mathbf{x} \mapsto P(y \mid \mathbf{x})$ is \textbf{stochastic, not deterministic} — knowing $P$ gives you the exact \emph{odds} of each label at $\mathbf{x}$, not the label itself. Two points with identical $\mathbf{x}$ can carry different $y$, and no amount of knowledge changes that.
+
+Even an omniscient classifier that knows $P$ perfectly — the Bayes classifier — is wrong at the rate of the Bayes error. That irreducible error is \textbf{aleatoric uncertainty}: it comes from unmeasured hidden variables and intrinsic randomness in the process. \emph{Fair-roulette analogy}: you can know the wheel and its physics perfectly and still not predict the next spin — perfect knowledge of the odds is not knowledge of the outcome.
+\end{notebox}
+
+\textbf{Computing the conditional probability from a joint density.} Given a joint density $p(\mathbf{x}, y)$, two standard rules get you to the conditional. First, the \emph{definition of conditional probability}: $P(y = C_1 \mid \mathbf{x}) = p(\mathbf{x}, C_1) / p(\mathbf{x})$. Second, the \emph{law of total probability} for the marginal: $p(\mathbf{x}) = p(\mathbf{x}, C_1) + p(\mathbf{x}, C_2)$ — sum the joint over every class. Substituting the second into the first:
+\[
+P(y = C_1 \mid \mathbf{x}) = \frac{p(\mathbf{x}, C_1)}{p(\mathbf{x}, C_1) + p(\mathbf{x}, C_2)}.
+\]
+This is Bayes' rule applied to continuous variables — the infinitesimal $\mathrm{d}\mathbf{x}$ factors that turn densities into probabilities appear in every term and cancel top-to-bottom. The conditional is proportional to the height of the $C_1$-curve at $\mathbf{x}$; the denominator is the height of both curves added. At the crossover point $\mathbf{x}_0$ where the curves are equal, both conditionals are exactly $0.5$ — that's where the Bayes classifier flips its prediction.
+
+\begin{notebox}
+\textbf{Upper-case $P$ vs lower-case $p$ — they are not the same object.}
+\begin{itemize}
+  \item $P(\cdot)$ is a \textbf{probability}: a pure number in $[0,1]$. $P(y = C_1 \mid \mathbf{x})$ is a genuine probability.
+  \item $p(\cdot)$ is a \textbf{probability density}: the \emph{height of a curve}, not itself a probability. A density can exceed $1$; only $p(\mathbf{x})\,\mathrm{d}\mathbf{x}$ — height times an infinitesimal width — is a probability.
+\end{itemize}
+This is why the Bayes-rule formula is consistent despite having densities on the right and a probability on the left:
+\[
+\underbrace{P(y = C_1 \mid \mathbf{x})}_{\text{a probability}} = \frac{\overbrace{p(\mathbf{x}, C_1)}^{\text{a density}}}{p(\mathbf{x}, C_1) + p(\mathbf{x}, C_2)}.
+\]
+Strictly, each term should carry the factor $\mathrm{d}\mathbf{x}$ ($P = p\,\mathrm{d}\mathbf{x}$). But the \emph{same} $\mathrm{d}\mathbf{x}$ multiplies every term, so it cancels top-to-bottom, leaving a ratio of densities that is numerically equal to the ratio of probabilities. The left side is a true probability; the right side looks like densities only because the common $\mathrm{d}\mathbf{x}$ has been silently divided out.
+\end{notebox}
+
+\subsection{Worked picture: the Bayes-optimal threshold}
+
+The slides walk through a 1D example: two overlapping Gaussian-like densities for $C_1$ and $C_2$ over an age axis. Setting a threshold at $x_0$ (where the two densities cross) is Bayes-optimal. Setting it elsewhere — say at $\hat{x}$ — produces additional error:
+
+\begin{itemize}
+  \item At threshold $x_0$ (Bayes-optimal): error = the area where the wrong class's density is non-zero on each side — \emph{green region} (true $C_2$ but predicted $C_1$ on the left of $x_0$) plus \emph{blue region} (true $C_1$ but predicted $C_2$ on the right of $x_0$). This is the \emph{Bayes error rate} — irreducible.
+  \item At threshold $\hat{x} > x_0$: additional \emph{red region} (true $C_2$ but now predicted $C_1$ on the wrong side of $x_0$). The total error is green + blue + red, strictly worse than Bayes-optimal.
+\end{itemize}
+
+\begin{center}
+
+\footnotesize\textit{The Bayes classifier illustrated on a 1-D example (from Bishop's \emph{Pattern Recognition and Machine Learning}). The two curves are the joint densities $p(x, \mathcal{C}_1)$ and $p(x, \mathcal{C}_2)$. The \textbf{dashed vertical line at $x_0$} is the Bayes-optimal decision boundary --- where the two densities cross and $P(\mathcal{C}_1|x)=0.5$. Points in region $\mathcal{R}_1$ (left) are classified as $\mathcal{C}_1$; points in $\mathcal{R}_2$ (right) as $\mathcal{C}_2$. The \textbf{green shaded area} is the irreducible error at $x_0$: true-$\mathcal{C}_2$ points misclassified as $\mathcal{C}_1$. Moving the threshold to $\hat{x}$ (solid line) adds the \textbf{red region} --- avoidable extra error. The \textbf{blue area} is true-$\mathcal{C}_1$ misclassified as $\mathcal{C}_2$ at $x_0$. Together green $+$ blue = Bayes error rate, a hard floor no classifier can beat.}
+\end{center}
+
+\begin{notebox}
+\textbf{Classification and error are properties of \emph{regions}, not of single points.} The crossover $\mathbf{x}_0$ — where the two class-density curves are equal, so $P(C_1 \mid \mathbf{x}_0) = 0.5$ — is the Bayes-optimal threshold. Its real job is to \emph{slice the axis into decision regions} $\mathcal{R}_1$ and $\mathcal{R}_2$. The Bayes error is then an \textbf{area integral} over those regions:
+\[
+\text{Bayes error} = \int_{\mathcal{R}_1} p(\mathbf{x}, C_2)\,\mathrm{d}\mathbf{x} \;+\; \int_{\mathcal{R}_2} p(\mathbf{x}, C_1)\,\mathrm{d}\mathbf{x}.
+\]
+A density \emph{height} at one point is not a probability and not an error. What \emph{is} meaningful is the height-ratio at $\mathbf{x}$: it equals the conditional probability for the micro-region of width $\mathrm{d}\mathbf{x}$ around $\mathbf{x}$. Stringing those micro-regions together — integrating — is what builds the macro-regions $\mathcal{R}_1, \mathcal{R}_2$ and their actual error areas.
+
+\textbf{The estimated threshold $\hat{x}$.} The ``hat'' marks it as \emph{estimated from data} rather than the true optimum. A poorly estimated $\hat{x}$ sits away from $\mathbf{x}_0$. In the band between $\mathbf{x}_0$ and $\hat{x}$ the model commits to the wrong class — the one whose curve is \emph{shorter} there — and the extra error is the area under the shorter curve across that band: the \textbf{red region}. That red region is exactly the excess risk owed to the estimator; with $\hat{x} = \mathbf{x}_0$ it vanishes and only the irreducible Bayes error remains.
+\end{notebox}
+
+\begin{pitfallbox}[the Bayes classifier needs the data distribution]
+The Bayes classifier is a \emph{theoretical} object — it assumes you know $P(y \mid \mathbf{x})$ exactly. In practice you don't. ML algorithms estimate it from finite training data, and the gap between achieved error and Bayes error is the \emph{excess risk}: the part you can hope to reduce by better algorithms or more data. The Bayes error itself is a hard floor.
+\end{pitfallbox}
+
+% =====================================================================
+\section{Why we don't optimise 0--1 loss directly}
+
+Even though 0--1 loss is what we want to minimise (its empirical version equals classification error), we cannot optimise it with gradient methods.
+
+\subsection{The shape of 0--1 loss}
+
+For a binary classifier with $y \in \{-1, +1\}$ and signed score $f(\mathbf{x}) \in \mathbb{R}$, the 0--1 loss as a function of the \emph{margin} $z = y \cdot f(\mathbf{x})$ is
+\[
+\ell_{0\text{-}1}(z) = \begin{cases} 0 & z > 0 \\ 1 & z \le 0. \end{cases}
+\]
+The margin $z = y \cdot f(\mathbf{x})$ is positive when $y$ and $f(\mathbf{x})$ have the same sign (correct prediction) and negative otherwise. The loss as a function of $z$ is a \emph{step function} — flat-zero on the positive side, flat-one on the negative side.
+
+\begin{notebox}
+\textbf{Why the step function is hopeless to optimise.} Gradient-based optimisation needs a non-zero gradient to know which direction to move parameters. The 0--1 loss has gradient zero almost everywhere (flat-zero or flat-one), and is non-differentiable at $z = 0$. Worse, summed over a training set, the empirical 0--1 risk is non-convex with combinatorially many local minima. Minimising it exactly is NP-hard.
+\end{notebox}
+
+\subsection{Convex surrogate losses}
+
+We replace 0--1 loss with a tractable upper bound — convex (so global minimum is reachable), differentiable (so gradient methods work), and lying \emph{above} the 0--1 loss (so minimising the surrogate also approximately minimises the true loss).
+
+\begin{defbox}[Convex surrogate losses (key examples)]
+Each is a function of the margin $z = y \cdot f(\mathbf{x})$.
+\begin{itemize}
+  \item \textbf{Hinge loss} (used by SVMs — Wks~25--26): $\ell_{\text{hinge}}(z) = \max(1 - z, 0)$. Zero when $z \ge 1$ (correct with margin); linear penalty when $z < 1$.
+  \item \textbf{Logistic loss} (used by logistic regression — Wk~11): $\ell_{\text{log}}(z) = \frac{1}{\log 2}\log(1 + \exp(-z))$. Smooth, always positive, asymptotes to $0$ for large positive $z$.
+  \item \textbf{Squared loss} (used by linear regression — Wk~8): $\ell_{\text{sq}}(z) = (1 - z)^2$. Convex parabola; over-penalises confident-correct predictions ($z > 1$) more than necessary, but is the natural choice for regression.
+\end{itemize}
+All three are convex upper bounds on 0--1 loss, equal to or above the step function for every $z$.
+\end{defbox}
+
+\textbf{Reading the loss landscape.} Plot all three as a function of margin $z$:
+\begin{itemize}
+  \item All three pass through the point $(0, 1)$ or near it — at the decision boundary, the loss is positive, encouraging the optimiser to push the margin positive.
+  \item All three have non-zero gradient on the wrong side, so the optimiser knows which way to move parameters.
+  \item Once the margin is comfortably positive ($z \gg 1$), hinge loss is exactly zero (no further pressure to ``be more confident'' — a useful sparsity-inducing property of SVMs); logistic loss decays to zero smoothly; squared loss \emph{increases again}, which is why squared loss is suboptimal for classification.
+\end{itemize}
+
+\begin{center}
+
+\footnotesize\textit{The three convex surrogate losses plotted against the margin $z = yf(x)$. The \textbf{horizontal axis} is the margin: positive values mean correct classification, negative mean misclassification. The \textbf{vertical axis} is the loss value. \textbf{Blue} = hinge loss $\max(1-z, 0)$: zero for $z\ge1$, linear otherwise --- it stops penalising once the margin is large enough. \textbf{Red} = logistic loss: smooth and always positive, asymptotically zero for large positive $z$. \textbf{Green} = squared loss: parabolic, penalises over-confident correct predictions ($z>1$) unnecessarily, making it sub-optimal for classification. All three sit \emph{above} the 0--1 loss step function everywhere, so minimising any surrogate approximately minimises classification error.}
+\end{center}
+
+\subsection{The three-layer reality of loss}
+
+\begin{defbox}[The three things called ``loss'' / ``performance'']
+The lecturer separates three distinct objects that get conflated:
+\begin{enumerate}
+  \item \textbf{Business objective.} What the model is for in the real world — revenue, user engagement, false-fraud rate, lives saved. Often unmeasurable directly.
+  \item \textbf{Performance metric.} A measurable proxy aligned (loosely) with the business objective — accuracy, precision, recall, F1, RMSE. What you report.
+  \item \textbf{Loss function (training surrogate).} A convex, differentiable function whose minimisation approximately drives the metric in the right direction — squared loss, hinge loss, cross-entropy. What the optimiser sees.
+\end{enumerate}
+\end{defbox}
+
+\textbf{Critical separation.} You can optimise loss \#3, you cannot generally optimise \#2 directly (most metrics are non-differentiable, like accuracy or F1), and you cannot directly optimise \#1 at all. The surrogate is chosen so its minimum aligns approximately with the metric, and the metric is chosen so it aligns approximately with the business objective. Misalignment between the layers is the source of many ML failures.
+
+\begin{pitfallbox}[don't ask for accuracy as a loss function]
+Accuracy isn't differentiable. F1 isn't differentiable. Recall isn't differentiable. None of them appear as loss functions in PyTorch / scikit-learn / TensorFlow training APIs because none of them can be backpropagated through. You optimise a surrogate (cross-entropy, hinge, squared) and \emph{evaluate} on the metric.
+\end{pitfallbox}
+
+% =====================================================================
+\section{Underfitting, overfitting, and the train/validation/test discipline}
+
+\subsection{Underfitting vs overfitting (re-presented)}
+
+The slides re-illustrate Wk~3's bias--variance picture with a concrete example: same dataset, three classifiers.
+
+\begin{center}
+\renewcommand{\arraystretch}{1.2}
+\begin{tabularx}{\linewidth}{l c c X}
+\toprule
+\thead{Classifier} & \thead{Train acc} & \thead{Test acc} & \thead{Diagnosis} \\
+\midrule
+Logistic regression (linear) & 79.2\% & 79.2\% & \textbf{Underfitting} — both errors high, model too weak for curved boundary. \\
+Tuned random forest (\texttt{min\_impurity\_decrease=0.008}, $S=512$) & 97.6\% & 95.0\% & \textbf{Balanced} — train and test close, both high. \\
+Default random forest (no regularisation) & 99.6\% & 94.7\% & \textbf{Overfitting} — gap between train and test, train near 100\%. \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\begin{center}
+
+\footnotesize\textit{Three random forest classifiers trained on the same two-class dataset (curved boundary, overlapping classes), shown as predicted-class heatmaps. \textbf{Left}: logistic regression --- a linear boundary that misses the curved structure; train and test accuracy are both around 79\% (underfitting). \textbf{Centre}: tuned random forest (\texttt{min\_impurity\_decrease=0.008}, 512 trees) --- the boundary closely matches the true curve without tracing individual points; train $\approx$ 97.6\%, test $\approx$ 95.0\% (balanced). \textbf{Right}: default random forest with no regularisation --- the jagged, pixelated boundary memorises training noise; train $\approx$ 99.6\%, test $\approx$ 94.7\% (overfitting, visible as the gap). The \textbf{train--test gap} is the operational definition of overfitting.}
+\end{center}
+
+\examflag{}\trapflag{}\textbf{(Q2.5)} The MCQ symptom of overfitting: \emph{low training error, high test error}. The signature is the gap, not either error in isolation.
+
+\subsection{Causes of each}
+
+\begin{itemize}
+  \item \textbf{Underfitting causes.} (a) The model family is too restricted (linear classifier on a curved boundary). (b) Insufficient training data — the model never sees enough examples to find a real pattern.
+  \item \textbf{Overfitting causes.} (a) Powerful model. (b) Insufficient regularisation — the optimiser is allowed to chase noise. The Wk~21 lecture is the principled treatment of regularisation; here it's set up as ``smoothing the model out so it doesn't learn the noise.''
+\end{itemize}
+
+\subsection{Detection: a model can't overfit data it hasn't seen}
+
+The diagnostic principle in one sentence: a model can overfit only to data it has seen. So a held-out set, never used during training, gives an honest estimate of generalisation.
+
+\subsection{The three-way data split}
+
+\begin{defbox}[Train, validation, test]
+\begin{itemize}
+  \item \textbf{Training set} — used to fit model \emph{parameters} (the weights, tree thresholds, etc.). The optimiser sees this data.
+  \item \textbf{Validation set} — used to choose \emph{hyperparameters} (tree depth, $\lambda$ in regularisation, ensemble size). The training algorithm doesn't see this; it's used to pick between different runs of the algorithm.
+  \item \textbf{Test set} — used \emph{only at the very end} to report final performance. Once you've looked at a test-set number, you've started selecting for it; treat the test set as inviolate until you're done.
+\end{itemize}
+\end{defbox}
+
+\begin{center}
+
+\footnotesize\textit{The three-way data split. A single pool of available data is partitioned into three non-overlapping portions. The \textbf{large blue bar} is the training set --- fed to the learning algorithm to fit model parameters. The \textbf{amber bar} is the validation set --- held out from the optimiser and used only to choose hyperparameters (e.g.\ depth, regularisation strength, ensemble size). The \textbf{green bar} is the test set --- locked away and touched only once at the end to report generalisation performance. The key invariant: no information from the validation or test portions flows back into the training algorithm.}
+\end{center}
+
+\textbf{Typical split sizes:} a common rule of thumb is 70--80\% train, 10--15\% validation, 10--15\% test. The slides note ``small as possible to get a reliable estimate'' for validation and test; the rest goes to train.
+
+\begin{pitfallbox}[the most common ML hygiene failure]
+Tuning hyperparameters by checking test-set performance \emph{is} using the test set during training, just one level removed. The reported test score becomes an optimistic estimate of generalisation. The lecturer flags this directly: ``this mistake can be found in countless research papers.'' Use a separate validation set; reserve test for the final number.
+\end{pitfallbox}
+
+\subsection{$n$-fold cross-validation}
+
+When data is scarce, a fixed train/validation split wastes data: the validation set's points never participate in training. \textbf{$n$-fold cross-validation} resolves this:
+
+\begin{defbox}[$n$-fold cross-validation]
+\textbf{$n$-fold cross-validation}: divide the (non-test) data into $n$ equal-sized folds. For each fold $i$:
+\begin{itemize}
+  \item Train on the other $n-1$ folds.
+  \item Validate on fold $i$.
+\end{itemize}
+Average the $n$ validation scores. Use this average to compare hyperparameter settings.
+\end{defbox}
+
+\textbf{Common choice}: $n = 5$ or $n = 10$. The slides note typical range $4 \le n \le 20$.
+
+\textbf{Cost}: $n$-fold cross-validation is $n \times$ slower than a single train/validation split, since the model is trained $n$ times per hyperparameter setting. With grid search over many hyperparameter settings, this can become the dominant compute cost.
+
+\textbf{After hyperparameter selection}, the standard pipeline is:
+\begin{enumerate}
+  \item Use $n$-fold cross-validation on the train+validation portion to pick the best hyperparameters.
+  \item Retrain a final model with those hyperparameters on the \emph{entire} train+validation data.
+  \item Evaluate once on the held-out test set.
+\end{enumerate}
+
+% =====================================================================
+\section{The confusion matrix and its derived metrics}
+
+This section owns past-paper Q5. Memorise the layout, the four cells, and the formulas.
+
+\subsection{The confusion matrix}
+
+\begin{defbox}[Confusion matrix (binary classification)]
+For a binary classifier, the \textbf{confusion matrix} cross-tabulates predictions against actuals:
+
+\begin{center}
+\begin{tabular}{l|cc}
+& \textbf{Actual: True (Positive)} & \textbf{Actual: False (Negative)} \\
+\hline
+\textbf{Predicted: True (Positive)} & TP (true positive) & FP (false positive) \\
+\textbf{Predicted: False (Negative)} & FN (false negative) & TN (true negative) \\
+\end{tabular}
+\end{center}
+
+Diagonal cells (TP, TN) are correct predictions; off-diagonal cells (FP, FN) are errors.
+\end{defbox}
+
+\begin{center}
+
+\footnotesize\textit{The four cells of the binary confusion matrix, labelled by their standard names. Columns represent the \textbf{actual} class (False / True); rows represent the \textbf{predicted} class. Reading across: if we predict False and the truth is False, that is a \textbf{True Negative (TN)} --- a correct rejection. If we predict False but the truth is True, that is a \textbf{False Negative (FN)} --- a miss. If we predict True but the truth is False, that is a \textbf{False Positive (FP)} --- a false alarm. If we predict True and the truth is True, that is a \textbf{True Positive (TP)} --- a correct detection. Memorise this layout; all five metric formulas derive directly from these four counts.}
+\end{center}
+
+\begin{notebox}
+\textbf{Layout convention warning.} Some textbooks transpose this matrix (rows = actual, columns = predicted). In this unit (and on the past paper, Q5), \textbf{rows = predicted, columns = actual}. Always check the orientation explicitly when reading a confusion matrix from a problem statement.
+\end{notebox}
+
+\begin{notebox}
+\textbf{Mnemonic — read each term backwards.} The two-word names are easy to get wrong (False Negative is \emph{not} ``a negative that is false''). Read them right-to-left:
+\begin{itemize}
+  \item \textbf{2nd word} = what the model \textbf{predicted} (Positive or Negative).
+  \item \textbf{1st word} = whether that prediction was right (True) or wrong (False).
+\end{itemize}
+So:
+\begin{itemize}
+  \item \textbf{False Negative} = predicted Negative, and \emph{wrong} $\Rightarrow$ the truth is \emph{positive}. This is a \textbf{miss} (e.g.\ a real cancer case called healthy).
+  \item \textbf{False Positive} = predicted Positive, and \emph{wrong} $\Rightarrow$ the truth is \emph{negative}. This is a \textbf{false alarm}.
+  \item \textbf{True Positive / True Negative} = predicted Positive / Negative, and \emph{correct}.
+\end{itemize}
+\end{notebox}
+
+\subsection{The metric formulas}
+
+\examflag{}These are the formulas Q5(a)--(e) directly asks for. Memorise them.
+
+\begin{defbox}[Performance metrics from the confusion matrix]
+\begin{align*}
+\text{Accuracy} &= \frac{TP + TN}{TP + TN + FP + FN} \quad\text{(fraction correct)} \\[0.4em]
+\text{Precision} &= \frac{TP}{TP + FP} \quad\text{(of predicted positives, what fraction are correct)} \\[0.4em]
+\text{Recall} &= \frac{TP}{TP + FN} \quad\text{(of actual positives, what fraction did we catch)} \\[0.4em]
+\text{F1 score} &= \frac{2 \cdot TP}{2 \cdot TP + FP + FN} \quad\text{(harmonic mean of precision and recall)} \\[0.4em]
+\text{Balanced accuracy} &= \frac{1}{|C|}\sum_{c \in C}\frac{|\{y_i = c \wedge \hat y_i = c\}|}{|\{y_i = c\}|} \quad\text{(mean of per-class recalls)}
+\end{align*}
+\end{defbox}
+
+\textbf{Other common names for the same things:}
+\begin{center}
+\renewcommand{\arraystretch}{1.2}
+\begin{tabularx}{\linewidth}{l X}
+\toprule
+\thead{Formula} & \thead{All the names it goes by} \\
+\midrule
+$\frac{TP}{TP+FN}$ & sensitivity, recall, hit rate, true positive rate \\
+$\frac{TN}{TN+FP}$ & specificity, true negative rate \\
+$\frac{TP}{TP+FP}$ & precision, positive predictive value \\
+$\frac{TP+TN}{TP+TN+FP+FN}$ & accuracy \\
+$\frac{2\,TP}{2\,TP+FP+FN}$ & F1 score, F-measure (with $\beta=1$) \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\subsection{Worked example: past-paper Q5 confusion matrix}
+
+\textbf{Q5 setup}: the past paper presents the confusion matrix
+\begin{center}
+\begin{tabular}{l|cc}
+& \textbf{Actual: False} & \textbf{Actual: True} \\
+\hline
+\textbf{Predicted: False} & 30 & 10 \\
+\textbf{Predicted: True} & 20 & 40 \\
+\end{tabular}
+\end{center}
+
+So $TN = 30$, $FN = 10$, $FP = 20$, $TP = 40$.
+
+\doflag{}Compute each metric.
+
+\begin{exbox}[Q5 confusion-matrix metrics, computed]
+\textbf{(a) Precision} $= \dfrac{TP}{TP + FP} = \dfrac{40}{40 + 20} = \dfrac{40}{60} = \mathbf{0.667}$.
+
+\textbf{(b) Recall} $= \dfrac{TP}{TP + FN} = \dfrac{40}{40 + 10} = \dfrac{40}{50} = \mathbf{0.8}$.
+
+\textbf{(c) Accuracy} $= \dfrac{TP + TN}{TP + TN + FP + FN} = \dfrac{40 + 30}{40 + 30 + 20 + 10} = \dfrac{70}{100} = \mathbf{0.7}$.
+
+\textbf{(d) F1 score} $= \dfrac{2 \cdot TP}{2 \cdot TP + FP + FN} = \dfrac{80}{80 + 20 + 10} = \dfrac{80}{110} = \mathbf{0.727}$.
+
+Equivalently, F1 = harmonic mean of P and R $= \dfrac{2 \cdot 0.667 \cdot 0.8}{0.667 + 0.8} = \dfrac{1.067}{1.467} = \mathbf{0.727}$. ✓
+
+\textbf{(e) Balanced accuracy} = mean of per-class recalls.
+
+Recall for class True $= TP / (TP + FN) = 40 / 50 = 0.8$. \\
+Recall for class False $= TN / (TN + FP) = 30 / 50 = 0.6$.
+
+Balanced accuracy $= \dfrac{0.8 + 0.6}{2} = \mathbf{0.7}$.
+\end{exbox}
+
+\subsection{The intuition behind each metric}
+
+\textbf{Precision} answers ``of the things I called positive, how many actually were?'' High precision $\Leftrightarrow$ few false alarms. Spam-filter design optimises precision (don't accidentally junk a real email).
+
+\textbf{Recall} answers ``of the actual positives, how many did I find?'' High recall $\Leftrightarrow$ few misses. Cancer-screening optimises recall (don't miss a real case).
+
+\textbf{Precision and recall trade off}: a classifier that always predicts positive gets recall = 1 but terrible precision; a classifier that only predicts positive when extremely confident gets high precision but low recall. The two metrics together describe the classifier's behaviour; either alone is misleading.
+
+\textbf{F1 = harmonic mean of precision and recall.} The harmonic mean is closer to the smaller of two values. So F1 forces you to be good at \emph{both} precision and recall — you cannot game F1 by acing one metric and tanking the other.
+
+\begin{notebox}
+\textbf{Past paper Q5(f)} asks: ``Why is the F1-score considered a better measure than precision or recall alone?'' Answer: because precision and recall trade off, and either alone can be artificially maximised by a useless classifier (always-positive maximises recall; never-positive maximises precision trivially when the positive class is rare). F1, as the harmonic mean, requires both to be high simultaneously and so reflects classifier quality more honestly.
+\end{notebox}
+
+\textbf{Accuracy} is the easy one — fraction of all predictions that are correct. But:
+
+\begin{pitfallbox}[accuracy is misleading on imbalanced data]
+Suppose a credit-card fraud dataset has 0.1\% fraud transactions. A useless classifier that always predicts ``not fraud'' achieves \textbf{99.9\% accuracy} while catching zero fraud cases. Any business intuition about ``99.9\% accuracy'' suggests excellent performance, but the classifier is worthless. \textbf{When classes are heavily imbalanced, accuracy is meaningless.} Use F1 or balanced accuracy instead.
+\end{pitfallbox}
+
+\examflag{}\textbf{Past paper Q5(g)--(h):}
+\begin{itemize}
+  \item \textbf{(g) When is accuracy not sufficient?} When classes are imbalanced. The trivial majority-class classifier achieves high accuracy without learning anything useful about the minority class.
+  \item \textbf{(h) What's a better measure?} F1 score (when one class matters more — captures precision/recall trade-off) or balanced accuracy (when all classes matter equally — averages per-class recalls regardless of class size).
+\end{itemize}
+
+\subsection{Balanced accuracy in detail}
+
+\begin{defbox}[Balanced accuracy]
+\textbf{Balanced accuracy} averages the per-class recall (a.k.a.\ true positive rate per class):
+\[
+\text{Balanced accuracy} = \frac{1}{|C|}\sum_{c \in C}\frac{|\{y_i = c \wedge \hat{y}_i = c\}|}{|\{y_i = c\}|},
+\]
+where $C$ is the set of classes. For binary classification with classes $+, -$:
+\[
+\text{Balanced accuracy} = \frac{1}{2}\left(\frac{TP}{TP+FN} + \frac{TN}{TN+FP}\right) = \frac{1}{2}(\text{Recall}_+ + \text{Recall}_-).
+\]
+\end{defbox}
+
+\begin{pitfallbox}[balanced accuracy is the \emph{mean} of per-class recalls, not the sum]
+A frequent slip: writing balanced accuracy as $\text{Recall}_+ + \text{Recall}_-$. It is the \textbf{mean}, not the sum — note the $\tfrac{1}{|C|}$ (here $\tfrac{1}{2}$) in front of the summation. The sum of two recalls could reach $2.0$, which is not a valid accuracy; dividing by the number of classes keeps the score in $[0,1]$.
+\begin{itemize}
+  \item \textbf{Binary}: $\text{Balanced accuracy} = \tfrac{1}{2}(\text{Recall}_+ + \text{Recall}_-)$.
+  \item \textbf{Multi-class}: add up all per-class recalls, then divide by the number of classes $|C|$.
+\end{itemize}
+\end{pitfallbox}
+
+\textbf{Why this works on imbalanced data}: each class contributes equally to the score, regardless of its size. The fraud-detection always-no classifier scores $\tfrac{1}{2}(0/1 + N/N) = 0.5$ — chance level — instead of 0.999.
+
+\subsection{Beyond confusion-matrix metrics}
+
+The slide flags that confusion-matrix metrics are intermediate proxies. For some problems you need different evaluation:
+\begin{itemize}
+  \item \textbf{Cost / loss / gain / risk}: assign different real-money costs to different cells (FP costs \$0.10 in misdirected ad spend; FN costs \$10,000 in missed fraud). The metric is then total expected cost, not raw counts.
+  \item \textbf{Ranking}: for search/recommendation, what matters is the ordering of items, not binary classification. Metrics like NDCG, MAP, precision@K capture ranking quality.
+\end{itemize}
+
+The lecturer's parting refrain: ``test the complete system'' — confusion-matrix metrics are intermediate, the business outcome is final.
+
+% =====================================================================
+\section{Bad data and why models fail}
+
+The slides close with a tour of failure modes that have nothing to do with the algorithm — they're data problems that even a perfect classifier cannot fix.
+
+\begin{itemize}
+  \item \textbf{Insufficient data.} Curve-fitting from too few points: many curves fit, no way to know which is right. Variance term of the bias-variance decomposition is huge.
+  \item \textbf{Spurious correlation.} The 1964 tank-detection study: cloud-day photos contained tanks, sunny-day photos didn't, and the classifier learned to detect cloudiness, not tanks. Generalisation to new test conditions failed completely. \emph{Always ask: what is the model actually using to decide?}
+  \item \textbf{No correlation.} Predicting bus arrival times from fountain heights — there's nothing to learn. The model can pretend to learn but can't generalise.
+  \item \textbf{Imbalanced data.} As above; a trivial majority-class classifier hits high accuracy — the lecture's example is a visual-question-answering system on which simply always answering ``yes'' beat far more sophisticated models, because the benchmark's answers were themselves skewed toward ``yes.'' Fixing imbalance has two sides: at \emph{evaluation} time, report F1 or balanced accuracy instead of raw accuracy; at \emph{training} time, adjust the training process itself — e.g.\ \textbf{oversampling} the minority class (or undersampling the majority) so the optimiser is not swamped by the dominant class.
+  \item \textbf{Runtime mismatch.} Model trained on UK data deployed in Australia encounters kangaroos it has never seen. The Bayes-optimal classifier on training data is suboptimal on test data drawn from a different distribution.
+  \item \textbf{Biased data.} Amazon's CV-screener trained on past hires (mostly male) reproduced and amplified the bias. Spurious correlation + societal bias = harmful failure that a precision/recall metric won't surface unless evaluated separately on protected groups.
+\end{itemize}
+
+The unit doesn't develop these in depth; recognise them, watch for them, and don't claim a model works without checking how it fails.
+
+% =====================================================================
+\section*{Exam-mode answers}
+
+\begin{exambox}[1 — Describe the random forest algorithm]
+\textbf{1 mark}: Choose $S$, the number of trees. \\
+\textbf{1 mark}: Generate $S$ bootstrap samples of the training data — each is $n$ points sampled with replacement from the original $n$. \\
+\textbf{1 mark}: Train one decision tree on each bootstrap sample, using the random subspace method (at each split, restrict the feature search to a random subset). \\
+\textbf{1 mark}: At prediction time, combine outputs: majority vote for classification, mean / median for regression. \\
+\textbf{1 mark} for noting the bias--variance rationale: the forest reduces the variance of a single high-variance tree without increasing bias.
+\end{exambox}
+
+\begin{exambox}[2 — Why does ensembling work?]
+\textbf{1 mark}: Decision trees (and many other model families) have high variance — small changes in the training data produce noticeably different trees. \\
+\textbf{1 mark}: Averaging $S$ approximately-independent estimators reduces the variance of the average to roughly $1/S$ of the per-estimator variance. \\
+\textbf{1 mark}: Bagging (varying the data) and random subspace (varying the features) make the trees approximately independent. \\
+\textbf{1 mark}: Bias is preserved — each tree is unbiased on average, and the average of unbiased estimators is unbiased. \\
+\textbf{1 mark}: The cost is interpretability and training/prediction time, both linear in $S$.
+\end{exambox}
+
+\begin{exambox}[3 — Why don't we optimise 0--1 loss directly during training?]
+\textbf{1 mark}: 0--1 loss is non-convex and non-differentiable. \\
+\textbf{1 mark}: Gradient methods need a non-zero gradient to point them toward better parameters; 0--1 loss has gradient zero almost everywhere. \\
+\textbf{1 mark}: Exact minimisation of empirical 0--1 loss is NP-hard. \\
+\textbf{1 mark}: We instead use convex surrogates that upper-bound 0--1 loss — hinge loss (SVMs), logistic loss (logistic regression), squared loss (linear regression). All are convex, differentiable, and minimising them approximately minimises 0--1 loss.
+\end{exambox}
+
+\begin{exambox}[4 — State the formulas for accuracy, precision, recall, F1, balanced accuracy]
+\textbf{1 mark each (5 total)}:
+\begin{itemize}
+  \item Accuracy $= \dfrac{TP + TN}{TP + TN + FP + FN}$.
+  \item Precision $= \dfrac{TP}{TP + FP}$.
+  \item Recall $= \dfrac{TP}{TP + FN}$.
+  \item F1 $= \dfrac{2 \cdot TP}{2 \cdot TP + FP + FN}$ (harmonic mean of precision and recall).
+  \item Balanced accuracy $= \dfrac{1}{|C|}\sum_c \dfrac{|\{y_i = c \wedge \hat y_i = c\}|}{|\{y_i = c\}|}$. Binary case: $\tfrac{1}{2}(\text{Recall}_+ + \text{Recall}_-)$.
+\end{itemize}
+\end{exambox}
+
+\begin{exambox}[5 — Compute all five metrics for the past-paper confusion matrix]
+Given $TP=40, FN=10, FP=20, TN=30$:
+
+\textbf{1 mark}: Precision $= 40/60 \approx 0.667$. \\
+\textbf{1 mark}: Recall $= 40/50 = 0.8$. \\
+\textbf{1 mark}: Accuracy $= 70/100 = 0.7$. \\
+\textbf{1 mark}: F1 $= 80/110 \approx 0.727$. \\
+\textbf{1 mark}: Balanced accuracy $= \tfrac{1}{2}(40/50 + 30/50) = \tfrac{1}{2}(0.8 + 0.6) = 0.7$.
+\end{exambox}
+
+\begin{exambox}[6 — Why is F1 better than precision or recall alone?]
+\textbf{1 mark}: Precision and recall trade off — improving one typically degrades the other. \\
+\textbf{1 mark}: A classifier can game precision (only predict positive when extremely confident — high precision, low recall) or recall (always predict positive — high recall, low precision) without being useful. \\
+\textbf{1 mark}: F1 is the harmonic mean of precision and recall: $\text{F1} = \tfrac{2 \cdot P \cdot R}{P + R}$. \\
+\textbf{1 mark}: The harmonic mean is closer to the smaller of two values, so F1 forces both precision and recall to be high — you cannot achieve a high F1 by being good at one and bad at the other.
+\end{exambox}
+
+\begin{exambox}[7 — When is accuracy not sufficient, and what should you use instead?]
+\textbf{1 mark}: Accuracy is misleading on \textbf{imbalanced} datasets. \\
+\textbf{1 mark}: Example: 99.9\% non-fraud transactions; a trivial always-no classifier achieves 99.9\% accuracy without catching any fraud. \\
+\textbf{1 mark}: \textbf{F1 score} is better when one class is more important and you care about both precision and recall on that class. \\
+\textbf{1 mark}: \textbf{Balanced accuracy} is better when all classes matter equally — it averages per-class recalls, so the score isn't dominated by the majority class.
+\end{exambox}
+
+\begin{exambox}[8 — Distinguish parameters, hyperparameters, train/validation/test sets]
+\textbf{1 mark}: \emph{Parameters} are values the training algorithm fits to data (tree node thresholds, regression weights). Optimised on the training set. \\
+\textbf{1 mark}: \emph{Hyperparameters} are choices about the training procedure made before training (tree depth, $\lambda$, ensemble size). Tuned on the validation set. \\
+\textbf{1 mark}: \emph{Training set} = data used to fit parameters. \emph{Validation set} = data used to choose hyperparameters. \emph{Test set} = data used \emph{only} to report final performance. \\
+\textbf{1 mark}: Tuning hyperparameters by checking test-set performance invalidates the test set as an honest generalisation estimate.
+\end{exambox}
+
+\begin{exambox}[9 — Define and explain the Bayes classifier]
+\textbf{1 mark}: The Bayes classifier $f_{\text{Bayes}} = \arg\min_f R(f)$ is the classifier achieving the minimum possible expected risk. \\
+\textbf{1 mark}: For binary classification: predict $C_1$ if $P(y = C_1 \mid \mathbf{x}) \ge 0.5$, else $C_2$. \\
+\textbf{1 mark}: Its error rate is the \emph{Bayes error} — irreducible noise in the data. No classifier can do better. \\
+\textbf{1 mark}: The Bayes classifier is theoretical (requires the true conditional $P(y \mid \mathbf{x})$); ML algorithms approximate it from finite training data.
+\end{exambox}
+
+% =====================================================================
+\section*{Key ideas to carry forward}
+
+\begin{tldrbox}
+\begin{itemize}[leftmargin=*]
+  \item \textbf{Random forests realise the Wk~3 plan} — they exist precisely to attack the variance term in the bias--variance decomposition. Bagging $+$ random subspace $+$ averaging.
+  \item \textbf{Loss vs metric vs business objective} — three layers, only the loss is what the optimiser sees, only the metric is what you report, only the business objective is what matters in the world. Misalignment between layers is the source of many ML failures.
+  \item \textbf{0--1 loss is the metric, never the training loss.} Convex surrogates (hinge, logistic, squared) make optimisation tractable. Wk~11 (logistic regression) develops logistic loss in detail; Wks~25--26 develop hinge loss for SVMs.
+  \item \textbf{The confusion matrix} is the foundation of classifier evaluation. Memorise the layout (rows = predicted, columns = actual) and the four metric formulas (accuracy, precision, recall, F1, balanced accuracy). Past-paper Q5 will hand you a confusion matrix and ask for these directly.
+  \item \textbf{Train / validation / test discipline} is non-negotiable: parameters fit on train, hyperparameters chosen on validation, test reserved for the final number. $n$-fold cross-validation when data is scarce.
+  \item \textbf{Bad data beats good algorithms.} Spurious correlations, imbalanced classes, runtime distribution shift, biased training sets — all produce models that look good on metrics and fail in deployment. Recognising these patterns is part of the practical skill set.
+  \item \textbf{Forward references}: Wk~7 develops the optimisation machinery the convex surrogates need (gradient descent, Newton's method). Wk~11 owns logistic loss; Wks~25--26 own hinge loss; Wk~21 owns regularisation as the Wk~3 bias--variance lever.
+\end{itemize}
+\end{tldrbox}
+
+\end{document}

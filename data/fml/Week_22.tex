@@ -1,0 +1,742 @@
+\documentclass[11pt, a4paper]{article}
+\usepackage{fontspec}\setmainfont{Helvetica Neue}\setmonofont{Menlo}
+\usepackage{unicode-math}\setmathfont{STIX Two Math}
+\usepackage[margin=2cm, top=2cm, bottom=2.5cm]{geometry}
+\usepackage{microtype}\usepackage{parskip}
+\setlength{\parskip}{0.6em}\setlength{\parindent}{0pt}
+\usepackage[colorlinks=true, linkcolor=NavyBlue, urlcolor=NavyBlue, citecolor=NavyBlue]{hyperref}
+\usepackage{xcolor}\usepackage[dvipsnames]{xcolor}
+\usepackage{amsmath}\usepackage{booktabs}\usepackage{array}\usepackage{tabularx}
+\usepackage{graphicx}
+\graphicspath{{figures/week22/}}
+\newcommand{\thead}[1]{\textbf{#1}}
+\usepackage{enumitem}
+\setlist[itemize]{leftmargin=1.5em, itemsep=0.2em, topsep=0.3em}
+\setlist[enumerate]{leftmargin=1.5em, itemsep=0.2em, topsep=0.3em}
+\usepackage[most]{tcolorbox}\tcbuselibrary{breakable, skins, theorems}
+\definecolor{defBg}{HTML}{EAF2FB}\definecolor{defBd}{HTML}{1F4E79}
+\definecolor{exBg}{HTML}{F4F4F4}\definecolor{exBd}{HTML}{555555}
+\definecolor{tipBg}{HTML}{E8F5E9}\definecolor{tipBd}{HTML}{2E7D32}
+\definecolor{trapBg}{HTML}{FCE4EC}\definecolor{trapBd}{HTML}{AD1457}
+\definecolor{pitBg}{HTML}{FFF8E1}\definecolor{pitBd}{HTML}{B27600}
+\definecolor{noteBg}{HTML}{F3E5F5}\definecolor{noteBd}{HTML}{6A1B9A}
+\definecolor{tldrBg}{HTML}{E1F5FE}\definecolor{tldrBd}{HTML}{0277BD}
+\newtcolorbox{defbox}[1][]{enhanced, breakable, colback=defBg, colframe=defBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={Definition: #1}}
+\newtcolorbox{exbox}[1][]{enhanced, breakable, colback=exBg, colframe=exBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={Worked example: #1}}
+\newtcolorbox{exambox}[1][]{enhanced, breakable, colback=tipBg, colframe=tipBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={Exam-mode answer #1}}
+\newtcolorbox{trapbox}[1][]{enhanced, breakable, colback=trapBg, colframe=trapBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={MCQ trap #1}}
+\newtcolorbox{pitfallbox}[1][]{enhanced, breakable, colback=pitBg, colframe=pitBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={Pitfall #1}}
+\newtcolorbox{notebox}[1][]{enhanced, breakable, colback=noteBg, colframe=noteBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={Lecturer aside #1}}
+\newtcolorbox{tldrbox}[1][]{enhanced, breakable, colback=tldrBg, colframe=tldrBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={TL;DR #1}}
+\usepackage{titlesec}
+\titleformat{\section}[block]{\Large\bfseries\color{defBd}}{\thesection.}{0.6em}{}
+\titleformat{\subsection}[block]{\large\bfseries\color{defBd!80!black}}{\thesubsection}{0.5em}{}
+\titleformat{\subsubsection}[block]{\normalsize\bfseries}{}{0pt}{}
+\titlespacing*{\section}{0pt}{1.6em}{0.6em}\titlespacing*{\subsection}{0pt}{1.2em}{0.4em}
+\usepackage{fancyhdr}\pagestyle{fancy}\fancyhf{}
+\fancyhead[L]{\small CM52054 — Week 22}\fancyhead[R]{\small Graphical Models}
+\fancyfoot[C]{\small\thepage}\renewcommand{\headrulewidth}{0.3pt}
+\newcommand{\examflag}{\textcolor{tipBd}{\textbf{[EXAM]}}\,}
+\newcommand{\trapflag}{\textcolor{trapBd}{\textbf{[TRAP]}}\,}
+\newcommand{\doflag}{\textcolor{defBd}{\textbf{[DO]}}\,}
+\title{\vspace{-1cm}{\Huge\bfseries Week 22 — Graphical Models} \\[0.4em]{\large Bayesian networks, factor graphs, Markov random fields; explaining away; d-separation; Naive Bayes}}
+\author{\large CM52054 Foundational Machine Learning \\[0.2em]\normalsize University of Bath \,$\cdot$\, Dr Rohit Babbar}
+\date{Revision notes}
+\begin{document}\maketitle\thispagestyle{empty}\vspace{1em}
+
+\begin{tldrbox}
+\begin{itemize}[leftmargin=*]
+  \item \textbf{Graphical models} encode the structure of a joint probability distribution over multiple random variables (RVs) using a graph. Nodes $=$ RVs; edges encode conditional (in)dependence. Used \emph{both} for representation and for efficient inference.
+  \item Three main flavours: \textbf{Bayesian networks} (directed; one $P(\text{node}|\text{parents})$ per node), \textbf{factor graphs} (bipartite; circles for RVs, squares for factor functions), \textbf{Markov random fields / networks} (undirected; pairwise + unary potentials). Conversions: BN $\to$ factor graph and MN $\to$ factor graph are always possible. Code typically uses factor graphs.
+  \item \textbf{Reading the graph}: shaded $=$ observed, unshaded $=$ unobserved. Different ``modes'' (training / testing / runtime / missing data) shade different nodes.
+  \item \textbf{Latent variables}: \textbf{always} unobserved. \emph{Hidden} (we know it exists, can't measure — speed in derailment) vs \emph{hypothetical} (might not actually exist — psychological constructs).
+  \item \textbf{Joint factorisation from a Bayesian network}: $P(\text{all RVs}) = \prod_v P(v\,|\,\text{parents}(v))$. The graph \emph{is} the factorisation.
+  \item \textbf{Naive Bayes} \doflag{}: classifier that assumes features are conditionally independent given the label. Joint factorises as $P(y)\prod_i P(x_i|y)$. ML estimate of each $P(x_i|y)$ is just a count: $p_{iy} = C_i(1, y) / [C_i(0,y)+C_i(1,y)]$.
+  \item \textbf{Markov property}: ``next state depends only on current state, not on history.'' Markov chains, factor graphs, Bayesian networks all encode it for time / spatial sequences.
+  \item \textbf{Explaining away / V-structure / collider} \examflag{}: a node with two parent arrows in. \emph{Marginally independent} parents become \emph{conditionally dependent} when the child (or any descendant) is observed. Slogan: ``observing the bottom of the V opens a path between the arms.''
+  \item \textbf{d-separation} (the conditional-independence rules) \examflag{}:
+  \begin{itemize}
+    \item \textbf{Chain} $a \to z \to b$: blocked iff $z$ observed.
+    \item \textbf{Fork} $a \leftarrow z \to b$: blocked iff $z$ observed.
+    \item \textbf{Collider} $a \to z \leftarrow b$: blocked iff $z$ \emph{not} observed (and no descendant observed). \textbf{Backwards from chain/fork.}
+    \item Two RVs are d-separated by a set $\mathbf{z}$ iff \emph{every} path between them is blocked.
+  \end{itemize}
+  \item \textbf{Inference at test time}: probability of an RV assignment $=$ product of all factors evaluated at the assignment. For numerical stability, work in log space.
+\end{itemize}
+\end{tldrbox}
+
+% =====================================================================
+\section{Why graphical models}
+
+\subsection{The motivating problem: train derailment}
+
+The lecture's running example: predict whether a train will derail from 6 features (driver hours on duty, lateness, speed limit, curve radius, train age, track age) plus an unobserved variable (actual speed). A naive supervised classifier learns
+\[
+P(\text{crashed} \,|\, \text{6 features})
+\]
+directly, treating the six features symmetrically. This works but ignores domain knowledge.
+
+\textbf{The structural insight.} The three driver/lateness/speed-limit features cause \emph{speed}; speed plus the radius/train-age/track-age features cause the crash. The full distribution factorises:
+\[
+P(\text{crashed},\,\text{6 features}) \;=\; \underbrace{P(\text{crashed}\,|\,\text{3 features},\text{speed})}_{r, a_v, a_s} \cdot \underbrace{P(\text{speed}\,|\,\text{3 features})}_{d,l,m}.
+\]
+Encoding this factorisation in a graph and learning the smaller factors is a graphical model.
+
+\textbf{The conditional-independence claim — and its counterfactual.} This structure says that \emph{knowing speed $v$, the speed limit $m$ gives no extra information about the crash $c$} — speed screens off the driver features. \trapflag{}But this depends on the graph: \emph{connecting $m$ directly to $c$ (adding an $m \to c$ edge) makes the claim no longer true} — the new direct path means $m$ would carry information about $c$ even once $v$ is known. The conditional independence is a property of \emph{this particular} structure, not an intrinsic fact about the variables.
+
+\begin{center}
+
+\footnotesize\textit{The derailment Bayesian network. Circles are random variables; arrows encode conditional dependency (``$a \to b$'' means $a$ influences $b$). The six feature RVs split into two groups: \textbf{driver features} ($d$, $l$, $m$) all pointing into the latent speed node $v$, and \textbf{track/hardware features} ($r$, $a_v$, $a_s$) pointing directly into crash $c$ alongside $v$. This two-stage structure captures the domain knowledge that speed mediates between driver behaviour and crash risk --- and gives the factorisation $P(c,\text{6 features}) = P(c\,|\,r,a_v,a_s,v)\cdot P(v\,|\,d,l,m)$, each factor being a smaller, more tractable problem than the full joint.}
+\end{center}
+
+\subsection{Why this is useful}
+
+\begin{itemize}
+  \item \textbf{Lower-dimensional sub-models.} Each factor estimates a conditional with fewer inputs. ``Curse of dimensionality'' is reduced by an explicit manifold (lecture). $P(\text{speed}\,|\,\text{3 features})$ is easier than $P(\text{crash}\,|\,\text{6 features})$.
+  \item \textbf{More effective use of data.} Each factor sees its own subset of conditioning RVs, so a moderate dataset trains many small factors rather than one giant table.
+  \item \textbf{Missing data tolerance.} You can do inference with some variables missing, training-time labels missing, or even \emph{latent} variables that are never observed (e.g.\ speed). Standard supervised models can't do this.
+  \item \textbf{Performance.} ``Including our knowledge (physics) into the problem leads to hard removal of possibilities.'' Domain structure tightens the model.
+\end{itemize}
+
+\textbf{Headline.} ``All ML algorithms have a graphical model — there is always some structural assumption about how data is generated. GMs make that explicit.''
+
+% =====================================================================
+\section{Reading a graphical model}
+
+\subsection{Notation}
+
+\begin{tabularx}{\linewidth}{@{}lX@{}}
+\toprule
+\thead{Symbol} & \thead{Meaning} \\
+\midrule
+Circle / open node           & a random variable \\
+No circle (variable name only) & a (hyper-)parameter — fixed, not random \\
+Shaded circle                & RV is \emph{observed} \\
+Unshaded circle              & RV is \emph{unobserved} (latent or just unknown for now) \\
+Arrow $a \to b$              & \emph{$a$ influences $b$} (in Bayesian network) \\
+Edge (no arrow)              & symmetric dependency (in Markov network) \\
+Square (in factor graph)     & a \emph{factor} — a function of the connected RVs \\
+\bottomrule
+\end{tabularx}
+
+\subsection{Modes change what's observed}
+
+The same graph can be re-shaded for different stages of the model lifecycle:
+
+\begin{itemize}
+  \item \textbf{Training}: all RVs that appear in training data are shaded.
+  \item \textbf{Testing / runtime}: only the input features are shaded; the prediction target is unshaded (we want to infer it).
+  \item \textbf{Missing data}: some normally-shaded RVs become unshaded (e.g.\ patient didn't report a symptom).
+\end{itemize}
+
+\begin{notebox}[: shading means ``do we have the value'', nothing else]
+Shading has \emph{nothing} to do with whether an RV is a cause or an effect, or where it sits in the
+graph (top vs bottom). It answers one question only: \emph{do we currently know this variable's
+value?} An \textbf{effect} at the bottom of the graph can be shaded (e.g.\ you \emph{hear} the sirens)
+while a \textbf{cause} at the top is unshaded (you can't see the weather). This is exactly what makes
+graphical models powerful: you can feed in observed effects and infer \emph{backwards} to unobserved
+causes — something a standard feed-forward model cannot do.
+\end{notebox}
+
+\begin{center}
+
+\footnotesize\textit{Three modes of the same Bayesian network (Bad weather $\to$ Accident; Rush hour $\to$ Traffic jam; both $\to$ Traffic jam; Accident $\to$ Sirens). \textbf{Shaded} nodes are observed; \textbf{unshaded} nodes are to be inferred. \emph{Training} (left): all measured variables are shaded --- every RV that appears in the data is known. \emph{Testing/runtime} (centre): only the input features are shaded; Accident and Sirens are unshaded targets to predict. \emph{Missing information} (right): some inputs that are normally observed happen to be absent for this example, so they become unshaded too. The graph topology is identical in all three --- only the shading changes.}
+\end{center}
+
+\textbf{Latent variables} are RVs that are always unshaded — never observed in any mode. Two flavours:
+\begin{itemize}
+  \item \textbf{Hidden}: we know it exists, just can't measure it directly. (Speed in the derailment example: real, but no sensor on the track.)
+  \item \textbf{Hypothetical}: posited by the model, may not actually exist as a measurable quantity. (Topic in topic models, brain region in fMRI cluster models.)
+\end{itemize}
+
+% =====================================================================
+\section{Three representations}
+
+\subsection{Bayesian networks}
+
+\begin{defbox}[Bayesian network]
+A directed acyclic graph (DAG) of RVs. The joint distribution factorises as
+\[
+P(x_1, x_2, \ldots, x_n) \;=\; \prod_{i=1}^n P(x_i \,|\, \text{parents}(x_i)),
+\]
+one local conditional per node, conditioned on its parents.
+\end{defbox}
+
+\textbf{Other names:} Bayes network, Bayes net, belief network, belief net.
+
+\textbf{Intuition.} An arrow $x \to y$ is sometimes read as ``$x$ causes $y$,'' but this is only an intuition pump — strictly, the arrow encodes a conditional dependency, not necessarily causation. The graph is just a compact way to specify the factorisation.
+
+\textbf{Example — Bayesian network for grass wetness.}
+
+\begin{verbatim}
+        c (Cloudy)
+       / \
+      /   \
+     v     v
+    s       r        c = Cloudy
+   (Sprinkler) (Rain)   s = Sprinkler
+      \       /         r = Rain
+       \     /          w = Wet grass
+        v   v
+          w
+\end{verbatim}
+
+Joint: $P(c,s,r,w) = P(w\,|\,s,r)\,P(s\,|\,c)\,P(r\,|\,c)\,P(c)$.
+
+\begin{center}
+
+\footnotesize\textit{The Cloudy/Sprinkler/Rain/Wet-grass Bayesian network --- the standard textbook illustration. Each circle is a random variable; arrows point from cause to effect. $c$ (Cloudy) is the root with no parents; $s$ (Sprinkler) and $r$ (Rain) each have $c$ as their sole parent; $w$ (Wet grass) has both $s$ and $r$ as parents. The joint distribution therefore factorises as $P(w|s,r)\,P(s|c)\,P(r|c)\,P(c)$ --- one local conditional per node, conditioned on its parents.}
+\end{center}
+
+\textbf{Once you have a probabilistic model, ``being Bayesian'' is optional.} The graph just specifies the factorisation; whether you treat parameters as random variables (Bayesian) or as fixed unknowns (frequentist) is a separate choice.
+
+\subsection{Factor graphs}
+
+\begin{defbox}[Factor graph]
+A bipartite graph with two kinds of nodes: \textbf{circles} for random variables and \textbf{squares} for factors (functions). Edges connect each factor to the RVs it depends on. The (un-normalised) joint distribution is the product of all factor functions:
+\[
+P(\mathbf{x}) \;\propto\; \prod_f F_f(\text{RVs connected to }f).
+\]
+\end{defbox}
+
+\begin{center}
+
+\footnotesize\textit{A factor graph for $P(a,b,c,d) \propto F(a,b)\,G(a,c,d)\,H(d)$. \textbf{Circles} are random variables; \textbf{squares} are factor functions; \textbf{edges} connect each factor to the RVs it depends on. Factor $F$ is connected to $a$ and $b$; factor $G$ to $a$, $c$, and $d$; factor $H$ to $d$ alone. The joint is the product of all factors. Notice $a$ appears in two factors --- it is shared, not duplicated --- so the bipartite structure makes multi-variable dependencies explicit without needing directed arrows.}
+\end{center}
+
+\textbf{Why factor graphs.} They make the factorisation \emph{explicit}, regardless of whether the underlying distribution is best thought of as directed or undirected. ``Code uses factor graphs'' (lecture) because the data structure is uniform.
+
+\textbf{Example.} $P(a,b,c,d) \propto F(a,b)\,G(a,c,d)\,H(d)$ becomes a factor graph with circles $\{a,b,c,d\}$ and squares $\{F, G, H\}$, with $F$ connected to $a$ and $b$, $G$ to $a, c, d$, and $H$ to $d$.
+
+\subsection{Markov random fields (Markov networks)}
+
+\begin{defbox}[Markov random field / Markov network]
+An undirected graph of RVs. Pairs of RVs joined by an edge enter a \emph{pairwise potential}; isolated RVs may have \emph{unary potentials}. The joint distribution is the product of these potentials, normalised:
+\[
+P(\mathbf{x}) \;\propto\; \prod_{(i,j)\in E} F_{ij}(x_i, x_j) \cdot \prod_{i} A_i(x_i).
+\]
+\end{defbox}
+
+\begin{center}
+
+\footnotesize\textit{A Markov random field (Markov network) on four variables $a$, $b$, $c$, $d$ arranged in a 4-cycle. Unlike a Bayesian network, edges are \textbf{undirected} --- no ``cause'' direction, only symmetric pairwise dependency. The joint is the product of pairwise potentials $F(a,b)$, $G(b,c)$, $H(c,d)$, $I(d,a)$ and unary potentials $A(a)$, $B(b)$, $C(c)$, $D(d)$. This structure is natural for spatial data such as adjacent pixels in an image, where no pixel ``causes'' its neighbour.}
+\end{center}
+
+\textbf{Use case.} Symmetric / spatial relationships — e.g.\ adjacent pixels in an image (denoising, segmentation), where there's no natural ``cause'' direction.
+
+\textbf{Example — 4-cycle.}
+
+\begin{verbatim}
+   a --- b           = F(a,b) G(b,c) H(c,d) I(d,a)
+   |     |              x A(a) B(b) C(c) D(d)
+   d --- c
+\end{verbatim}
+
+\subsection{Conversions}
+
+\textbf{Markov network $\to$ factor graph.}
+\begin{enumerate}
+  \item Add a square (factor) on each edge.
+  \item Add a square for each node's implicit unary potential.
+\end{enumerate}
+
+\textbf{Bayesian network $\to$ factor graph.}
+\begin{enumerate}
+  \item Add a square for each RV (representing $P(\text{node}|\text{parents})$).
+  \item Connect the square to the RV and to all its parents.
+  \item The arrows from the original BN: tail stays on RV, head goes to the factor.
+\end{enumerate}
+
+\textbf{Factor graph $\to$ Markov / Bayesian network.} Not always possible. ``Conversion to factor graph is always possible. Other way is not.''
+
+\begin{notebox}[: why even factor graph $\to$ Markov network can fail]
+It is tempting to think the conversion is trivial since \emph{both} are undirected. It is not, for two reasons:
+\begin{itemize}
+  \item \textbf{Pairwise-only restriction.} A Markov network in this course allows only pairwise potentials $F_{ij}(x_i,x_j)$ (and implicit unary ones). A factor graph can have \textbf{higher-order factors} — a single square connected to 3, 4 or more RVs, e.g.\ $G(a,c,d)$. An irreducible 3-way factor cannot be rebuilt from 2-variable edges without changing the distribution.
+  \item \textbf{Loss of explicitness.} A single 3-way factor $F(a,b,c)$ and three pairwise factors $f_1(a,b)f_2(b,c)f_3(a,c)$ are \emph{different} factor graphs, but both map to the \emph{same} Markov network — a triangle of $a,b,c$. The Markov network only records ``who touches whom,'' so it cannot say which factorisation was the original. Going backwards is ambiguous.
+\end{itemize}
+\end{notebox}
+
+% =====================================================================
+\section{Examples of graphical models}
+
+\subsection{Classification \& regression}
+
+A pure regression / classification model has $n$ feature RVs $x_1, \ldots, x_n$ all pointing into a label $y$:
+\[
+P(y\,|\,x_1, \ldots, x_n).
+\]
+\textbf{Everything is connected to $y$, so there is no conditional independence to exploit.} The graphical model is largely pointless here — it just restates the supervised learning task. The interesting graphical models impose more structure than this.
+
+\subsection{Naive Bayes — reverse the arrows}
+
+Naive Bayes flips classification on its head. The label $y$ is the parent; each feature $x_i$ is conditionally independent of all others given $y$:
+\[
+P(x_1, \ldots, x_n\,|\,y) \;=\; \prod_{i=1}^n P(x_i\,|\,y).
+\]
+\textbf{Graphical structure}: a star, $y$ in the middle, $x_i$'s as leaves.
+
+\textbf{Causal reading}: ``the class label causes the features.'' For a kitten classifier, $y = \text{kitten}$ ``causes'' the pixel intensities $x_i$.
+
+\textbf{The Naive Bayes assumption is strong} — features are rarely truly conditionally independent given the label. But it leads to a tractable factorisation that often works surprisingly well in practice. Standard baseline for text classification.
+
+\textbf{Why model $P(\mathbf{x}\,|\,y)$ at all?} The joint $P(y, x_1, \ldots, x_n)$ can be expanded by Bayes' rule in \emph{two} ways:
+\[
+P(y, x_1, \ldots, x_n) \;=\; P(y)\,P(x_1, \ldots, x_n\,|\,y) \;=\; P(x_1, \ldots, x_n)\,P(y\,|\,x_1, \ldots, x_n).
+\]
+Standard classification targets the right-hand factor $P(y\,|\,\mathbf{x})$ directly. \emph{Equating the two expansions} is what licenses going the other way: if we can estimate $P(\mathbf{x}\,|\,y)$ (which the Naive Bayes assumption makes tractable as $\prod_i P(x_i|y)$) and $P(y)$, we can recover $P(y\,|\,\mathbf{x})$. That is why Naive Bayes models $P(\mathbf{x}\,|\,y)$.
+
+\begin{notebox}[: discriminative vs generative]
+Models that learn $P(y\,|\,\mathbf{x})$ \emph{directly} are \textbf{discriminative} — logistic regression, neural networks, SVMs; they draw a boundary in feature space. Models that learn $P(\mathbf{x}\,|\,y)$ (and $P(y)$) and use Bayes' rule to reach $P(y\,|\,\mathbf{x})$ are \textbf{generative} — Naive Bayes is the canonical example. ``Generative'' because $P(\mathbf{x}\,|\,y)$ describes how a class would \emph{generate} its features. Your everyday intuition (``predict the label from the features'') is the discriminative one; Naive Bayes deliberately flips it because $P(x_i\,|\,y)$ is just a count and sidesteps the curse of dimensionality of estimating $P(y\,|\,x_1,\dots,x_n)$ jointly.
+\end{notebox}
+
+\textbf{Predicting at test time} (using Bayes' rule, recall Wk10):
+\[
+P(y\,|\,\mathbf{x}) \;\propto\; P(y) \prod_{i=1}^n P(x_i\,|\,y).
+\]
+
+\subsection{Expert systems --- medical diagnosis}
+
+Doctors encode domain knowledge as a Bayesian network. A canonical example:
+
+\begin{verbatim}
+            s (Smokes?)
+           / \
+          /   \
+         v     v
+        c       b
+   (Cancer?)  (Bronchitis?)
+       |       /
+       |      /
+       v     v
+       x      d
+   (Shadow  (Difficulty
+    on x-ray) breathing?)
+\end{verbatim}
+
+All RVs binary. The full joint is
+\[
+P(s,c,b,x,d) \;=\; P(s)\,P(c\,|\,s)\,P(b\,|\,s)\,P(x\,|\,c)\,P(d\,|\,c, b).
+\]
+Each factor is a Bernoulli distribution with a few parameters elicited from the expert.
+
+\textbf{Inference as evidence arrives.} A patient walks in; everything is unknown. As the doctor asks questions, the relevant RV shades and the others' marginal probabilities update:
+
+\begin{tabularx}{\linewidth}{@{}lXX@{}}
+\toprule
+\thead{Stage} & \thead{Observed} & \thead{$P(c)$, $P(b)$} \\
+\midrule
+Walk-in                 & nothing                          & 0.055, 0.45 \\
+Smokes? Yes             & $s = $true                       & 0.10, 0.60 \\
+Difficulty breathing? No & $s$, $d=$false                  & 0.037, 0.242 \\
+X-ray? Yes              & $s$, $d$, $x=$true               & 0.430, 0.158 \\
+\bottomrule
+\end{tabularx}
+
+\textbf{Note how $P(b)$ drops} when the x-ray comes back positive. This is \textbf{explaining away} (see §6) — once cancer is supported by the x-ray, bronchitis is a less likely alternative explanation for the observations. We unpack the mechanism below.
+
+\subsection{Markov chains --- temporal sequences}
+
+A 1D chain of RVs $x_0 \to x_1 \to x_2 \to \cdots$. Each new state depends only on the previous one — the Markov property. Three equivalent representations:
+
+\begin{itemize}
+  \item \textbf{Markov network} (undirected pairwise): $x_0 - x_1 - x_2 - x_3$.
+  \item \textbf{Factor graph}: alternating circles and squares, plus a unary factor on each RV.
+  \item \textbf{Bayesian network}: directed chain $x_0 \to x_1 \to x_2 \to x_3$.
+\end{itemize}
+
+\textbf{Markov property} (definition): ``state has no memory of the past.'' Applies to time (simulations in physics/chemistry, stock market, speech recognition, data transfer over noisy channels) and to space (1D pixel sequences, DNA).
+
+\begin{center}
+
+\footnotesize\textit{Three equivalent representations of a Markov chain. \textbf{Top}: a Markov network (undirected pairwise edges) --- each $x_i$ linked to $x_{i+1}$, no direction implied. \textbf{Middle}: a factor graph for noisy-channel data transmission --- circles are RVs, the horizontal squares are pairwise transition factors (encoding $P(x_{i+1}|x_i)$), and the vertical squares are unary observation factors (encoding $P(\text{observed}_i|x_i)$). \textbf{Bottom}: a Bayesian network (directed chain) encoding the same Markov property as $P(x_t|x_{t-1},\ldots) = P(x_t|x_{t-1})$. All three describe the same conditional independence structure; the choice of representation depends on which operations (learning, inference, sampling) are most important.}
+\end{center}
+
+% =====================================================================
+\section{Explaining away --- the V-structure}
+
+The single most counter-intuitive pattern in graphical models. \examflag{}A favourite of MCQs.
+
+\subsection{The setup}
+
+Consider three RVs:
+\begin{itemize}
+  \item $r =$ ``it's been raining'' (binary)
+  \item $s =$ ``sprinklers have been on'' (binary)
+  \item $w =$ ``grass is wet'' (binary)
+\end{itemize}
+
+Graph: $r \to w \leftarrow s$. Both $r$ and $s$ are causes of $w$. This is called a \textbf{V-structure} or \textbf{collider} (because the arrows ``collide'' at $w$).
+
+\subsection{What happens marginally}
+
+\textbf{Without observing $w$}, knowing whether the sprinkler was on tells you \emph{nothing} about whether it rained. Rain and sprinkler are \emph{marginally independent}.
+\[
+P(r \,|\, s) \;=\; P(r).
+\]
+
+\subsection{What happens when we observe $w$}
+
+Now suppose we observe the grass is wet. By Bayes' rule:
+\[
+P(r \,|\, w) \;=\; 0.38, \qquad P(s \,|\, w) \;=\; 0.76 \quad(\text{lecture's numbers}).
+\]
+Neither alone is much larger than its prior — both are plausible explanations.
+
+Now \emph{additionally} observe the sprinkler was on:
+\[
+P(r \,|\, w, s = \text{true}) \;=\; 0.20.
+\]
+\textbf{$P(r)$ has dropped.} Why? Because the sprinkler being on already explains the wet grass. There's less ``explanatory work'' for the rain to do, so its posterior probability falls.
+
+\begin{exbox}[Explaining away — the lecture's numbers, fully worked]
+\textbf{Priors} (rain and sprinkler are marginally independent):
+$P(r{=}1)=0.20$, $P(s{=}1)=0.40$.\\[0.2em]
+\textbf{CPT for wet grass} $P(w{=}1\,|\,r,s)$:
+$\;(0,0)\!: 0.0125,\;\;(1,0)\!: 0.95,\;\;(0,1)\!: 0.95,\;\;(1,1)\!: 0.95$.\\[0.3em]
+\textbf{Joint of each $w{=}1$ scenario} $= P(r)\,P(s)\,P(w{=}1|r,s)$:
+\[
+\begin{array}{llll}
+P(r{=}1,s{=}1,w{=}1)=0.20\cdot0.40\cdot0.95 &=0.076, &
+P(r{=}0,s{=}1,w{=}1)=0.80\cdot0.40\cdot0.95 &=0.304,\\
+P(r{=}1,s{=}0,w{=}1)=0.20\cdot0.60\cdot0.95 &=0.114, &
+P(r{=}0,s{=}0,w{=}1)=0.80\cdot0.60\cdot0.0125 &=0.006.
+\end{array}
+\]
+\textbf{Total} $P(w{=}1)=0.076+0.304+0.114+0.006=0.50$.\\[0.3em]
+\textbf{Observe wet grass only} (sum the scenarios with $r{=}1$, resp.\ $s{=}1$, over $P(w{=}1)$):
+\[
+P(r{=}1\,|\,w)=\frac{0.076+0.114}{0.50}=\frac{0.190}{0.50}=0.38, \qquad
+P(s{=}1\,|\,w)=\frac{0.076+0.304}{0.50}=\frac{0.380}{0.50}=0.76.
+\]
+Both rise above their priors — each is a plausible explanation.\\[0.3em]
+\textbf{Additionally observe $s{=}1$} (restrict to the two $s{=}1$ scenarios):
+\[
+P(r{=}1\,|\,w,s{=}1)=\frac{0.076}{0.076+0.304}=\frac{0.076}{0.380}=0.20.
+\]
+Rain falls back to its \emph{prior} $0.20$: with the sprinkler confirmed on, it fully accounts for the
+wet grass and ``explains away'' the need for rain.
+\end{exbox}
+
+\subsection{The slogan}
+
+\begin{defbox}[Explaining away (collider effect)]
+In a V-structure $a \to z \leftarrow b$, the parents $a$ and $b$ are \emph{marginally independent} but become \emph{conditionally dependent} when the child $z$ (or any of its descendants) is observed. Observing the bottom of the V opens a path for information to flow between the arms.
+\end{defbox}
+
+\begin{center}
+
+\footnotesize\textit{The V-structure (collider) $r \to w \leftarrow s$: rain ($r$) and sprinkler ($s$) are two independent causes of wet grass ($w$, shaded because it is observed). \textbf{Marginally}: without knowing $w$, $r$ and $s$ are independent --- $P(r|s)=P(r)$. \textbf{After observing $w$}: both $r$ and $s$ become more probable. \textbf{After additionally observing $s=\mathrm{true}$}: $P(r)$ drops, because the sprinkler now fully explains the wet grass and ``explains away'' the need for rain. This is the collider effect: observing the child $w$ (shaded) opens the path between the two arms, making them conditionally dependent.}
+\end{center}
+
+\textbf{Practical use.} The medical-diagnosis example: cancer ($c$) and bronchitis ($b$) are both possible causes of difficulty breathing ($d$). Observing $d$ ties them together; positive evidence for cancer (e.g.\ x-ray shadow) reduces the probability of bronchitis.
+
+\textbf{Why this is not standard intuition.} Marginally, ``two competing causes are independent'' makes sense. The unfamiliar move is that \emph{conditioning on a common effect} creates dependence — opposite of the usual ``conditioning makes things independent'' rule of thumb (which holds for chains and forks).
+
+% =====================================================================
+\section{d-separation --- the conditional independence calculus}
+
+\examflag{}This is the technical apparatus for reading conditional independence directly off a graph.
+
+\begin{defbox}[d-separation]
+Two RVs $a$ and $b$ are \textbf{d-separated} by a set $\mathbf{z}$ (equivalently, $a \perp b \,|\, \mathbf{z}$) if and only if \emph{every} path between them is \textbf{blocked}. A path is blocked or open according to the rule for the type of structure at each middle node.
+\end{defbox}
+
+Three structures, three rules. The first two have the same blocking condition; the collider is reversed.
+
+\subsection{Chain}
+
+Pattern: $a \to z \to b$ (or its reverse $a \leftarrow z \leftarrow b$).
+
+\textbf{Rule.} The path is \textbf{blocked} iff $z$ is observed (i.e.\ $z \in \mathbf{z}$).
+
+\textbf{Intuition.} Information about $a$ flows through $z$ to $b$. If $z$ is fixed (observed), the flow stops. If $z$ is free, it carries information.
+
+\textbf{Why it holds (idea only).} Start from the chain's factorisation $P(a,z,b) = P(a)\,P(z|a)\,P(b|z)$, divide by $P(z)$, and rewrite $P(a)P(z|a)$ as $P(z)P(a|z)$ via Bayes' rule; $P(z)$ cancels, leaving $P(a,b|z) = P(a|z)\,P(b|z)$ — i.e.\ $a \perp b\,|\,z$. \examflag{}The \emph{rule} and this intuition are examinable; the formal step-by-step proof is \emph{not} (the lecturer explicitly says the proofs will not be asked).
+
+\begin{center}
+
+\footnotesize\textit{\textbf{d-separation: chain} $a \to z \to b$ (or its reverse). \emph{Left pair} (d-connected, dependent): $z$ is \textbf{unobserved} (open circle), so information flows freely from $a$ through $z$ to $b$ --- both arrow directions shown. \emph{Right pair} (d-separated, conditionally independent): $z$ is \textbf{observed} (shaded), blocking the path --- $a \perp b \,|\, z$ in both the forward and reverse chain. Rule: for a chain, observing the middle node blocks; \emph{not} observing it leaves it open.}
+\end{center}
+
+\subsection{Fork}
+
+Pattern: $a \leftarrow z \to b$. Common parent $z$.
+
+\textbf{Rule.} Same as chain. The path is \textbf{blocked} iff $z$ is observed.
+
+\textbf{Intuition.} $z$ is a common cause of both $a$ and $b$. If we don't know $z$, then knowing $a$ tells us about $z$, which tells us about $b$ — so $a$ and $b$ are dependent. If $z$ is fixed, the link is severed.
+
+\textbf{Why it holds (idea only).} The fork's factorisation is $P(a,b,z) = P(z)\,P(a|z)\,P(b|z)$; dividing by $P(z)$ immediately gives $P(a,b|z) = P(a|z)\,P(b|z)$, so $a \perp b\,|\,z$. As with the chain, the rule and intuition are examinable but the formal proof is not.
+
+\begin{center}
+
+\footnotesize\textit{\textbf{d-separation: fork} $a \leftarrow z \to b$ (common-parent structure). \emph{Left} (d-connected): $z$ is \textbf{unobserved} (open circle) --- the common cause $z$ ties $a$ and $b$ together, so they are dependent. Observing $a$ tells you about $z$, which tells you about $b$. \emph{Right} (d-separated): $z$ is \textbf{observed} (shaded) --- conditioning on the common cause severs the link, making $a \perp b \,|\, z$. Rule for forks is identical to chains: observing the middle node blocks.}
+\end{center}
+
+\subsection{Collider --- reversed!}
+
+Pattern: $a \to z \leftarrow b$.
+
+\textbf{Rule.} The path is \textbf{open} (path is conducting, $a$ and $b$ are dependent) iff the collider node $z$ \emph{or any of its descendants} is observed. The path is \textbf{blocked} iff neither $z$ nor any descendant is in $\mathbf{z}$.
+
+\textbf{This is backwards from chain/fork!} For chain/fork, observing the middle node blocks. For colliders, observing the middle node \emph{opens} (this is the explaining-away effect from §5).
+
+\textbf{Why it holds (idea only).} Collider factorisation $P(a,z,b)=P(a)\,P(b)\,P(z|a,b)$. \emph{$z$ unobserved}: marginalise it out, $P(a,b)=\sum_z P(a)P(b)P(z|a,b)=P(a)P(b)\sum_z P(z|a,b)=P(a)P(b)$, since $\sum_z P(z|a,b)=1$ — so $a\perp b$. \emph{$z$ observed}: $P(a,b|z)\propto P(a)P(b)P(z|a,b)$, and the term $P(z|a,b)$ binds $a$ and $b$ together — it cannot be split into a factor in $a$ alone times a factor in $b$ alone, so $a\not\perp b\,|\,z$. \examflag{}The rule and this idea are examinable; the formal proof is not.
+
+\textbf{Intuition (the bouncing-ball metaphor).} Imagine information ``bouncing off'' observed nodes. Information bounces only off arrow-heads. Chain/fork: information flows along arrow-tails, observation of $z$ blocks the path. Collider: information has to flow ``across'' the V, which only conducts when $z$ is observed.
+
+\begin{center}
+
+\footnotesize\textit{\textbf{d-separation: collider} $a \to z \leftarrow b$ (V-structure) --- the rule is \emph{backwards} from chain/fork. \emph{Left} (d-connected): $z$ is \textbf{observed} (shaded), opening the path between $a$ and $b$ --- this is the explaining-away effect. \emph{Right} (d-separated): the collider node $x$ is \textbf{unobserved} (open circle), so the path is blocked and $a \perp b$. Note the label ``This is backwards!'' on the slide --- for chain/fork, observing the middle blocks; for a collider, observing the middle \emph{opens}. Committing this asymmetry to memory is the key to all collider/d-separation MCQs.}
+\end{center}
+
+\subsection{\texorpdfstring{The general rule for $a \perp b \,|\, \mathbf{z}$}{The general rule for a perp b given z}}
+
+\begin{enumerate}
+  \item Find every undirected path between $a$ and $b$.
+  \item For each path, classify each middle node as chain, fork, or collider.
+  \item The path is \textbf{blocked} if any middle node satisfies its blocking condition (chain/fork: middle in $\mathbf{z}$; collider: middle and all descendants \emph{not} in $\mathbf{z}$).
+  \item $a$ and $b$ are d-separated by $\mathbf{z}$ iff every path is blocked.
+\end{enumerate}
+
+\textbf{Worked logic.} For more complex graphs, you walk every path, apply the rules, and OR them up. If any path is open, $a$ and $b$ are conditionally dependent given $\mathbf{z}$.
+
+\begin{pitfallbox}[: the collider rule's ``or any descendant'' qualifier]
+For a collider $a \to z \leftarrow b$, observing $z$ \emph{or any node downstream of $z$} opens the path. So if $z$ has a child $c$ and we observe $c$, the path between $a$ and $b$ via $z$ is also open — partial information about $z$ leaks through its descendants. Don't forget the descendant clause when checking d-separation.
+\end{pitfallbox}
+
+% =====================================================================
+\section{Distribution choices --- factor graphs are flexible}
+
+A graph alone is not a complete model. You also need:
+
+\textbf{The RVs can represent anything:} scalars, vectors, matrices, text, images, 3D models, even other graphical models.
+
+\textbf{The factor functions can be anything:} standard distributions (Gaussian, Bernoulli, Categorical), neural networks (logistic regression, MLP, CNN), random forests, SVMs, etc. Any function that takes the connected RVs as inputs and outputs a non-negative scalar (proportional to a density).
+
+\textbf{The graphical model is incomplete until both are specified.} The graph gives the structure; the choice of RVs and factor functions gives the model.
+
+\textbf{Caveat.} ``Graphical models are all-powerful, except writing the model down does not mean it can be solved.'' Inference and learning may be intractable for general factor graphs — exact algorithms only work for trees, special structures, or small graphs. (Wk23 covers message passing — the polynomial-time inference algorithm for tree-structured factor graphs.)
+
+% =====================================================================
+\section{Naive Bayes — learning and inference}
+
+Naive Bayes is the canonical first-graphical-model exam example. We work it end-to-end.
+
+\subsection{Setup}
+
+Binary classification. $y \in \{0, 1\}$ is the label; $\mathbf{x} = (x_1, \ldots, x_n)$ is the binary feature vector (e.g.\ word presence/absence in text). Naive Bayes assumption:
+\[
+P(\mathbf{x} \,|\, y) \;=\; \prod_{i=1}^n P(x_i \,|\, y).
+\]
+Each $P(x_i\,|\,y)$ is a Bernoulli distribution with parameter $p_{iy}$:
+\[
+P(x_i = 1 \,|\, y) = p_{iy}, \qquad P(x_i = 0 \,|\, y) = 1 - p_{iy}.
+\]
+There are $2n$ Bernoulli parameters in total: one $p_{iy}$ for each (feature, class) pair.
+
+\subsection{Maximum-likelihood parameter learning}
+
+\begin{exbox}[\doflag{}MLE for Naive Bayes Bernoulli parameters]
+Let $C_i(x', y') =$ number of training samples with $x_i = x'$ and $y = y'$.\\[0.3em]
+The likelihood of the training data under the Bernoulli model is
+\[
+L(p_{iy}) \;\propto\; p_{iy}^{C_i(1, y)} (1 - p_{iy})^{C_i(0, y)}.
+\]
+Take the log: $\log L = C_i(1,y)\log p_{iy} + C_i(0,y)\log(1-p_{iy})$.\\[0.3em]
+Differentiate w.r.t.\ $p_{iy}$ and set to zero:
+\[
+\frac{C_i(1,y)}{p_{iy}} - \frac{C_i(0,y)}{1-p_{iy}} = 0
+\quad\Longrightarrow\quad
+\boxed{\;p_{iy} \;=\; \frac{C_i(1, y)}{C_i(0, y) + C_i(1, y)}.\;}
+\]
+The MLE is just the empirical frequency of $x_i = 1$ within class $y$.
+\end{exbox}
+
+\textbf{Why smoothing is needed — two distinct zero-probability failure modes.} The prediction is a \emph{product} of per-feature probabilities, so a single zero zeroes the whole thing. This can arise in two separate ways:
+\begin{enumerate}
+  \item \textbf{Unseen feature at test time.} A feature appears at test time that never occurred in training, so there is \emph{no parameter} $p_{iy}$ estimated for it at all — the MLE formula gives $0/0$ (both counts zero).
+  \item \textbf{Feature absent for one class in training.} A feature never co-occurred with one class in training, so $C_i(1,y) = 0$, making $p_{iy} = 0$. That feature then contributes a zero factor and forces the entire product to zero, even though the feature is perfectly valid.
+\end{enumerate}
+
+\textbf{Bayesian estimation with a Beta prior — the derivation.} Instead of a point estimate, place a distribution \emph{over the parameter} $p_{iy}$ itself:
+\begin{enumerate}
+  \item \textbf{Prior.} A Beta distribution with shape parameters $\alpha, \beta$:
+  \[
+  P(p_{iy}) \;\propto\; p_{iy}^{\alpha-1}(1-p_{iy})^{\beta-1}.
+  \]
+  \item \textbf{Likelihood.} The Bernoulli likelihood of the observed counts $C_i(1,y)$ (successes) and $C_i(0,y)$ (failures):
+  \[
+  P(\text{Data}\,|\,p_{iy}) \;\propto\; p_{iy}^{C_i(1,y)}(1-p_{iy})^{C_i(0,y)}.
+  \]
+  \item \textbf{Bayes' rule.} The posterior is proportional to prior $\times$ likelihood:
+  \[
+  P(p_{iy}\,|\,\text{Data}) \;\propto\; \big[p_{iy}^{\alpha-1}(1-p_{iy})^{\beta-1}\big]\cdot\big[p_{iy}^{C_i(1,y)}(1-p_{iy})^{C_i(0,y)}\big].
+  \]
+  \item \textbf{Group terms by base:}
+  \[
+  P(p_{iy}\,|\,\text{Data}) \;\propto\; p_{iy}^{\,\alpha + C_i(1,y) - 1}(1-p_{iy})^{\,\beta + C_i(0,y) - 1}.
+  \]
+\end{enumerate}
+The posterior is \emph{again a Beta distribution}, now with parameters $\alpha + C_i(1,y)$ and $\beta + C_i(0,y)$.
+
+\begin{notebox}[: conjugacy]
+The prior and posterior have the \emph{same functional form} (both Beta). This property is called \textbf{conjugacy}: the \textbf{Beta is the conjugate prior for the Bernoulli} likelihood. Conjugacy is what makes the update clean — multiplying a Beta by a Bernoulli likelihood just adds the counts to the shape parameters, no integration needed.
+\end{notebox}
+
+\textbf{Collapsing the posterior to a point estimate.} The Beta posterior
+$\text{Beta}\big(\alpha + C_i(1,y),\, \beta + C_i(0,y)\big)$ can be summarised by its \emph{mode} or its
+\emph{mean}:
+\[
+\text{mode} = \frac{\alpha + C_i(1, y) - 1}{\alpha + \beta + C_i(0, y) + C_i(1, y) - 2}, \qquad
+\text{mean} = \frac{\alpha + C_i(1, y)}{\alpha + \beta + C_i(0, y) + C_i(1, y)}.
+\]
+
+\textbf{Laplace (add-one) smoothing} is the estimate
+$\;p_{iy}^{\text{Lap}} = \dfrac{C_i(1,y)+1}{C_i(0,y)+C_i(1,y)+2}\;$ — add 1 to the success count and 2
+to the total. It is recovered from the \textbf{posterior mean} with a uniform prior
+$\alpha=\beta=1$. The headline: \emph{Laplace smoothing is not an arbitrary hack — it is exactly
+Bayesian estimation under a uniform Beta prior, read off as the posterior mean.}
+
+\begin{trapbox}[: posterior \emph{mode} with $\alpha=\beta=1$ does \emph{not} give Laplace smoothing]
+A natural slip (and an error on the lecture slide): plugging $\alpha=\beta=1$ into the \emph{mode}
+formula gives $\dfrac{1 + C_i(1,y) - 1}{2 + C_i(0,y)+C_i(1,y) - 2} = \dfrac{C_i(1,y)}{C_i(0,y)+C_i(1,y)}$
+— the $\pm1$ and $\pm2$ cancel and you are back at the \textbf{unsmoothed MLE}. Laplace smoothing
+comes from the \textbf{mean} with $\alpha=\beta=1$, or equivalently from the \textbf{mode} with
+$\alpha=\beta=2$ (a prior worth one prior success and one prior failure). Mode $\ne$ mean for the Beta.
+\end{trapbox}
+
+\subsection{Inference at test time}
+
+Given a new feature vector $\mathbf{x}$, predict the class with highest posterior:
+\[
+P(y\,|\,\mathbf{x}) \;\propto\; P(y) \prod_{i=1}^n P(x_i\,|\,y) \;=\; P(y) \prod_{i=1}^n p_{iy}^{x_i}(1-p_{iy})^{1-x_i}.
+\]
+\textbf{Numerical stability — work in log space:}
+\[
+\log P(y\,|\,\mathbf{x}) \;=\; \sum_{i=1}^n \big[x_i\log p_{iy} + (1-x_i)\log(1-p_{iy})\big] + \log P(y) + C.
+\]
+The constant $C$ accounts for the missing normaliser; it cancels when comparing classes.
+
+\textbf{Pick $y$ that maximises $\log P(y\,|\,\mathbf{x})$.} For binary classification with a uniform class prior, this is just whichever class assigns higher likelihood to the feature vector.
+
+% =====================================================================
+\section{Inference at test time --- the general recipe}
+
+For a graphical model with all factors $\{F_f\}$:
+
+\textbf{Probability of a complete RV assignment.} Plug the values into every factor and multiply:
+\[
+P(\mathbf{x}) \;\propto\; \prod_f F_f(\mathbf{x}_f).
+\]
+
+\textbf{Marginal probability of a subset of RVs.} Sum out the others. For tree-structured graphs this can be done efficiently by the \emph{message passing} algorithm (Wk23 owns this). For arbitrary graphs it's NP-hard in general; approximate inference (sampling, variational methods) is the fallback.
+
+\textbf{Always work in log space} for stability. Underflow on long products of probabilities is the canonical bug.
+
+% =====================================================================
+\section{Exam-mode answers}
+
+\begin{exambox}[{Concept: What is a Bayesian network? Write the joint factorisation rule.}]
+\textit{A Bayesian network is a directed acyclic graph (DAG) of random variables in which each node represents an RV and each arrow represents a conditional dependency. The joint distribution factorises as $P(x_1, \ldots, x_n) = \prod_{i=1}^n P(x_i\,|\,\text{parents}(x_i))$ — the product of one local conditional per node, conditioned on its parents in the graph. Other names: Bayes net, belief network.}
+\end{exambox}
+
+\begin{exambox}[{Concept: What is a factor graph? How does it relate to a Bayesian network?}]
+\textit{A factor graph is a bipartite graph with two kinds of nodes: circles for random variables and squares for factor functions. An edge connects each factor to the RVs it depends on. The joint distribution is the product of all factors. Conversion: any Bayesian network can be converted to a factor graph (one square per local conditional, connecting the RV to its parents). Conversion in the opposite direction is not always possible, since factor graphs can encode undirected dependencies. Code typically uses factor graphs because they are the most general representation.}
+\end{exambox}
+
+\begin{exambox}[{\examflag{}Concept: Explain the V-structure and the explaining-away effect.}]
+\textit{A \textbf{V-structure} (also called a \textbf{collider}) is a pattern $a \to z \leftarrow b$ where two RVs $a$ and $b$ both have arrows into a common child $z$. Marginally, $a$ and $b$ are independent: $P(a,b) = P(a)P(b)$. Once $z$ (or any of its descendants) is observed, $a$ and $b$ become \emph{conditionally dependent} — \textbf{the path between them opens}. This is called \textbf{explaining away}: observing the common effect creates a competition between possible causes, so confirming one cause reduces the probability of the others. Example: rain and sprinklers both wet the grass; observing wet grass plus the sprinkler being on reduces the probability of rain.}
+\end{exambox}
+
+\begin{exambox}[{\examflag{}Concept: State the d-separation rules for chain, fork, and collider.}]
+\textit{For two RVs $a$ and $b$ on a path through a middle node $z$:}\\[0.3em]
+\textit{\textbf{Chain $a \to z \to b$ (or reverse).} Blocked if $z$ is observed.}\\
+\textit{\textbf{Fork $a \leftarrow z \to b$.} Blocked if $z$ is observed.}\\
+\textit{\textbf{Collider $a \to z \leftarrow b$.} Blocked if $z$ is \emph{not} observed AND no descendant of $z$ is observed. Open otherwise.}\\[0.3em]
+\textit{$a$ and $b$ are d-separated (conditionally independent) by a set $\mathbf{z}$ iff \emph{every} path between them is blocked. The collider rule is the reverse of the chain/fork rule — observing the middle node \emph{opens} the path. This is the explaining-away effect.}
+\end{exambox}
+
+\begin{exambox}[{Concept: State the Naive Bayes assumption and the resulting joint factorisation.}]
+\textit{Naive Bayes assumes that, given the class label $y$, the features $x_1, \ldots, x_n$ are mutually conditionally independent: $P(\mathbf{x}\,|\,y) = \prod_{i=1}^n P(x_i\,|\,y)$. The graphical model is a star: $y$ in the centre, each $x_i$ as a leaf with arrow $y \to x_i$. The full joint factorises as $P(y, \mathbf{x}) = P(y) \prod_i P(x_i\,|\,y)$. This assumption is rarely literally true (features are usually correlated) but yields a tractable, often surprisingly accurate baseline.}
+\end{exambox}
+
+\begin{exambox}[{\doflag{}Compute: MLE for the Bernoulli parameter $p_{iy}$ in binary Naive Bayes.}]
+\textit{Let $C_i(1, y)$ be the count of training samples with $x_i = 1$ and label $y$, and $C_i(0, y)$ the count with $x_i = 0$ and label $y$. The Bernoulli likelihood for $p_{iy}$ is $L \propto p_{iy}^{C_i(1,y)}(1-p_{iy})^{C_i(0,y)}$. Take log, differentiate, set to zero:}
+\[
+p_{iy} = \frac{C_i(1, y)}{C_i(0, y) + C_i(1, y)}.
+\]
+\textit{Just the empirical proportion of feature $i$ being on, within class $y$.}
+\end{exambox}
+
+\begin{exambox}[{Concept: Define a latent variable. Distinguish hidden and hypothetical.}]
+\textit{A \textbf{latent variable} is one that is always unobserved — never appears as data. \textbf{Hidden} variables are quantities we know exist but cannot measure (e.g.\ the true speed of a train, when only sensors at certain checkpoints exist). \textbf{Hypothetical} variables are constructs the model posits that may not have a measurable physical counterpart (e.g.\ topics in topic modelling, or factors in factor analysis). Both are inferred indirectly through their influence on observed variables.}
+\end{exambox}
+
+% =====================================================================
+\section*{Key equations cheat sheet}
+\addcontentsline{toc}{section}{Key equations cheat sheet}
+
+\begin{tabularx}{\linewidth}{@{}lX@{}}
+\toprule
+\thead{Object} & \thead{Formula / fact} \\
+\midrule
+Bayesian network factorisation & $P(x_1, \ldots, x_n) = \prod_i P(x_i\,|\,\text{parents}(x_i))$ \\
+Factor graph                   & $P(\mathbf{x}) \propto \prod_f F_f(\mathbf{x}_f)$ \\
+Markov network                 & $P(\mathbf{x}) \propto \prod_{(i,j)\in E} F_{ij}(x_i, x_j)\prod_i A_i(x_i)$ \\
+Markov property                & $P(x_t\,|\,x_{t-1}, x_{t-2}, \ldots) = P(x_t\,|\,x_{t-1})$ \\
+Naive Bayes                    & $P(\mathbf{x}\,|\,y) = \prod_i P(x_i\,|\,y)$, joint $= P(y)\prod_i P(x_i\,|\,y)$ \\
+Naive Bayes MLE                & $p_{iy} = C_i(1,y) / [C_i(0,y) + C_i(1,y)]$ \\
+Naive Bayes prediction         & $\hat y = \arg\max_y\big[\log P(y) + \sum_i x_i\log p_{iy} + (1-x_i)\log(1-p_{iy})\big]$ \\
+d-separation chain $a\to z\to b$ & blocked iff $z$ observed \\
+d-separation fork $a\leftarrow z\to b$ & blocked iff $z$ observed \\
+d-separation collider $a\to z\leftarrow b$ & open iff $z$ \emph{or any descendant} observed (reversed!) \\
+Explaining away                & marginally independent parents become conditionally dependent when their common child is observed \\
+\bottomrule
+\end{tabularx}
+
+% =====================================================================
+\section*{Pitfalls and traps consolidated}
+\addcontentsline{toc}{section}{Pitfalls and traps consolidated}
+
+\begin{itemize}
+  \item \textbf{Collider rule is backwards.} For chain/fork, observing the middle node \emph{blocks} the path. For colliders, observing the middle node (or any descendant) \emph{opens} the path. Don't memorise one-rule-fits-all.
+  \item \textbf{Don't forget the descendants clause.} The collider rule says ``$z$ or any descendant'' — partial information about a collider through its children is enough to open the path.
+  \item \textbf{Naive Bayes assumption is strong.} Features rarely independent given the label; the model still works in practice but predicted probabilities are often poorly calibrated.
+  \item \textbf{Direction of arrows in Naive Bayes.} The arrow goes from $y$ to $x_i$ (label causes features), not the other way around. ``Reverse the supervised model.''
+  \item \trapflag{}\textbf{``Arrow $\to$ causation.''} Strictly false. Arrows encode dependencies; causation is a separate semantic claim. Use the causal reading as intuition only.
+  \item \textbf{V-structure must have heads colliding.} $a \to z \to b$ is a chain (not a V); $a \leftarrow z \to b$ is a fork (not a V); only $a \to z \leftarrow b$ is a V/collider.
+  \item \textbf{Factor graph $\to$ BN/MN is not always possible.} The directionality / undirectedness can be lost. BN $\to$ factor graph and MN $\to$ factor graph are always possible.
+  \item \textbf{MLE in Naive Bayes can give zero probabilities.} Smoothing (Laplace, or Beta prior with $\alpha = \beta = 1$) avoids this.
+  \item \textbf{Always inference in log space.} Long products of small probabilities underflow.
+  \item \textbf{Don't memorise the Hessian formula.} (From Wk7 / Wk22 contexts.) The lecturer explicitly says you'll be given it if needed; understand the structure instead.
+  \item \textbf{Marginal independence $\ne$ conditional independence.} Two RVs can be marginally independent and conditionally dependent (V-structure), or marginally dependent and conditionally independent (chain / fork). The graph encodes both regimes.
+\end{itemize}
+
+% =====================================================================
+\section*{Self-check questions}
+\addcontentsline{toc}{section}{Self-check questions}
+
+\begin{enumerate}
+  \item Define a graphical model. What does an edge encode?
+  \item State the Bayesian network factorisation rule and apply it to a small example (e.g.\ Cloudy/Sprinkler/Rain/Wet-grass).
+  \item Define a factor graph. What are the two kinds of nodes? What does a factor represent?
+  \item Define a Markov random field. When is it preferable to a Bayesian network?
+  \item Convert a small Markov network and a small Bayesian network into factor graphs. Show the steps.
+  \item What does ``shaded'' mean on a graphical model? Give three modes (training, testing, missing data) and describe what's shaded in each.
+  \item Define a latent variable. Distinguish hidden from hypothetical.
+  \item State the Naive Bayes conditional independence assumption. Why is the resulting graphical model a star?
+  \item Derive the maximum-likelihood estimator for the Bernoulli parameter $p_{iy}$ in binary Naive Bayes.
+  \item Write the predict step of Naive Bayes both in raw probability and in log space. Why log space?
+  \item Define the V-structure / collider. Why are its parents marginally independent but conditionally dependent given the child?
+  \item State the d-separation rule for a chain, and explain the idea behind why it holds. (The formal proof is non-examinable.)
+  \item State the d-separation rule for a fork, and explain the idea behind why it holds. (The formal proof is non-examinable.)
+  \item State the d-separation rule for a collider. How does it differ from chain/fork?
+  \item Worked example: in the medical-diagnosis network ($s \to c$, $s \to b$, $c \to x$, $c, b \to d$), is $c$ d-separated from $b$ given $s$? Given $s$ and $d$? Justify each.
+  \item Define the Markov property. Give two examples of systems satisfying it.
+  \item Why does the lecture say ``all ML algorithms have a graphical model''? Give the implicit graphical model for ordinary linear regression.
+  \item Forward link: how does the message-passing algorithm (Wk23) exploit graph structure to do inference efficiently?
+\end{enumerate}
+
+\end{document}

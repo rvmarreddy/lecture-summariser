@@ -1,0 +1,432 @@
+\documentclass[11pt, a4paper]{article}
+
+% --- Fonts and engine ---
+\usepackage{fontspec}
+\setmainfont{Helvetica Neue}
+\setmonofont{Menlo}
+\usepackage{unicode-math}
+\setmathfont{STIX Two Math}
+
+% --- Layout ---
+\usepackage[margin=2cm, top=2cm, bottom=2.5cm]{geometry}
+\usepackage{microtype}
+\usepackage{parskip}
+\setlength{\parskip}{0.6em}
+\setlength{\parindent}{0pt}
+
+% --- Typography and links ---
+\usepackage[colorlinks=true, linkcolor=NavyBlue, urlcolor=NavyBlue, citecolor=NavyBlue]{hyperref}
+\usepackage{xcolor}
+\usepackage[dvipsnames]{xcolor}
+
+% --- Math and tables ---
+\usepackage{amsmath}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{tabularx}
+\usepackage{graphicx}
+\graphicspath{{figures/week01/}}
+\newcommand{\thead}[1]{\textbf{#1}}
+
+% --- Lists ---
+\usepackage{enumitem}
+\setlist[itemize]{leftmargin=1.5em, itemsep=0.2em, topsep=0.3em}
+\setlist[enumerate]{leftmargin=1.5em, itemsep=0.2em, topsep=0.3em}
+
+% --- Boxed callouts ---
+\usepackage[most]{tcolorbox}
+\tcbuselibrary{breakable, skins, theorems}
+
+% Color palette
+\definecolor{defBg}{HTML}{EAF2FB}
+\definecolor{defBd}{HTML}{1F4E79}
+\definecolor{exBg}{HTML}{F4F4F4}
+\definecolor{exBd}{HTML}{555555}
+\definecolor{tipBg}{HTML}{E8F5E9}
+\definecolor{tipBd}{HTML}{2E7D32}
+\definecolor{trapBg}{HTML}{FCE4EC}
+\definecolor{trapBd}{HTML}{AD1457}
+\definecolor{pitBg}{HTML}{FFF8E1}
+\definecolor{pitBd}{HTML}{B27600}
+\definecolor{noteBg}{HTML}{F3E5F5}
+\definecolor{noteBd}{HTML}{6A1B9A}
+\definecolor{tldrBg}{HTML}{E1F5FE}
+\definecolor{tldrBd}{HTML}{0277BD}
+
+\newtcolorbox{defbox}[1][]{enhanced, breakable, colback=defBg, colframe=defBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={Definition: #1}}
+\newtcolorbox{exbox}[1][]{enhanced, breakable, colback=exBg, colframe=exBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={Worked example: #1}}
+\newtcolorbox{exambox}[1][]{enhanced, breakable, colback=tipBg, colframe=tipBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={Exam-mode answer #1}}
+\newtcolorbox{trapbox}[1][]{enhanced, breakable, colback=trapBg, colframe=trapBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={MCQ trap #1}}
+\newtcolorbox{pitfallbox}[1][]{enhanced, breakable, colback=pitBg, colframe=pitBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={Pitfall #1}}
+\newtcolorbox{notebox}[1][]{enhanced, breakable, colback=noteBg, colframe=noteBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={Lecturer aside #1}}
+\newtcolorbox{tldrbox}[1][]{enhanced, breakable, colback=tldrBg, colframe=tldrBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={TL;DR #1}}
+
+\usepackage{titlesec}
+\titleformat{\section}[block]{\Large\bfseries\color{defBd}}{\thesection.}{0.6em}{}
+\titleformat{\subsection}[block]{\large\bfseries\color{defBd!80!black}}{\thesubsection}{0.5em}{}
+\titleformat{\subsubsection}[block]{\normalsize\bfseries}{}{0pt}{}
+\titlespacing*{\section}{0pt}{1.6em}{0.6em}
+\titlespacing*{\subsection}{0pt}{1.2em}{0.4em}
+
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small CM52054 — Week 1}
+\fancyhead[R]{\small Introduction}
+\fancyfoot[C]{\small\thepage}
+\renewcommand{\headrulewidth}{0.3pt}
+
+\newcommand{\examflag}{\textcolor{tipBd}{\textbf{[EXAM]}}\,}
+\newcommand{\trapflag}{\textcolor{trapBd}{\textbf{[TRAP]}}\,}
+\newcommand{\doflag}{\textcolor{defBd}{\textbf{[DO]}}\,}
+
+\title{\vspace{-1cm}{\Huge\bfseries Week 1 — Introduction} \\[0.4em]{\large What ML is, the five-step pipeline, the decision-stump algorithm}}
+\author{\large CM52054 Foundational Machine Learning \\[0.2em]\normalsize University of Bath \,$\cdot$\, Dr Rohit Babbar}
+\date{Revision notes}
+
+\begin{document}
+
+\maketitle
+\thispagestyle{empty}
+
+\vspace{1em}
+
+\begin{tldrbox}
+\begin{itemize}[leftmargin=*]
+  \item \textbf{Machine learning is data-driven rule discovery.} A programmer hand-writes the rule (``if revs $> 5000$ then up-shift''); a classical AI system searches for an optimal solution to a fully specified problem (A* on a road graph); an ML system is given \emph{examples} and induces the rule itself. The lecturer's supplementary definition: ``a Machine Learning algorithm outputs code.''
+  \item Every supervised ML task follows the same \textbf{five-step pipeline}: (1) choose a problem, (2) obtain data, (3) choose / design a model, (4) fit the model to the data using optimisation, (5) measure performance. This unit ignores step 2 (data collection) and centres on steps 3--5.
+  \item Two problem types pervade the unit: \textbf{classification} (discrete label, e.g.\ fish/invertebrate, spam/not-spam) and \textbf{regression} (real-valued target, e.g.\ tomorrow's stock price). The toy fish-vs-invertebrate problem is the running example here; later weeks formalise the regression case (Wk 8 linear regression, Wk 10 BLR) and revisit classification with proper algorithms (Wk 11 logistic regression, Wks 25--26 SVM).
+  \item Data is laid out as a matrix where \textbf{features sit along the rows} and \textbf{individual examples sit along the columns} in this lecturer's convention. The standardisation matters because every later derivation assumes one of the two layouts.
+  \item \textbf{Train / test split is fundamental.} The model is fit on a training set; performance is judged on an unseen test set. A rule that explains the training data perfectly but fails on test data has overfit. The bear example dramatises that the test-time world is uncontrolled — anything can show up, including inputs of a kind the training set never contained.
+  \item The first toy ML algorithm is the \textbf{decision stump} (a.k.a.\ 1-rule): exhaustively try every (feature, value) pair, score each on the training set, return the best. This is the simplest non-trivial demonstration of ``rule search $=$ optimisation,'' which is the spine of the rest of the unit.
+  \item \examflag{}Wk 1 does not own a past-paper question, but everything Wk 1 establishes (the pipeline, train/test, classification vs regression, generalisation, ``model fitting is optimisation'') is assumed by every later question. Treat it as the conceptual chassis the rest of the unit is bolted onto.
+\end{itemize}
+\end{tldrbox}
+
+% =====================================================================
+\section{What machine learning is (and what it isn't)}
+
+\subsection{Three ways a computer can solve a problem}
+
+The lecturer opens by contrasting three ways of getting a computer to act intelligently. They share the goal but differ entirely in how the rule that drives the behaviour comes into being.
+
+\begin{description}
+  \item[\textbf{Programming.}] The computer is told exactly what to do. Every condition, threshold, and branch is written by the engineer. The slide's automatic-gearbox example is canonical: \emph{if engine revs $> 5000$ and gear $< 5$, disengage clutch, increment gear, re-engage}. There is no learning, no search, no optimisation. The computer is, in the lecturer's phrase, ``an idiot — does exactly what you tell it to and nothing else.'' The intelligence is entirely in the human's head; the machine just executes.
+
+  \item[\textbf{Classical Artificial Intelligence.}] The computer is told the \emph{problem}, not the rule. It then \emph{searches} a well-defined space for the best solution. The slide's example is GPS routing: load a road graph, mark a start and an end, run A* (1960s) to find the shortest route. The intelligence is in the search algorithm and the problem formalisation. AI predates ML by decades — the term goes back to the 1950s (Turing); ML in its modern data-driven form only became central from the late 1980s.
+
+  \item[\textbf{Machine Learning.}] The computer is given \emph{neither} a rule \emph{nor} a fully specified problem — it is given \emph{data} (input-output examples) and asked to \emph{induce} the rule that explains the examples and generalises to new ones. The slide's example is a self-driving car reading a 15\,mph speed-limit sign: trained on many sign images, the model parses a new image and adjusts speed.
+\end{description}
+
+\begin{notebox}
+The placement is deliberate: ML is a \emph{subfield} of AI. Both want intelligent behaviour from a machine; ML's distinguishing feature is that the rule is \emph{learnt from data} rather than programmed or searched-for in a hand-built problem space.
+\end{notebox}
+
+\begin{center}
+
+\footnotesize\textit{The containment hierarchy of the three paradigms. The outermost green oval is \textbf{Programming} --- the broadest category, covering any computer-executable rule. The middle orange oval is \textbf{Artificial Intelligence} --- a subset of programming in which the computer searches for the best solution to a well-defined problem (e.g.\ A* on a road graph). The innermost pink oval is \textbf{Machine Learning} --- a subset of AI in which the rule itself is \emph{induced from data} rather than hand-specified or found by search in a hand-built space. The nesting makes the relationship precise: every ML system is doing AI; every AI system is a form of programming; but not every program is AI, and not every AI system learns.}
+\end{center}
+
+\subsection{The working definition}
+
+For this unit:
+
+\begin{defbox}[Machine learning]
+\textbf{Machine learning is the discipline of learning rules (models) from data.} An ML algorithm consumes a dataset of input-output examples and emits a function $f$ that maps new inputs to predicted outputs. The slide gives a supplementary phrasing: \emph{a machine-learning algorithm outputs code} — except that ``code'' is more practically replaced by \emph{parameters} that index a fixed family of functions.
+\end{defbox}
+
+What does that look like concretely? The slide gives a stripped-down version of the decision-stump model that closes the lecture:
+
+\begin{verbatim}
+# Learn these:
+feature = 'teeth'
+match   = False
+
+# Code of model (fixed):
+def evaluate(fv):
+    return fv[feature] == match
+\end{verbatim}
+
+The architecture (\texttt{evaluate}) is fixed; the \emph{learnt} content is the two parameters (\texttt{feature}, \texttt{match}). This is the schema for every supervised model in the unit:
+
+\begin{enumerate}
+  \item Pick a parametric family $f_{\boldsymbol\theta}(\mathbf{x})$ — a decision stump, a linear hyperplane, a tree of depth $d$, an SVM with a chosen kernel.
+  \item Pick a \textbf{loss function} $L(\boldsymbol\theta)$ that scores how badly the current $\boldsymbol\theta$ fits the data.
+  \item Find the $\boldsymbol\theta^*$ that minimises $L(\boldsymbol\theta)$ over the training data — this is the \emph{optimisation} step.
+\end{enumerate}
+
+Step~3 is what the optimisation block of the unit (Weeks 7--9) is built around; Wk~7 is the natural home for the formal notion of ``optimisation,'' so the formalism is deferred there.
+
+\subsection{Why the maths/programming/optimisation dependencies}
+
+The slide closes its definition with: ML is \emph{built on} maths (especially probability), optimisation, and programming. That triple recurs through the unit:
+
+\begin{itemize}
+  \item \textbf{Probability} — needed once the rule has to be probabilistic (Wk~10 Bayesian linear regression, Wk~11 logistic regression's $p(y\mid \mathbf{x})$, Wks~22--23 graphical models and message passing).
+  \item \textbf{Optimisation} — needed for fitting (Wks~7--9 set up gradient descent and Newton's method; Wks~21 regularisation and Wks~25--29 SVMs use these tools).
+  \item \textbf{Programming} — needed to actually run anything; not examined in this unit, but the labs presume it.
+\end{itemize}
+
+% =====================================================================
+\section{The five-step ML pipeline}
+
+The rest of the lecture organises ML practice into five canonical steps. Memorising the order is unimportant; understanding which step each later week elaborates is essential.
+
+\begin{defbox}[The five-step ML pipeline]
+\begin{enumerate}
+  \item \textbf{Choose a problem.} A clear specification of what the model is to predict. ``Detect spam'' is a problem; ``do something useful with email'' is not.
+  \item \textbf{Obtain required data.} Collect (or be handed) labelled examples relevant to the problem. \emph{This unit does not cover data collection — the data is always given.}
+  \item \textbf{Choose or design a model.} Pick a parametric family appropriate to the problem type (classification vs regression vs sequence vs probabilistic).
+  \item \textbf{Fit the model to data using optimisation.} Find the parameters that minimise the chosen loss.
+  \item \textbf{Measure performance.} On unseen test data, compute a metric (accuracy, precision, recall, F1, MSE, $\ldots$) — and iterate back to step~3 if it isn't good enough.
+\end{enumerate}
+\end{defbox}
+
+The lecturer hammers a particular point: the loop is iterative. ``Measure performance'' feeds back to ``choose model'' or ``re-fit,'' and only the deployment-ready combination survives. The unit's later weeks are essentially refinements of step~3 (model families) and step~4 (how to fit them).
+
+\subsection{Three running examples of the pipeline}
+
+The slide walks through three real applications, choosing them to make the classification/regression/probability split visible.
+
+\begin{center}
+\renewcommand{\arraystretch}{1.2}
+\begin{tabularx}{\linewidth}{l X X X}
+\toprule
+\thead{Application} & \thead{Step 1: Problem} & \thead{Step 2: Data} & \thead{Step 3: Model} \\
+\midrule
+Mortgage approval & Will the applicant repay? & Past applications + repayment outcomes & \emph{Classification} (yes/no) \\
+Algorithmic trading & What will a stock be worth tomorrow? & Historical price time series & \emph{Regression} on a temporal series \\
+Recommendation & Which products should I show this user? & Other users' purchase histories & \emph{Probabilistic classification} (top-$k$ ranked by $p$) \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+The two splits to internalise:
+
+\begin{itemize}
+  \item \textbf{Classification vs regression} is the \emph{type of output}. Discrete label $\Rightarrow$ classification; real-valued target $\Rightarrow$ regression.
+  \item \textbf{Point estimate vs probability} is \emph{how the output is expressed}. ``It's a fish'' vs ``$p(\text{fish}\mid\mathbf{x}) = 0.83$.'' Probabilistic outputs are needed when downstream decisions need confidence (recommendation, fraud, mortgage risk-pricing).
+\end{itemize}
+
+% =====================================================================
+\section{The fish-vs-invertebrate toy problem}
+
+The lecture's second half walks through the pipeline on a deliberately simple toy: classify ocean creatures as \emph{fish} or \emph{invertebrate}.
+
+\subsection{Step 1: the problem statement}
+
+\emph{Given an animal observed in the ocean, predict whether it is a fish or an invertebrate.} Output is binary (one of two labels), so the task is \emph{binary classification}. Multi-class problems exist (digit recognition, news categorisation) but the toy here is binary.
+
+\subsection{Step 2: the dataset}
+
+The training data is shown as a $7 \times 8$ matrix: 7 features $\times$ 8 animals.
+
+\begin{center}
+\small
+\begin{tabular}{l cccccccc}
+\toprule
+& bass & clam & carp & crab & catfish & crayfish & chub & lobster \\
+\midrule
+teeth?    & 1 & 0 & 1 & 0 & 1 & 0 & 1 & 0 \\
+breathe?  & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\
+backbone? & 1 & 0 & 1 & 0 & 1 & 0 & 1 & 0 \\
+aquatic?  & 1 & 0 & 1 & 1 & 1 & 1 & 1 & 1 \\
+tail?     & 1 & 0 & 1 & 0 & 1 & 0 & 1 & 0 \\
+predator? & 1 & 1 & 0 & 1 & 1 & 1 & 1 & 1 \\
+\midrule
+\textbf{invertebrate?} & 0 & 1 & 0 & 1 & 0 & 1 & 0 & 1 \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+A few conventions worth nailing down before later weeks generalise them:
+
+\begin{defbox}[Layout convention used in this unit]
+\textbf{Features run along the rows; individual examples run along the columns.} Each \emph{column} is a complete feature vector for one example; each \emph{row} is one feature observed across all examples. The last row holds the labels.
+\end{defbox}
+
+\begin{pitfallbox}[features-vs-examples orientation]
+The opposite convention (\emph{rows} = examples, \emph{columns} = features) is more common in textbooks and in Python libraries (\texttt{scikit-learn}'s \texttt{X.shape == (n\_samples, n\_features)}). The lecturer flagged this directly: ``the features are along the rows and the examples are along the columns.'' Carry the flip in your head when reading external material; carry his convention when reading later slides in this unit.
+\end{pitfallbox}
+
+The lecturer's note ``1 = yes, 0 = no is typical'' is your introduction to \emph{numerical encoding} of categorical data. We'll revisit this when decision trees handle mixed types (Wk~2) and when SVMs require labels in $\{-1, +1\}$ (Wks~25--26).
+
+\subsection{Step 3: choose the model}
+
+\emph{Binary classification with binary inputs}, so a rule of the form ``\texttt{if feature\_X = value, predict invertebrate}'' is a natural family. The lecturer explicitly notes: hundreds of models exist; here we'll use the simplest possible — a single-feature decision rule produced by a human in three minutes. This is the \textbf{decision stump} that gets formalised at the end.
+
+\subsection{Step 4: fit (manually, this time)}
+
+For the toy problem, the audience is asked to find a rule by hand. Three plausible candidates surface:
+
+\begin{itemize}
+  \item \textbf{has\_tail $\Rightarrow$ fish.} Explains 7 of 8 training examples (the crayfish and lobster have no tail and are correctly invertebrate; the scorpion-like exceptions surface when test data widens the world).
+  \item \textbf{has\_backbone $\Rightarrow$ fish.} The biological definition. Perfect on training. ``Not always obvious'' for a non-expert (caterpillars).
+  \item \textbf{has\_teeth $\Rightarrow$ fish.} Also perfect on training in this dataset, and easier to inspect than backbone. Snails and a few invertebrates have teeth-equivalent structures, so this rule will fail in the wild.
+\end{itemize}
+
+Multiple rules can fit a small training set perfectly and disagree on test data. This is the lecture's first encounter with what later becomes \emph{model selection} (Wk~3, bias--variance) and \emph{generalisation} (everywhere).
+
+\subsection{Step 5: measure performance}
+
+The test set introduces \emph{previously unseen} animals — and one deliberately broken case:
+
+\begin{center}
+\small
+\begin{tabular}{l ccccccc}
+\toprule
+& dogfish & octopus & scorpion & haddock & pike & seawasp & \textbf{bear} \\
+\midrule
+teeth?    & 1 & 0 & 0 & 1 & 1 & 0 & 1 \\
+backbone? & 1 & 0 & 0 & 1 & 1 & 0 & 1 \\
+tail?     & 1 & 0 & 1 & 1 & 1 & 0 & 1 \\
+$\ldots$ & & & & & & & \\
+\midrule
+truth & fish & inv. & inv. & fish & fish & inv. & \emph{mammal} \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Two lessons land here:
+
+\begin{itemize}
+  \item \textbf{Test accuracy $\neq$ training accuracy.} \texttt{has\_tail} fails on \emph{scorpion} (an invertebrate with a tail), even though it was perfect on training. Training-set perfection \emph{guarantees} nothing.
+  \item \textbf{The bear is the punchline.} The training data was ocean creatures, but the deployed model will see whatever the world hands it. A bear is a mammal — neither fish nor invertebrate — and \emph{none} of the candidate rules can correctly handle it because the model family has no ``mammal'' option. ``You put your algorithms in the wild, and anything can come up.''
+\end{itemize}
+
+\begin{pitfallbox}[training-set perfection is not a goal]
+A rule that is 100\% correct on the training set tells you very little about its test-set behaviour. The reason later weeks work hard on \emph{regularisation} (Wk~21), \emph{cross-validation} (Wk~3), and \emph{bias--variance trade-offs} (Wk~3) is precisely to stop you celebrating a perfect training fit. The lecturer's bear is a worked illustration of this.
+\end{pitfallbox}
+
+% =====================================================================
+\section{Rule search is optimisation: the decision stump}
+
+Having walked the pipeline by hand, the lecture closes by automating step~4. The same logic the audience executed mentally — ``try each feature, see which best explains the labels'' — is now an algorithm.
+
+\begin{defbox}[Decision stump (1-rule algorithm)]
+A \textbf{decision stump} is a one-feature decision rule. It picks a single feature $f$ and a value $m$ and predicts via the test ``does the input's feature $f$ equal $m$?'' Training searches over all (feature, value) pairs and returns the pair with the highest training accuracy. Equivalently: \emph{a depth-1 decision tree.}
+\end{defbox}
+
+\subsection{The algorithm in pseudocode}
+
+\doflag{}You should be able to write this algorithm in 30 seconds:
+
+\begin{verbatim}
+best_acc = 0.0
+for f in features:
+    for m in {False, True}:
+        acc = performance(rule_using(f, m), training_set)
+        if acc > best_acc:
+            best_acc, feature, match = acc, f, m
+return (feature, match)
+\end{verbatim}
+
+Three things are happening simultaneously:
+
+\begin{itemize}
+  \item \textbf{The model family} is single-feature equality tests — a \emph{very} restricted parametric family. Two parameters: which feature, and which value.
+  \item \textbf{The loss function} is implicit — accuracy is being maximised, so loss = error rate $= 1 - \text{accuracy}$.
+  \item \textbf{The optimiser} is brute force — exhaustive search over the parameter space. The space is small enough ($n_{\text{features}} \times 2$ pairs) that brute force is fine; for richer model families, the parameter space explodes and you reach for gradient methods (Wk~7 onwards).
+\end{itemize}
+
+\begin{notebox}
+The line ``\textbf{search $=$ optimisation}'' is the slide's own framing and is repeated several times in the transcript. Internalise it: every model-fitting procedure in this unit is an optimisation, in the sense that it is a search through a parameter space for the parameters that score best on a chosen loss. The model families and the optimisers change; the schema does not.
+\end{notebox}
+
+\subsection{Why this connects to the rest of the unit}
+
+The decision stump is a depth-1 special case of decision trees (Wk~2) and its brute-force optimisation is the shape of a more interesting one: trees expand the parameter space (which feature \emph{at every node}) and need a smarter search criterion (information gain) than raw accuracy. Random forests (Wk~4) ensemble many of these trees.
+
+When the parameter space becomes continuous (linear regression's weights $\mathbf{w} \in \mathbb{R}^M$, Wk~8), brute force is impossible and you need \emph{gradient}-driven search (Wk~7 introduces the iterative skeleton; Wk~8 specialises it to least squares). When you want \emph{probabilistic} outputs, the model family changes from a hard rule to a sigmoid (Wk~11). When the rule should explain the data \emph{and} stay simple, you add a regulariser (Wk~21).
+
+Same skeleton every time: pick a model family, pick a loss, run an optimiser.
+
+\subsection{A brief look ahead at linearity}
+
+A passing exchange in the lecture flags the next layer of complexity. A decision stump uses one feature in isolation. A \textbf{linear model} combines features as
+
+\[
+\hat{y} = w_1 x_1 + w_2 x_2 + \cdots + w_M x_M
+\]
+
+— a weighted sum. This is the form that Wk~8 develops formally for regression (least squares) and Wk~11 adapts for classification (logistic regression). A \textbf{non-linear model} allows feature combinations like $x_1^2$, $x_1 x_2$, or $\exp(x_1)$, which buys richer decision boundaries at the cost of harder optimisation. \textbf{Deep learning} is the extreme of this: the non-linear feature combinations are themselves \emph{learnt} from data rather than chosen by the engineer (``representation learning''). None of these are needed in Wk~1 — they are landmarks to walk past on the way to Wk~7+.
+
+% =====================================================================
+\section{Closing observations the lecturer flagged}
+
+A handful of asides surfaced in the Q\&A and are worth carrying forward.
+
+\subsection{Domain knowledge is not required}
+
+The lecturer's emphatic point: \emph{you do not need to know what a fish is to learn the fish/invertebrate classifier}. As long as the data is in feature-vector form and the labels are in some encoded format, the algorithm operates on the matrix and is blind to what the symbols ``mean.'' This generality is precisely what distinguishes ML from hand-crafted rules: a hand rule for cats vs dogs (``pointed triangular ears $\Rightarrow$ cat'') doesn't transfer to fraud detection or to spam, and rule-construction effort scales linearly with the number of problems. ML transfers \emph{the algorithm}; only the data needs swapping.
+
+\subsection{Supervised vs unsupervised, in passing}
+
+A student asked where \emph{unsupervised} learning fits. The lecturer's answer (paraphrased): if you delete the last row of the matrix — the labels — then the same data and the same algorithm-architecture frame an unsupervised problem instead. The goal becomes finding \emph{structure} in the inputs (clusters, low-dimensional embeddings, density estimates) rather than predicting a target. Wk~19 is the natural home for this; for now, just register that ``presence of labels'' is the difference, not the data format.
+
+\subsection{The \texttt{evaluate(fv)} skeleton is a microcosm}
+
+The two-line code skeleton of the decision stump captures something deep about how supervised models are stored and deployed:
+
+\begin{itemize}
+  \item \textbf{The architecture} (the \texttt{evaluate} function body) is fixed at design time.
+  \item \textbf{The parameters} (the \texttt{feature} / \texttt{match} variables, or in later weeks, weight vectors and bias terms) are the only thing that varies between trained instances.
+\end{itemize}
+
+A trained ML system is therefore exactly two things: a piece of static code, plus a parameter blob. Deployment ships the architecture once and updates the parameters; this is the working picture you should have whenever a later week says ``the model is parameterised by $\boldsymbol\theta$.''
+
+% =====================================================================
+\section*{Exam-mode answers}
+
+Wk~1 doesn't appear directly on the past paper, so the exam-mode answers below treat the kinds of MCQ-style ``define / give an example / explain'' prompts that test foundational vocabulary. Use these as rehearsal for any compulsory MCQ subpart that draws on Wk~1 vocabulary.
+
+\begin{exambox}[1 — Distinguish ML from programming and classical AI]
+\textbf{1 mark} for: \emph{Programming} hard-codes a rule from human knowledge. \\
+\textbf{1 mark} for: \emph{Classical AI} solves a fully specified problem by search/optimisation in a hand-built problem space (e.g.\ A* on a road graph). \\
+\textbf{1 mark} for: \emph{Machine learning} induces the rule from input/output examples — neither rule nor full problem-space is hand-built. \\
+\textbf{1 mark} for: a concrete contrast (gearbox $\Rightarrow$ programming; GPS routing $\Rightarrow$ AI; reading a road sign $\Rightarrow$ ML).
+\end{exambox}
+
+\begin{exambox}[2 — State the five-step ML pipeline]
+\textbf{1 mark} per step (cap 5): (1) choose a problem, (2) obtain required data, (3) choose / design a model, (4) fit the model to the data using optimisation, (5) measure performance — iterate back to (3) if performance is inadequate.
+\end{exambox}
+
+\begin{exambox}[3 — Classification vs regression]
+\textbf{1 mark}: \emph{Classification} = the output is a discrete label (e.g.\ fish/invertebrate, spam/not-spam). \\
+\textbf{1 mark}: \emph{Regression} = the output is a real-valued (continuous) target (e.g.\ tomorrow's stock price). \\
+\textbf{1 mark} for one example of each.
+\end{exambox}
+
+\begin{exambox}[4 — Why train on one set and test on another?]
+\textbf{1 mark}: A model can memorise the training set without learning a rule that generalises (the bear / scorpion examples — different test data exposes failure modes invisible at training). \\
+\textbf{1 mark}: Performance must be \emph{estimated} on data the model did not see during fitting; otherwise the score is optimistically biased. \\
+\textbf{1 mark}: This is what later weeks formalise as the bias--variance trade-off (Wk~3) and motivates regularisation (Wk~21) and cross-validation.
+\end{exambox}
+
+\begin{exambox}[5 — Describe the decision stump algorithm]
+\textbf{1 mark}: A decision stump is a depth-1 decision rule using a single feature. \\
+\textbf{1 mark}: Training enumerates all (feature, value) pairs. \\
+\textbf{1 mark}: For each, the candidate rule's accuracy on the training set is computed. \\
+\textbf{1 mark}: Return the (feature, value) pair with highest training accuracy. \\
+\textbf{1 mark} for noting: ``rule search $=$ optimisation,'' here implemented as brute-force exhaustive search.
+\end{exambox}
+
+\begin{exambox}[6 — What does ``ML algorithm outputs code'' mean?]
+\textbf{1 mark}: The architecture (the function that consumes a feature vector and returns a prediction) is fixed at design time. \\
+\textbf{1 mark}: Training produces \emph{parameters} that, plugged into that fixed function, define a specific predictor. \\
+\textbf{1 mark}: A deployed model is therefore architecture $+$ parameter blob; the same architecture serves every trained instance.
+\end{exambox}
+
+% =====================================================================
+\section*{Key ideas to carry forward}
+
+\begin{tldrbox}
+\begin{itemize}[leftmargin=*]
+  \item \textbf{ML reduces to optimisation.} Pick a model family, pick a loss, search the parameter space for the parameters that minimise the loss. Wk~7 onwards develops the search-engine half of this story.
+  \item \textbf{The five-step pipeline} is the scaffold. Wk 2 onward refines step~3 (model families: trees, linear models, SVMs, kernels, graphical models). Wks~7--9 refine step~4 (the optimiser). Wk~4 owns step~5 (loss functions and performance metrics).
+  \item \textbf{Generalisation, not training-set fit, is the target.} The bear is the lecturer's working illustration. Wk~3 (bias--variance) and Wk~21 (regularisation) are the formal tools the rest of the unit uses to manage this.
+  \item \textbf{Decision stump $\rightarrow$ decision tree (Wk~2) $\rightarrow$ random forest (Wk~4)} is one trail through the unit; \textbf{Wk~7 optimisation $\rightarrow$ Wk~8 linear regression $\rightarrow$ Wk~10 BLR $\rightarrow$ Wk~11 logistic $\rightarrow$ Wks~25--29 SVMs/kernels} is the other. Wk~1 puts you at the trailhead of both.
+\end{itemize}
+\end{tldrbox}
+
+\end{document}

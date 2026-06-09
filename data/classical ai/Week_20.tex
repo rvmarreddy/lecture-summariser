@@ -1,0 +1,613 @@
+\documentclass[11pt, a4paper]{article}
+
+% --- Fonts and engine ---
+\usepackage{fontspec}
+\setmainfont{Helvetica Neue}
+\setmonofont{Menlo}
+\usepackage{unicode-math}
+\setmathfont{STIX Two Math}
+
+% --- Layout ---
+\usepackage[margin=2cm, top=2cm, bottom=2.5cm]{geometry}
+\usepackage{microtype}
+\usepackage{parskip}
+\setlength{\parskip}{0.5em}
+\setlength{\parindent}{0pt}
+
+% --- Typography and links ---
+\usepackage[colorlinks=true, linkcolor=NavyBlue, urlcolor=NavyBlue, citecolor=NavyBlue]{hyperref}
+\usepackage{xcolor}
+\usepackage[dvipsnames]{xcolor}
+
+% --- Math and tables ---
+\usepackage{amsmath}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{tabularx}
+\newcommand{\thead}[1]{\textbf{#1}}
+
+% --- Graphics ---
+\usepackage{graphicx}
+\graphicspath{{figures/week20/}}
+
+% --- Lists ---
+\usepackage{enumitem}
+\setlist[itemize]{leftmargin=1.3em, itemsep=0.15em, topsep=0.2em}
+\setlist[enumerate]{leftmargin=1.5em, itemsep=0.15em, topsep=0.2em}
+
+% --- Boxed callouts ---
+\usepackage[most]{tcolorbox}
+\tcbuselibrary{breakable, skins, theorems}
+
+% Color palette
+\definecolor{cardBg}{HTML}{FFFDF2}
+\definecolor{cardBd}{HTML}{D4C69A}
+\definecolor{defBg}{HTML}{EAF2FB}
+\definecolor{defBd}{HTML}{1F4E79}
+\definecolor{factBg}{HTML}{E7F1FF}
+\definecolor{factBd}{HTML}{1D4ED8}
+\definecolor{tipBg}{HTML}{E8F5E9}
+\definecolor{tipBd}{HTML}{2E7D32}
+\definecolor{trapBg}{HTML}{FDE2E2}
+\definecolor{trapBd}{HTML}{D23F3F}
+\definecolor{pitBg}{HTML}{FFF3CD}
+\definecolor{pitBd}{HTML}{D4A017}
+\definecolor{quizBg}{HTML}{FFF0E8}
+\definecolor{quizBd}{HTML}{B85C2A}
+\definecolor{doBg}{HTML}{F5F0E0}
+\definecolor{doBd}{HTML}{6A1B9A}
+
+\newtcolorbox{card}[1][]{enhanced, breakable, colback=cardBg, colframe=cardBd, arc=4pt, boxrule=0.5pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries\small, coltitle=black, title={#1}}
+\newtcolorbox{defbox}[1][]{enhanced, breakable, colback=defBg, colframe=defBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={Definition: #1}}
+\newtcolorbox{factbox}[1][]{enhanced, breakable, colback=factBg, colframe=factBd, arc=3pt, boxrule=0.6pt, left=8pt, right=8pt, top=5pt, bottom=5pt, fonttitle=\bfseries, title={Fact #1}}
+\newtcolorbox{trapbox}[1][]{enhanced, breakable, colback=trapBg, colframe=trapBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=5pt, bottom=5pt, fonttitle=\bfseries, title={MCQ trap #1}}
+\newtcolorbox{pitfallbox}[1][]{enhanced, breakable, colback=pitBg, colframe=pitBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=5pt, bottom=5pt, fonttitle=\bfseries, title={Pitfall #1}}
+\newtcolorbox{quizbox}[1][]{enhanced, breakable, colback=quizBg, colframe=quizBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=5pt, bottom=5pt, fonttitle=\bfseries, title={Lecturer's in-class quiz #1}}
+\newtcolorbox{dobox}[1][]{enhanced, breakable, colback=doBg, colframe=doBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=5pt, bottom=5pt, fonttitle=\bfseries, title={Worked trace #1}}
+
+\usepackage{titlesec}
+\titleformat{\section}[block]{\Large\bfseries\color{defBd}}{\thesection.}{0.6em}{}
+\titleformat{\subsection}[block]{\large\bfseries\color{defBd!80!black}}{\thesubsection}{0.5em}{}
+\titlespacing*{\section}{0pt}{1.3em}{0.4em}
+\titlespacing*{\subsection}{0pt}{0.9em}{0.3em}
+
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small CM52078 — Week 2}
+\fancyhead[R]{\small Informed and Uninformed Search}
+\fancyfoot[C]{\small\thepage}
+\renewcommand{\headrulewidth}{0.3pt}
+
+\newcommand{\examflag}{\textcolor{tipBd}{\textbf{[EXAM]}}\,}
+\newcommand{\trapflag}{\textcolor{trapBd}{\textbf{[TRAP]}}\,}
+\newcommand{\doflag}{\textcolor{doBd}{\textbf{[DO]}}\,}
+
+\title{\vspace{-1.5cm}{\Huge\bfseries Week 2 — Informed and Uninformed Search} \\[0.3em]{\large Search problems · BFS / DFS / IDS / UCS · Greedy / A$^{*}$ · admissibility \& consistency}}
+\author{\large CM52078 Classical Artificial Intelligence \,$\cdot$\, Dr Nadejda Roubtsova}
+\date{}
+
+\begin{document}
+
+\maketitle
+\thispagestyle{empty}
+\vspace{-1em}
+
+% =====================================================================
+\section{Search problems — formalisation}
+
+\subsection{Six attributes}
+
+A search problem is fully specified by these six items; cost is optional, the other five are mandatory.
+
+\begin{center}
+\renewcommand{\arraystretch}{1.2}
+\begin{tabularx}{\textwidth}{@{}p{3.3cm}X@{}}
+\toprule
+\thead{Attribute} & \thead{Meaning} \\
+\midrule
+\textbf{State space} $S$ & Set of every configuration the agent could be in. Usually defined implicitly by actions + transition model. \\
+\textbf{Initial state} $s_0$ & The starting configuration, $s_0 \in S$. \\
+\textbf{Goal state / test} & A specific state, or a predicate $Goal(s)$. The two are equivalent in formalism. \\
+\textbf{Actions} $Actions(s)$ & Legal moves \emph{from} state $s$. State-dependent. \\
+\textbf{Transition model} $Result(s,a)$ & The state you arrive at after performing $a$ in $s$. Deterministic. \\
+\textbf{Action cost} $c(s,a,s')$ \emph{(optional)} & Numeric cost. Omitted $\Rightarrow$ uniform cost $\Rightarrow$ optimal $=$ fewest transitions. \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\examflag{}\textbf{Formalisation drill.} Given any puzzle (8-queens, Tower of Hanoi, river crossing, sudoku, Romania map, Rubik's, 8-puzzle), fill the six rows. This is the lecturer's standard exam-style question.
+
+\subsection{State-space graph vs search tree}
+
+Two \emph{different} data structures. Confusing them is a guaranteed MCQ mistake.
+
+\begin{center}
+\renewcommand{\arraystretch}{1.2}
+\begin{tabularx}{\textwidth}{@{}p{4.5cm}p{4.5cm}X@{}}
+\toprule
+\thead{} & \thead{State-space graph} & \thead{Search tree} \\
+\midrule
+Represents & The whole problem (all states, all transitions) & A specific exploration strategy applied to the problem \\
+Each state appears & Once & Possibly many times (nodes encode \emph{paths}, not states) \\
+Built & Once; defines the problem & Incrementally during search \\
+Cycles & Possible & Never (it's a tree) \\
+Root & N/A & Always $s_0$ \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\begin{center}
+
+\footnotesize\textit{Romania state-space graph (left) and a partial search tree from Arad (right). Arad reappears under Sibiu in the tree because that node encodes the path Arad$\to$Sibiu$\to$Arad. R\&N AIMA 4e.}
+\end{center}
+
+\textbf{Two species of problem:}
+\begin{itemize}
+  \item \emph{Tree-search problem} — underlying graph has no cycles; each state reachable by exactly one path. No need for explored set.
+  \item \emph{Graph-search problem} — graph has cycles; maintain an \textbf{explored} set to avoid loops. Cost: memory.
+\end{itemize}
+
+\textbf{Path-checking} is a compromise: cheaper than full explored set; only checks whether a new node is already on the current path back to the root. Catches infinite loops without paying for full history.
+
+\subsection{Terminology}
+
+\begin{itemize}
+  \item \textbf{Expansion} — picking a frontier node and generating \emph{all} its successors by applying every legal action. The expensive operation.
+  \item \textbf{Generation} — producing \emph{one} successor during an expansion. A node is generated, then sits on the frontier until itself chosen for expansion.
+  \item \textbf{Frontier} (open list) — nodes generated but not yet expanded. The selection rule from the frontier \emph{is} the algorithm.
+  \item \textbf{Explored} (closed list) — states already expanded; maintained in graph search.
+\end{itemize}
+
+\subsection{Goal-test timing — \trapflag\ critical}
+
+\begin{itemize}
+  \item \textbf{BFS} may test on \emph{generation} (early goal test). Safe under uniform costs --- once the goal is generated at depth $d$, no shallower one exists.
+  \item \textbf{DFS} normally tests on expansion (early test also safe).
+  \item \textbf{UCS} and \textbf{A$^{*}$} \emph{must} test on \emph{expansion}, never on generation. A cheaper path may still be on the frontier. Testing on generation can return a suboptimal solution.
+\end{itemize}
+
+% =====================================================================
+\section{Performance metrics}
+
+\subsection{The four metrics}
+
+\begin{itemize}
+  \item \textbf{Completeness} --- guaranteed to find a solution if one exists, or correctly declare ``no solution''.
+  \item \textbf{Optimality} --- guaranteed to return the \emph{cheapest} solution (lowest path cost; with uniform costs, fewest transitions).
+  \item \textbf{Time} --- measured in node expansions.
+  \item \textbf{Space} --- driven by frontier size (plus explored set if maintained).
+\end{itemize}
+
+\subsection{Tree parameters $b$, $d$, $m$}
+
+\begin{itemize}
+  \item $b$ = \textbf{branching factor} (max successors per node).
+  \item $d$ = depth of the \emph{shallowest} goal node.
+  \item $m$ = \emph{maximum} depth of the whole tree.
+  \item Always $d \le m$. Swap them and you get the wrong complexity.
+\end{itemize}
+
+\begin{center}
+
+\footnotesize\textit{Branching factor $b$ (green), shallowest-goal depth $d$ (red), max depth $m$ (blue).}
+\end{center}
+
+\textbf{Big-O.} $\;1 + b + b^2 + \dots + b^m = O(b^m)$. Drop everything except the dominant term.
+
+% =====================================================================
+\section{Uninformed search}
+
+\emph{Uninformed} $=$ uses only the problem (state-space graph $\pm$ action costs). \trapflag\ Action costs count as \emph{internal} information --- UCS uses costs and is \emph{still uninformed}.
+
+\subsection{BFS — Breadth-First Search}
+
+\begin{card}[BFS card]
+\begin{itemize}
+  \item \textbf{Rule:} expand the shallowest frontier node (FIFO queue).
+  \item \textbf{Complete:} yes (finite branching).
+  \item \textbf{Optimal:} yes \emph{only if all step costs are equal}.
+  \item \textbf{Time:} $O(b^d)$. \quad \textbf{Space:} $O(b^d)$.
+  \item \textbf{Early goal test} legal: check on generation, saves up to one whole layer.
+\end{itemize}
+\end{card}
+
+\begin{center}
+
+\footnotesize\textit{BFS sweeps depth-by-depth. Frontier evolves $[B,C] \to [C,D,E] \to [D,E,F,G]$. R\&N AIMA 4e.}
+\end{center}
+
+\subsection{DFS — Depth-First Search}
+
+\begin{card}[DFS card]
+\begin{itemize}
+  \item \textbf{Rule:} expand the deepest frontier node (LIFO stack); backtrack when stuck.
+  \item \textbf{Complete:} yes on finite trees; \emph{no} on infinite/cyclic graphs without cycle detection.
+  \item \textbf{Optimal:} no --- can dive past a shallow goal and return a deeper one.
+  \item \textbf{Time:} $O(b^m)$. \quad \textbf{Space:} $O(bm)$ --- \emph{linear; the only selling point}.
+\end{itemize}
+\end{card}
+
+\subsection{IDS — Iterative Deepening Search}
+
+\begin{card}[IDS card]
+\begin{itemize}
+  \item \textbf{Rule:} repeated DFS with depth limit $\ell = 0, 1, 2, \dots$ until goal found.
+  \item Each iteration = bounded DFS $\Rightarrow$ linear space.
+  \item Outer loop = depth-first-then-breadth-first $\Rightarrow$ never miss a shallow goal $\Rightarrow$ optimal.
+  \item \textbf{Time:} $O(b^d)$ \quad \textbf{Space:} $O(bd)$ \quad \textbf{Complete + optimal} (equal costs).
+\end{itemize}
+\end{card}
+
+\textbf{FAQ:} \emph{``IDS re-explores shallow levels --- shouldn't it be slower than BFS?''} The total expansion sum
+\[ d \cdot b + (d-1) \cdot b^2 + \dots + 1 \cdot b^d \]
+is dominated by the last term $b^d$. BFS's sum is $b + b^2 + \dots + b^d$, also dominated by $b^d$. Big-O captures the dominant term, so both are $O(b^d)$. IDS expands a constant factor more in absolute terms but wins on space.
+
+\subsection{UCS — Uniform-Cost Search (Dijkstra)}
+
+\begin{card}[UCS card]
+\begin{itemize}
+  \item \textbf{Rule:} expand the frontier node with the lowest accumulated path cost $g(n)$.
+  \item \textbf{Complete:} yes if all action costs $\ge \epsilon > 0$.
+  \item \textbf{Optimal:} yes for arbitrary non-negative costs.
+  \item \textbf{Goal test on expansion}, not generation --- a cheaper path may still arrive.
+  \item Equals BFS when all step costs are equal.
+\end{itemize}
+\end{card}
+
+\textbf{Why ``still uninformed'':} costs are part of the problem representation, not an external estimate of distance-to-goal.
+
+% =====================================================================
+\section{Informed search}
+
+\textbf{Informed} $=$ uses a heuristic function $h(n)$, an \emph{external} estimate of cost from $n$ to the goal. Must be optimistic (cannot overestimate); standard example is straight-line distance for pathfinding.
+
+\subsection{Greedy Best-First}
+
+\begin{card}[Greedy card]
+\begin{itemize}
+  \item \textbf{Rule:} expand the frontier node with the lowest $h(n)$. Ignores $g(n)$.
+  \item Complete (with cycle detection); \emph{not} optimal --- cannot backtrack after the goal is generated, because $h(\text{goal}) = 0$ wins the frontier outright.
+  \item Fast \emph{when} the heuristic is good; worst-case time $O(b^m)$.
+\end{itemize}
+\end{card}
+
+\begin{center}
+
+\footnotesize\textit{Greedy from Sibiu: picks Fagaras ($h=176$) over Rimnicu Vilcea ($h=193$), reaches Bucharest in two expansions. Path cost 310 mi --- but Sibiu$\to$RV$\to$Pitesti$\to$Bucharest costs 278 mi. Greedy returned the worse path.}
+\end{center}
+
+\subsection{A$^{*}$ Search}
+
+\begin{card}[A$^{*}$ card]
+\begin{itemize}
+  \item \textbf{Rule:} expand the frontier node with the lowest $f(n) = g(n) + h(n)$.
+  \item Combines UCS ($g$, backward grounding) with Greedy ($h$, forward speed).
+  \item \textbf{Optimal} if $h$ is admissible.
+  \item \textbf{Optimally efficient} if $h$ is consistent --- no admissible algorithm using the same $h$ expands fewer nodes.
+  \item Goal test on \emph{expansion}, never on generation.
+\end{itemize}
+\end{card}
+
+\begin{center}
+
+\footnotesize\textit{A$^{*}$ Sibiu$\to$Bucharest. Step 1: RV ($f=273$) beats Fagaras ($f=275$). Step 2: from RV, Pitesti ($f=277$). Step 3: Fagaras still beats Pitesti at 275 $\Rightarrow$ expand, generates Bucharest via path 1 ($f=310$). Step 4: Pitesti expanded, generates Bucharest via path 2 ($f=278$) which replaces path 1. Optimal solution returned.}
+\end{center}
+
+% =====================================================================
+\section{Heuristic properties (highest MCQ density)}
+
+\subsection{Admissibility}
+
+\begin{defbox}[Admissible heuristic]
+$h(n) \le h^*(n)$ for every state $n$, where $h^*(n)$ is the true optimal cost from $n$ to the goal. \\
+\textbf{Plain English:} never overestimates.
+\end{defbox}
+
+\begin{itemize}
+  \item Straight-line distance in pathfinding --- admissible (road distance $\ge$ straight line).
+  \item Manhattan distance on a 4-connected grid --- admissible.
+  \item $h \equiv 0$ --- admissible (under-estimates trivially). A$^{*}$ with $h\equiv 0$ degenerates to UCS.
+\end{itemize}
+
+\subsection{Consistency (monotonicity)}
+
+\begin{defbox}[Consistent heuristic]
+For every $n$, every successor $n'$, and the action cost $c = c(n,a,n')$:
+\[ h(n) \;\le\; c + h(n'). \]
+This is the \emph{triangle inequality}.
+\end{defbox}
+
+\textbf{Picture:} you can't get a tighter estimate of distance-to-goal by detouring through any neighbour, after paying the actual step cost.
+
+\subsection{The implication that gets tested constantly}
+
+\begin{factbox}
+\textbf{Consistent $\Rightarrow$ Admissible}. The converse does \textbf{not} hold. \\
+Contrapositive: \emph{Not admissible $\Rightarrow$ Not consistent}.
+\end{factbox}
+
+\begin{center}
+\renewcommand{\arraystretch}{1.15}
+\begin{tabular}{@{}cccl@{}}
+\toprule
+\thead{Consistent?} & \thead{Admissible?} & \thead{Possible?} & \thead{A$^{*}$ guarantee} \\
+\midrule
+Yes & Yes & yes & optimal + optimally efficient \\
+No  & Yes & yes & optimal (tree search) \\
+Yes & No  & \emph{impossible} & --- \\
+No  & No  & yes & no guarantee \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\textbf{Consistency triangle direction (2022 Q1):} the inequality is $h(n) \le c + h(n')$. Not $<$, not $=$, not $\ge$. Strict less-than excludes the perfect-heuristic boundary case; $\ge$ flips into overestimation.
+
+% =====================================================================
+\section{Lecturer's three in-class quizzes}
+
+The lecturer explicitly flags these as \emph{``the hardest part of the lecture''}. Each quiz pairs a heuristic with a transition rule and asks: admissible? consistent?
+
+\subsection{Quiz 1 --- 8-puzzle with Hamming distance}
+
+\textbf{Heuristic:} number of tiles out of place vs goal. \textbf{Transition:} one slide $=$ cost 1.
+
+\begin{center}
+
+\footnotesize\textit{8-puzzle state $\{7,2,4 \mid 5,\_,6 \mid 8,3,1\}$. Eight tiles misplaced $\Rightarrow$ $h = 8$.}
+\end{center}
+
+\textbf{Admissible? Yes.} If $k$ tiles are out of place you need \emph{at least} $k$ slides to place them all (each slide moves one tile). So $h \le h^*$ always.
+
+\textbf{Consistent? Yes.} Any single slide changes the Hamming count by $\pm 1$. With $c = 1$, the inequality $h(n) \le 1 + h(n')$ holds in every case (equality when moving toward goal, strict when away).
+
+\subsection{Quiz 2 --- Rubik's Cube with Hamming distance}
+
+\textbf{Heuristic:} number of incorrectly-coloured stickers. \textbf{Transition:} one face rotation $=$ cost 1.
+
+\textbf{Admissible? \trapflag\ NO.} One rotation moves \emph{8 stickers simultaneously}. If those 8 stickers were the only wrong ones and the rotation fixes them all, $h(n) = 12$ but the true cost is 1. \emph{Massively overestimates}.
+
+\textbf{Consistent? No.} The easy path: every consistent heuristic is admissible; this one isn't admissible, so it can't be consistent (contrapositive).
+
+\textbf{General lesson:} a ``count misplaced units'' heuristic is admissible \emph{only if every action can fix at most one such unit}.
+
+\subsection{Quiz 3 --- Maze with Manhattan distance}
+
+\textbf{Heuristic:} $h(s) = |x_1 - x_2| + |y_1 - y_2|$. \textbf{Transition:} 4-connected (no diagonals), cost 1.
+
+\textbf{Admissible? Yes.} Manhattan is the minimum number of grid moves between two cells in 4-connected movement, ignoring walls. Walls can only \emph{lengthen} the path. So $h \le h^*$.
+
+\textbf{Consistent? Yes.} One step changes Manhattan distance by $\pm 1$ with cost 1, so $h(n) \le 1 + h(n')$ always holds.
+
+\begin{trapbox}[: same heuristic, different verdict]
+The \emph{same} heuristic (Hamming, Manhattan) is admissible in one transition system and not in another. Always check what one action can change.
+
+\textbf{King chess heuristic (Worksheet Q6g):} 8-connected (diagonals allowed, cost 1). A diagonal step reduces Manhattan by 2 with cost 1 $\Rightarrow$ over-estimates $\Rightarrow$ \emph{not admissible}.
+\end{trapbox}
+
+% =====================================================================
+\section{Worked traces ([DO] practice)}
+
+Every trace below maps directly to a past-paper MCQ. Reproduce them on paper.
+
+\subsection{\doflag\ Trace 1 --- Family-tree BFS counting (2023 Q1 / Worksheet Q1)}
+
+Each person has 2 parents. Closest matching ancestor at generation 5. Tree extends to generation 7. Find the \emph{minimum} names checked.
+
+BFS visits levels 1--4 in full: $2 + 4 + 8 + 16 = 30$. Then at level 5, the minimum is when the match is the \emph{first} name checked $\Rightarrow$ $30 + 1 = \mathbf{31}$.
+
+\trapflag\ Maximum would be $30 + 32 = 62$. ``Minimum'' vs ``maximum'' is the entire question.
+
+\subsection{\doflag\ Trace 2 --- Possible DFS orders (2022 Q5)}
+
+Tree: $A \to \{B, C\}$, $B \to \{D, E\}$, $C \to \{F, G\}$. Sibling chosen at random.
+
+DFS must exhaust a subtree before backtracking; can start with $B$ or $C$ from $A$, and either child within each subtree.
+
+\textbf{Legal:} $A,B,D,E,C,F,G$ \quad $A,B,E,D,C,F,G$ \quad $A,C,G,F,B,E,D$ \quad (and five more permutations).
+
+\textbf{Illegal:} $A,B,C,\dots$ (BFS-style: both children before a grandchild). $A,C,B,\dots$ (jumps subtree without exhausting).
+
+\subsection{\doflag\ Trace 3 --- Admissibility check (2025 Q2 / Worksheet Q8)}
+
+Edges: $A{\to}B$(3), $A{\to}C$(1), $A{\to}D$(4), $B{\to}G$(2), $C{\to}B$(2), $C{\to}D$(2), $D{\to}G$(1). Goal $G$.
+
+\textbf{Step 1 --- compute true optimal costs $h^*$:}
+\begin{itemize}
+  \item $h^*(B) = 2$, $h^*(D) = 1$.
+  \item $h^*(C) = \min(2{+}2, 2{+}1) = 3$ (via $D$).
+  \item $h^*(A) = \min(3{+}2,\, 1{+}3,\, 4{+}1) = 4$ (via $C \to D$, \trapflag\ \emph{not} direct $A \to B$).
+\end{itemize}
+
+\textbf{Step 2 --- check each $h$ row-by-row:}
+
+\begin{center}
+\renewcommand{\arraystretch}{1.15}
+\begin{tabular}{@{}lcccccc@{}}
+\toprule
+Node & $h^*$ & H1 & H2 & H3 & H4 & H5 \\
+\midrule
+A & 4 & 3\,\checkmark & 6\,\textcolor{red}{\textbf{X}} & 4\,\checkmark & 3\,\checkmark & 3\,\checkmark \\
+B & 2 & 1\,\checkmark & 2\,\checkmark & 2\,\checkmark & 2\,\checkmark & 4\,\textcolor{red}{\textbf{X}} \\
+C & 3 & 2\,\checkmark & 4\,\textcolor{red}{\textbf{X}} & 1\,\checkmark & 3\,\checkmark & 3\,\checkmark \\
+D & 1 & 1\,\checkmark & 2\,\textcolor{red}{\textbf{X}} & 1\,\checkmark & 4\,\textcolor{red}{\textbf{X}} & 1\,\checkmark \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\textbf{Admissible: H1, H3.}
+
+\subsection{\doflag\ Trace 4 --- Greedy vs A$^{*}$ on P--V graph (2024 Q2 \& Q3)}
+
+Edges: $P{\to}Q$(2), $P{\to}S$(5), $P{\to}T$(3), $Q{\to}R$(5), $R{\to}V$(2), $S{\to}V$(5), $T{\to}U$(1), $U{\to}V$(3). $h$ $=$ actions to $V$. $h$-values: $V{=}0$, $R/S/U{=}1$, $Q/T{=}2$, $P{=}3$.
+
+\textbf{Greedy (Q2).} From $P$: pick lowest $h$ among $\{Q(2), S(1), T(2)\}$ $\Rightarrow$ $S$. From $S$: generate $V$ $\Rightarrow$ done. \textbf{Expanded: $S$ only.}
+
+\trapflag\ Actual cost via $S$: $5 + 5 = 10$. Via $Q \to R$: $2 + 5 + 2 = 9$ (cheaper). Greedy can't see $g$.
+
+\textbf{A$^{*}$ (Q3).} $f$ values: from $P$ generate $Q$ ($f{=}4$), $S$ ($f{=}6$), $T$ ($f{=}5$). Expand $Q$ ($f{=}4$) $\Rightarrow$ generate $R$ ($f{=}8$). Expand $T$ ($f{=}5$) $\Rightarrow$ generate $U$ ($f{=}5$). Expand $U$ ($f{=}5$) $\Rightarrow$ generate $V$ ($f{=}7$, optimal path $P{\to}T{\to}U{\to}V$ at cost 7). \textbf{Expanded: $Q$, $T$, $U$, $R$.}
+
+\textbf{Punchline.} Greedy expanded 1 node for a path of cost 10. A$^{*}$ expanded 4 for the optimal path of cost 7.
+
+\subsection{\doflag\ Trace 5 --- BFS / DFS / IDS on binary state-space (Worksheet Q4)}
+
+Start $=1$, children of $k$ are $2k$ and $2k+1$. Find $k=11$ (at depth 3, child of 5).
+
+\begin{itemize}
+  \item \textbf{BFS late goal test:} $1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11$.
+  \item \textbf{BFS early goal test:} $1, 2, 3, 4, 5$ (11 generated as child of 5, halts).
+  \item \textbf{Depth-limited DFS, limit 3:} $1, 2, 4, 8, 9, 5, 10, 11$.
+  \item \textbf{IDS:}
+    \begin{itemize}
+      \item $\ell=0$: $1$.
+      \item $\ell=1$: $1, 2, 3$.
+      \item $\ell=2$: $1, 2, 4, 5, 3, 6, 7$.
+      \item $\ell=3$: $1, 2, 4, 8, 9, 5, 10, 11$.
+    \end{itemize}
+\end{itemize}
+
+\trapflag\ IDS \emph{restarts} from the root every iteration, so $1$ recurs each time. Late vs early goal test changes BFS trace by a whole layer.
+
+\subsection{\doflag\ Trace 6 --- Graph search Greedy / A$^{*}$ / UCS (Worksheet Q5)}
+
+Goal $H$; ties broken alphabetically.
+
+\begin{center}
+\renewcommand{\arraystretch}{1.15}
+\begin{tabularx}{\textwidth}{@{}lXl@{}}
+\toprule
+\thead{Algo} & \thead{Removed-from-frontier order} & \thead{Path / cost} \\
+\midrule
+Greedy & $A, B, D, H$ & $A{\to}B{\to}D{\to}H$, cost 6 (suboptimal) \\
+A$^{*}$ & $A, C, B, G, H$ & $A{\to}C{\to}G{\to}H$, cost 4 (optimal) \\
+UCS & $A, C, B, G, F, H$ & $A{\to}C{\to}G{\to}H$, cost 4 (optimal) \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+A$^{*}$ skips $F$ that UCS expands --- the heuristic prunes one node. Both find the optimal path; UCS expands more.
+
+% =====================================================================
+\section{Past-paper traps consolidated}
+
+\begin{itemize}
+  \item \trapflag\ \textbf{BFS optimality requires equal step costs.} ``BFS is always optimal'' --- false. Use UCS for unequal costs.
+  \item \trapflag\ \textbf{BFS space is $O(b^d)$, not $O(bd)$.} Linear space belongs to DFS / IDS.
+  \item \trapflag\ \textbf{DFS upper bound is $O(b^m)$.} Worst case it explores the whole tree to depth $m$. $b^d$ is BFS's complexity.
+  \item \trapflag\ \textbf{$d$ vs $m$ swap.} $d$ = shallowest goal. $m$ = deepest leaf.
+  \item \trapflag\ \textbf{$f = g + h$, never $g - h$.}
+  \item \trapflag\ \textbf{Consistency direction:} $h(n) \le c + h(n')$. Not $<$, not $\ge$, not $=$.
+  \item \trapflag\ \textbf{Heuristic measures cost-to-goal, never cost-from-start.} A formula like $(x{-}1)+(y{-}1)$ in a maze starting at $(1,1)$ describes $g$, not $h$.
+  \item \trapflag\ \textbf{Consistent $\Rightarrow$ admissible, one way only.} Mirror questions in 2023 Q3 and 2025 Q3.
+  \item \trapflag\ \textbf{Optimally efficient $\neq$ finds optimal.} Two distinct claims.
+  \item \trapflag\ \textbf{``DFS always expands at least as many nodes as A$^{*}$''} --- false. DFS can stumble on the optimal path immediately.
+  \item \trapflag\ \textbf{BFS is complete with zero-cost actions} (depth-driven). UCS is \emph{not} (can loop forever on a zero-cost cycle).
+  \item \trapflag\ \textbf{BFS not complete on infinite no-solution spaces} --- never finishes, never declares no-solution.
+  \item \trapflag\ \textbf{Manhattan on king's-move chess is not admissible} (diagonals are cheap).
+  \item \trapflag\ \textbf{``Minimum'' vs ``maximum''} in BFS counting matters (2023 Q1: 31 vs 62).
+  \item \trapflag\ \textbf{Random sibling tie-break} gives multiple valid DFS orders. Don't restrict to left-first.
+  \item \trapflag\ \textbf{Late vs early goal test} changes BFS trace by a whole layer.
+  \item \trapflag\ \textbf{Greedy can be cheaper-to-search but suboptimal-in-cost.} Inverted intuition vs A$^{*}$.
+  \item \trapflag\ \textbf{``Always preferable'' is essentially never true} (BFS vs DFS, etc).
+\end{itemize}
+
+% =====================================================================
+\section{Algorithm comparison and decision card}
+
+\subsection{Master table}
+
+\begin{center}
+\renewcommand{\arraystretch}{1.2}
+\begin{tabularx}{\textwidth}{@{}p{1.4cm}p{2.6cm}p{1.6cm}p{1.6cm}p{1.6cm}X@{}}
+\toprule
+\thead{Algo} & \thead{Selection rule} & \thead{Time} & \thead{Space} & \thead{Optimal?} & \thead{Notes} \\
+\midrule
+BFS & shallowest & $O(b^d)$ & $O(b^d)$ & yes (equal costs) & early goal test legal \\
+DFS & deepest & $O(b^m)$ & $O(bm)$ & no & only linear-space algo (uninformed) \\
+IDS & DFS w/ inc.\ $\ell$ & $O(b^d)$ & $O(bd)$ & yes (equal costs) & best uninformed default \\
+UCS & lowest $g(n)$ & varies & varies & yes (non-neg) & cost-aware uninformed; test on expansion \\
+Greedy & lowest $h(n)$ & $O(b^m)$ worst & $O(b^m)$ worst & no & fast w/ good $h$; commits early \\
+A$^{*}$ & lowest $g{+}h$ & varies & varies & yes if $h$ admissible & opt.\ efficient if $h$ consistent \\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\subsection{Equivalences}
+
+\begin{itemize}
+  \item BFS $=$ UCS when all step costs are equal.
+  \item UCS $=$ A$^{*}$ with $h \equiv 0$.
+  \item Greedy $=$ A$^{*}$ with $g$ ignored.
+\end{itemize}
+
+\subsection{``Which algorithm?''}
+
+\begin{itemize}
+  \item Equal step costs, memory cheap, want optimality $\Rightarrow$ BFS.
+  \item Equal step costs, memory tight $\Rightarrow$ IDS.
+  \item Unequal step costs, no heuristic $\Rightarrow$ UCS.
+  \item Good admissible heuristic, want optimality $\Rightarrow$ A$^{*}$.
+  \item Have heuristic, want fast (not necessarily optimal) $\Rightarrow$ Greedy.
+  \item Don't care about optimality, memory tight $\Rightarrow$ DFS.
+\end{itemize}
+
+\subsection{Key formulas}
+
+\begin{itemize}
+  \item $1 + b + b^2 + \dots + b^m = O(b^m)$.
+  \item A$^{*}$: $f(n) = g(n) + h(n)$.
+  \item Admissibility: $h(n) \le h^*(n)$.
+  \item Consistency: $h(n) \le c(n,a,n') + h(n')$.
+  \item Implication: consistent $\Rightarrow$ admissible (and the contrapositive).
+\end{itemize}
+
+% =====================================================================
+\section{Self-check questions (no answers)}
+
+\textbf{Formalisation}
+\begin{enumerate}
+  \item Cast 8-queens, Tower of Hanoi, river crossing as search problems in the six-attribute form.
+  \item Why are action costs ``internal'' information but a straight-line heuristic is ``external''?
+  \item Distinguish ``state'' from ``node''. Can two tree nodes correspond to the same state?
+  \item Give a problem whose state-space graph is a tree. Why is the explored set unnecessary there?
+\end{enumerate}
+
+\textbf{Metrics and uninformed search}
+\begin{enumerate}\setcounter{enumi}{4}
+  \item Why is BFS's time $O(b^d)$ and DFS's $O(b^m)$?
+  \item If $d = m$, which uninformed algorithm has the smallest memory footprint?
+  \item Give a problem where BFS is complete but DFS is not.
+  \item Show that UCS reduces to BFS when all step costs are equal.
+  \item Why does UCS test on expansion, not generation? Construct a graph where testing on generation returns a suboptimal path.
+  \item Explain in big-O why IDS isn't slower than BFS despite re-exploring shallow levels.
+  \item When would you prefer IDS over BFS? Over DFS?
+\end{enumerate}
+
+\textbf{Informed search}
+\begin{enumerate}\setcounter{enumi}{11}
+  \item Construct a 4-node example where Greedy fails to be optimal.
+  \item What does A$^{*}$ degenerate to when $h \equiv 0$?
+  \item Why must A$^{*}$ test on expansion (Sibiu--Bucharest example)?
+  \item Construct an admissible heuristic for the 8-puzzle better than Hamming.
+  \item For king's-move chess (8-connected, cost 1), construct an admissible heuristic.
+  \item State the triangle inequality form of consistency and explain the name.
+  \item Give an admissible heuristic that is not consistent.
+\end{enumerate}
+
+\textbf{Implications and traps}
+\begin{enumerate}\setcounter{enumi}{18}
+  \item If $h_1, h_2$ are admissible, is $\max(h_1, h_2)$ admissible? Consistent?
+  \item Show consistent $\Rightarrow$ admissible.
+  \item Why is ``A$^{*}$ with admissible $h$ is optimally efficient'' false in general?
+  \item In graph search, what can go wrong with A$^{*}$ when $h$ is admissible but not consistent?
+\end{enumerate}
+
+\textbf{Trace-style}
+\begin{enumerate}\setcounter{enumi}{22}
+  \item Repeat the family-tree count for closest match at generation 6 in a tree of height 10. Minimum, average, maximum?
+  \item Re-run Worksheet Q5 with $h$ values doubled. Still admissible? Still consistent? How does A$^{*}$'s order change?
+  \item Run A$^{*}$ with Manhattan distance on an 8-puzzle for one step and verify $f$ is non-decreasing.
+  \item Construct a graph where A$^{*}$ with consistent $h$ expands strictly fewer nodes than UCS.
+\end{enumerate}
+
+\end{document}

@@ -1,0 +1,568 @@
+\documentclass[11pt, a4paper]{article}
+\usepackage{fontspec}\setmainfont{Helvetica Neue}\setmonofont{Menlo}
+\usepackage{unicode-math}\setmathfont{STIX Two Math}
+\usepackage[margin=2cm, top=2cm, bottom=2.5cm]{geometry}
+\usepackage{microtype}\usepackage{parskip}
+\setlength{\parskip}{0.6em}\setlength{\parindent}{0pt}
+\usepackage[colorlinks=true, linkcolor=NavyBlue, urlcolor=NavyBlue, citecolor=NavyBlue]{hyperref}
+\usepackage{xcolor}\usepackage[dvipsnames]{xcolor}
+\usepackage{amsmath}\usepackage{booktabs}\usepackage{array}\usepackage{tabularx}
+\usepackage{graphicx}
+\graphicspath{{figures/week11/}}
+\newcommand{\thead}[1]{\textbf{#1}}
+\usepackage{enumitem}
+\setlist[itemize]{leftmargin=1.5em, itemsep=0.2em, topsep=0.3em}
+\setlist[enumerate]{leftmargin=1.5em, itemsep=0.2em, topsep=0.3em}
+\usepackage[most]{tcolorbox}\tcbuselibrary{breakable, skins, theorems}
+\definecolor{defBg}{HTML}{EAF2FB}\definecolor{defBd}{HTML}{1F4E79}
+\definecolor{exBg}{HTML}{F4F4F4}\definecolor{exBd}{HTML}{555555}
+\definecolor{tipBg}{HTML}{E8F5E9}\definecolor{tipBd}{HTML}{2E7D32}
+\definecolor{trapBg}{HTML}{FCE4EC}\definecolor{trapBd}{HTML}{AD1457}
+\definecolor{pitBg}{HTML}{FFF8E1}\definecolor{pitBd}{HTML}{B27600}
+\definecolor{noteBg}{HTML}{F3E5F5}\definecolor{noteBd}{HTML}{6A1B9A}
+\definecolor{tldrBg}{HTML}{E1F5FE}\definecolor{tldrBd}{HTML}{0277BD}
+\newtcolorbox{defbox}[1][]{enhanced, breakable, colback=defBg, colframe=defBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={Definition: #1}}
+\newtcolorbox{exbox}[1][]{enhanced, breakable, colback=exBg, colframe=exBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={Worked example: #1}}
+\newtcolorbox{exambox}[1][]{enhanced, breakable, colback=tipBg, colframe=tipBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={Exam-mode answer #1}}
+\newtcolorbox{trapbox}[1][]{enhanced, breakable, colback=trapBg, colframe=trapBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={MCQ trap #1}}
+\newtcolorbox{pitfallbox}[1][]{enhanced, breakable, colback=pitBg, colframe=pitBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={Pitfall #1}}
+\newtcolorbox{notebox}[1][]{enhanced, breakable, colback=noteBg, colframe=noteBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={Lecturer aside #1}}
+\newtcolorbox{tldrbox}[1][]{enhanced, breakable, colback=tldrBg, colframe=tldrBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={TL;DR #1}}
+\usepackage{titlesec}
+\titleformat{\section}[block]{\Large\bfseries\color{defBd}}{\thesection.}{0.6em}{}
+\titleformat{\subsection}[block]{\large\bfseries\color{defBd!80!black}}{\thesubsection}{0.5em}{}
+\titleformat{\subsubsection}[block]{\normalsize\bfseries}{}{0pt}{}
+\titlespacing*{\section}{0pt}{1.6em}{0.6em}\titlespacing*{\subsection}{0pt}{1.2em}{0.4em}
+\usepackage{fancyhdr}\pagestyle{fancy}\fancyhf{}
+\fancyhead[L]{\small CM52054 — Week 11}\fancyhead[R]{\small Logistic Regression}
+\fancyfoot[C]{\small\thepage}\renewcommand{\headrulewidth}{0.3pt}
+\newcommand{\examflag}{\textcolor{tipBd}{\textbf{[EXAM]}}\,}
+\newcommand{\trapflag}{\textcolor{trapBd}{\textbf{[TRAP]}}\,}
+\newcommand{\doflag}{\textcolor{defBd}{\textbf{[DO]}}\,}
+\title{\vspace{-1cm}{\Huge\bfseries Week 11 — Logistic Regression} \\[0.4em]{\large Sigmoid, logit, log-likelihood, gradient ascent, linear decision boundary, regularisation for overfitting}}
+\author{\large CM52054 Foundational Machine Learning \\[0.2em]\normalsize University of Bath \,$\cdot$\, Dr Wenbin Li}
+\date{Revision notes}
+\begin{document}\maketitle\thispagestyle{empty}\vspace{1em}
+
+\begin{tldrbox}
+\begin{itemize}[leftmargin=*]
+  \item Wk11 turns linear regression into a \textbf{binary classifier} by squashing $\mathbf{w}^\top\mathbf{x}$ through a sigmoid. The squashed value lives in $(0,1)$ and is interpreted as $P(y=1\,|\,\mathbf{x},\mathbf{w})$.
+  \item \textbf{Sigmoid (logistic) function}: $\sigma(z) = 1/(1+e^{-z})$. Maps $\mathbb{R}\to(0,1)$. Smooth, differentiable everywhere. Self-derivative property $\sigma'(z) = \sigma(z)(1-\sigma(z))$ — \emph{memorise this}, it appears throughout.
+  \item \textbf{Logit (inverse sigmoid)}: $\mathrm{logit}(p) = \log(p/(1-p))$. Maps $(0,1)\to\mathbb{R}$. Used for interpreting model outputs in log-odds terms.
+  \item \textbf{Model}: $f_\mathbf{w}(\mathbf{x}) = \sigma(\mathbf{w}^\top\mathbf{x})$, so $P(y=1|\mathbf{x};\mathbf{w}) = f_\mathbf{w}(\mathbf{x})$ and $P(y=0|\mathbf{x};\mathbf{w}) = 1 - f_\mathbf{w}(\mathbf{x})$.
+  \item \textbf{Compact likelihood per sample}: $p(y|\mathbf{x};\mathbf{w}) = [f_\mathbf{w}(\mathbf{x})]^y[1-f_\mathbf{w}(\mathbf{x})]^{1-y}$. The exponent trick selects the right factor for $y\in\{0,1\}$.
+  \item \textbf{Log-likelihood} \doflag{}: $\log L(\mathbf{w}) = \sum_{i=1}^N \big[y_i\log f_\mathbf{w}(\mathbf{x}_i) + (1-y_i)\log(1-f_\mathbf{w}(\mathbf{x}_i))\big]$. Concave in $\mathbf{w}$, so gradient ascent has no spurious local maxima to get stuck in --- every local maximum is a global maximum.
+  \item \textbf{Gradient (per coordinate)} \doflag{}: $\partial_{w_j}\log L = \sum_i (y_i - f_\mathbf{w}(\mathbf{x}_i))x_{ij}$. Vectorised: $\nabla\log L(\mathbf{w}) = \mathbf{X}^\top(\mathbf{y} - \boldsymbol\sigma)$, where $\boldsymbol\sigma_i = \sigma(\mathbf{w}^\top\mathbf{x}_i)$.
+  \item \textbf{No closed form.} Optimised iteratively (gradient ascent / IRLS / Newton's method).
+  \item \textbf{Decision boundary}: $\mathbf{w}^\top\mathbf{x} = 0$ — a hyperplane. The decision is linear; the model output is non-linear in $\mathbf{x}$. \emph{Limitation}: cannot separate data that is non-linearly separable (e.g.\ a circular boundary).
+  \item \textbf{Overfitting handling}: regularisation (L2 penalty / Gaussian prior; recall Wk10). Equivalent to ridge logistic regression.
+  \item \examflag{}Past paper Q4 is an entire question on this material — sigmoid derivative, logit derivation, likelihood, log-likelihood, overfitting handling. Each sub-part is 2 marks. Make every derivation reflexive.
+\end{itemize}
+\end{tldrbox}
+
+% =====================================================================
+\section{Where Wk11 fits}
+
+The unit's classification thread starts here. Decision Trees (Wk2) and Random Forests (Wk4 LecA) classified by recursive partitioning; logistic regression classifies by fitting a smooth probability function. Both produce a decision boundary, but logistic regression's boundary is \emph{linear in the input space}, like SVM (Wks 25--29), and unlike a tree.
+
+\textbf{Conceptual building blocks already in place} (recall, do not re-derive):
+\begin{itemize}
+  \item Linear function $\mathbf{w}^\top\mathbf{x}$ — Wk8 §3.1.
+  \item Likelihood, $\arg\max$ on log-likelihood — Wk10 §3.
+  \item Gradient ascent / descent generic loop, $\mathbf{w}_{t+1} = \mathbf{w}_t + \alpha\nabla L$ — Wk7 §3, Wk8 §5.
+\end{itemize}
+
+\textbf{Wk11 adds}: squashing through sigmoid; the binomial likelihood; the gradient computation specific to the sigmoid; the linear decision boundary in input space.
+
+% =====================================================================
+\section{Binary classification problem and why linear regression won't do}
+
+\subsection{Problem setup}
+
+\textbf{Data}: $D = \{(\mathbf{x}_1, y_1), \ldots, (\mathbf{x}_N, y_N)\} \subset \mathbb{R}^M\times\{0,1\}$ — labels are now \emph{Boolean}, taking value 0 (class ``False'') or 1 (class ``True''). Goal: train a model that, given a new $\mathbf{x}_{\text{new}}$, predicts $\hat y_{\text{new}}\in\{0,1\}$.
+
+\begin{center}
+
+\footnotesize\textit{The binary classification problem visualised. \textbf{Left}: raw training data --- each square is one example, plotted by its two input features; \textbf{red} squares belong to one class, \textbf{blue} squares to the other. \textbf{Right}: the goal --- learn a \textbf{decision boundary} (dashed cyan curve) that separates the two classes so that a new, unseen point can be assigned to the region whose colour matches its likely label. The boundary here is not a straight line, but logistic regression will produce a \emph{linear} boundary --- the key limitation discussed in \S6.}
+\end{center}
+
+The exam wording (past paper Q4(a)): \emph{Can we use linear regression for binary classification problems?}
+
+\subsection{Why not just linear regression?}
+
+If we naively fit $f(\mathbf{x}) = \mathbf{w}^\top\mathbf{x}$ to $\{0,1\}$ labels, two problems immediately appear.
+
+\textbf{Problem 1 — output is unbounded.} Linear regression returns any real number. For an extreme $\mathbf{x}$ the prediction can be $-3$ or $+12$ — meaningless as a probability or class label.
+
+\textbf{Problem 2 — fitting a line through 0/1 points is poor geometry.} Squared loss penalises $f(\mathbf{x}_i)$ for being far from 0 or 1, so a single outlier in $\mathbf{x}$ tilts the regression line and changes the implied threshold dramatically.
+
+\begin{pitfallbox}[: the ``outlier tilt'' --- a correct guess that wrecks the classifier]
+Walk through the mechanism, because it is subtle. Suppose one point is far out along the $x$-axis and is \emph{obviously} class 1. The regression line, extrapolated, predicts something large there --- say $f(\mathbf{x}) = 5$. The \emph{class guess is correct} ($5 > 0.5$, so ``class 1''). But squared loss does not care about the class guess; it sees the target $1$ and the prediction $5$ and charges $(5-1)^2 = 16$ units of error.
+
+To shave down that \emph{artificial} error, the optimiser tilts the whole line \emph{flatter} --- pulling the far point's prediction down toward $1$. But the line is rigid: flattening it also moves the place where it crosses the $0.5$ mark. That crossing point \emph{is} the decision threshold. So a single extreme-but-correctly-classified point drags the threshold sideways and \textbf{suddenly misclassifies the ordinary middle points} that were fine before. The classifier is sabotaged by a point it actually got right.
+
+\textbf{Why the quick hacks fail.}
+\begin{itemize}
+  \item \emph{Clip outputs to $[0,1]$.} You throw away the magnitude information --- a prediction of $5$ and a prediction of $1.01$ both become $1$, so you lose any sense of confidence, and the clipped flat regions have zero gradient.
+  \item \emph{Hard-threshold at $0.5$.} The output becomes a step: $0$ below, $1$ above. A step function is \emph{discontinuous}, hence non-differentiable at the jump and flat everywhere else --- gradient descent has no slope to follow and cannot train it.
+\end{itemize}
+The principled fix is a \emph{smooth} squashing function --- the sigmoid --- which saturates gently toward $0$ and $1$ so far-out points stop generating runaway error, yet stays differentiable everywhere.
+\end{pitfallbox}
+
+\textbf{The fix.} Compose the linear function with a smooth, monotone squashing function that maps $\mathbb{R}\to(0,1)$. The standard choice is the sigmoid; the resulting model is logistic regression.
+
+\examflag{}For past paper Q4(a), the marker wants both points: \emph{(i) linear regression's output is unbounded so can't be a probability, (ii) enforcing $[0,1]$ via clipping or thresholds is brittle — instead, compose with a smooth squashing function (sigmoid). The result is logistic regression.}
+
+\subsection{Logistic regression vs linear regression}
+
+The lecturer flags three axes of difference that students ``need to know clearly'':
+
+\begin{tabularx}{\linewidth}{@{}lXX@{}}
+\toprule
+\thead{Axis} & \thead{Logistic regression} & \thead{Linear regression} \\
+\midrule
+Output type & Class labels / probabilities in $(0,1)$ & Unbounded continuous real values \\
+Optimisation objective & Maximise the log-likelihood (likelihood-based) & Minimise squared error (numerical fit) \\
+Classification & Solves classification directly & Cannot classify without post-processing (e.g.\ squashing the output through a sigmoid) \\
+\bottomrule
+\end{tabularx}
+
+% =====================================================================
+\section{The sigmoid (logistic) function}
+
+\subsection{Definition and properties}
+
+\begin{defbox}[Sigmoid / logistic function]
+\[
+\sigma(z) \;=\; \frac{1}{1+e^{-z}} \;=\; \frac{e^z}{1+e^z}, \qquad z\in\mathbb{R}.
+\]
+The two algebraic forms are equivalent (multiply numerator and denominator by $e^z$).
+\end{defbox}
+
+\begin{tabularx}{\linewidth}{@{}lX@{}}
+\toprule
+\thead{Property} & \thead{Why it matters} \\
+\midrule
+Range $(0,1)$           & Output is a valid probability \\
+Monotone increasing     & Order of inputs preserved as order of probabilities \\
+$\sigma(0) = 0.5$       & The decision boundary $\sigma(\mathbf{w}^\top\mathbf{x}) = 0.5$ is the linear hyperplane $\mathbf{w}^\top\mathbf{x} = 0$ \\
+Smooth, $C^\infty$       & Has derivatives of every order — gradient-based training works \\
+$\sigma(z) + \sigma(-z) = 1$ & Symmetric: probability of class 0 mirrors that of class 1 \\
+$\sigma'(z) = \sigma(z)(1-\sigma(z))$ & Self-derivative — appears everywhere in gradient computations \\
+\bottomrule
+\end{tabularx}
+
+\examflag{}Past paper Q4(b): \emph{Why is the sigmoid function used in logistic regression?} Answer: \emph{(i) it maps $\mathbb{R}$ to $(0,1)$, so the output is interpretable as a probability; (ii) it is smooth and differentiable everywhere, enabling gradient-based training.} (2 marks.)
+
+\begin{center}
+
+\footnotesize\textit{The sigmoid (logistic) function $\sigma(x) = 1/(1+e^{-x})$ plotted over $x \in [-8, 8]$. The \textbf{S-shaped curve} is the key shape to memorise: it is essentially flat near $0$ and $1$ at the extremes (saturating), and rises steeply through $\sigma(0) = 0.5$ at the origin. The saturation means that for large $|\mathbf{w}^\top\mathbf{x}|$ the model is very confident; the smooth transition at $x=0$ is exactly where the decision boundary lies --- the point at which $P(y=1|\mathbf{x}) = P(y=0|\mathbf{x}) = 0.5$.}
+\end{center}
+
+\subsection{Sigmoid derivative — the self-derivative property}
+
+\begin{exbox}[\doflag{}Derive $\sigma'(z) = \sigma(z)(1-\sigma(z))$]
+Start from $\sigma(z) = (1+e^{-z})^{-1}$. Apply the chain rule:
+\[
+\sigma'(z) \;=\; -1\cdot(1+e^{-z})^{-2} \cdot (-e^{-z}) \;=\; \frac{e^{-z}}{(1+e^{-z})^2}.
+\]
+Now factor:
+\[
+\frac{e^{-z}}{(1+e^{-z})^2} \;=\; \frac{1}{1+e^{-z}} \cdot \frac{e^{-z}}{1+e^{-z}} \;=\; \sigma(z) \cdot \frac{e^{-z}}{1+e^{-z}}.
+\]
+The second factor: $\dfrac{e^{-z}}{1+e^{-z}} = \dfrac{1+e^{-z}-1}{1+e^{-z}} = 1 - \dfrac{1}{1+e^{-z}} = 1-\sigma(z)$.
+Therefore
+\[
+\boxed{\;\sigma'(z) \;=\; \sigma(z)(1-\sigma(z)).\;}
+\]
+\end{exbox}
+
+\textbf{Generalisation.} If $f = \sigma(g(z))$ then $f' = \sigma'(g(z))\,g'(z) = f(1-f)\cdot g'(z)$. So the self-derivative ``$f' = f(1-f)$'' (for the bare sigmoid) extends to any sigmoid composed with a nice argument. This is exactly past paper Q4(c)'s phrasing.
+
+\subsection{Logit — the inverse sigmoid}
+
+\begin{defbox}[Logit / log-odds function]
+\[
+\mathrm{logit}(p) \;=\; \sigma^{-1}(p) \;=\; \log\!\left(\frac{p}{1-p}\right), \qquad p\in(0,1).
+\]
+Maps probability to log-odds. The inverse of the sigmoid; together they convert between probabilities and unbounded real values.
+\end{defbox}
+
+\begin{exbox}[\doflag{}Derive the logit from the sigmoid]
+Start with $p = \sigma(x) = 1/(1+e^{-x})$ and solve for $x$.\\[0.2em]
+\textbf{Step 1.} $p(1+e^{-x}) = 1 \Rightarrow p + pe^{-x} = 1 \Rightarrow pe^{-x} = 1-p$.\\
+\textbf{Step 2.} $e^{-x} = (1-p)/p \Rightarrow e^x = p/(1-p)$.\\
+\textbf{Step 3.} $x = \log(p/(1-p))$.\\[0.3em]
+Therefore $\mathrm{logit}(p) = \log(p/(1-p))$. (Past paper Q4(d).)
+\end{exbox}
+
+\textbf{Reading the logit.} ``Log-odds'' — the logarithm of the odds ratio $p/(1-p)$. Probabilities $p > 0.5$ give positive log-odds; $p < 0.5$ negative. The model says: \emph{the log-odds of class 1 are linear in the features}.
+\[
+\log\frac{P(y=1|\mathbf{x})}{P(y=0|\mathbf{x})} \;=\; \mathbf{w}^\top\mathbf{x}.
+\]
+
+\begin{notebox}[: what the raw real-number score $z = \mathbf{w}^\top\mathbf{x}$ actually means]
+It is easy to see that the sigmoid \emph{squashes} a real number $z\in\mathbb{R}$ down into a probability $(0,1)$. The harder direction --- the one worth pinning down --- is: \emph{what was $z$ before it got squashed?} Build it up in two steps.
+\begin{enumerate}
+  \item \textbf{Odds} $= p/(1-p)$. If $p = 0.75$ the odds are $3$ --- ``3 to 1 on class 1.'' Odds live in $(0,\infty)$.
+  \item \textbf{Logit} $= \log(\text{odds})$. The logarithm stretches $(0,\infty)$ out to the full real line $(-\infty,\infty)$.
+\end{enumerate}
+So the linear score $z = \mathbf{w}^\top\mathbf{x}$ \emph{is} a value measured in \textbf{log-odds units} --- it is the model's \emph{raw confidence} before squashing. Reading it off:
+\begin{itemize}
+  \item $z = 0 \Rightarrow$ odds $= 1 \Rightarrow p = 0.5$. This is exactly the \textbf{decision boundary} --- the model is maximally undecided.
+  \item $z > 0 \Rightarrow p > 0.5 \Rightarrow$ predict \textbf{class 1}; the more positive $z$, the more confident.
+  \item $z < 0 \Rightarrow p < 0.5 \Rightarrow$ predict \textbf{class 0}; the more negative $z$, the more confident.
+\end{itemize}
+And each weight $w_j$ becomes interpretable: a one-unit increase in feature $x_j$ \emph{adds $w_j$ to the log-odds} of class 1 (holding the others fixed). The sigmoid and the logit are inverse maps --- one converts confidence to probability, the other recovers confidence from probability.
+\end{notebox}
+
+% =====================================================================
+\section{The logistic regression model}
+
+\subsection{Model definition}
+
+Compose a linear function with the sigmoid:
+\[
+f_\mathbf{w}(\mathbf{x}) \;=\; \sigma(\mathbf{w}^\top\mathbf{x}) \;=\; \frac{1}{1+\exp(-\mathbf{w}^\top\mathbf{x})}.
+\]
+The output is interpreted as the probability that $\mathbf{x}$ belongs to class 1. Conventionally, $\mathbf{x}$ is augmented with a leading 1 (i.e.\ $\mathbf{x} = [1, x_1, \ldots, x_M]^\top$) and $\mathbf{w} = [w_0, w_1, \ldots, w_M]^\top$, so $w_0$ acts as a bias / intercept.
+
+\subsection{Class-probability formulae}
+
+\begin{align}
+P(y=1\,|\,\mathbf{x};\mathbf{w}) &= f_\mathbf{w}(\mathbf{x}) \;=\; \frac{1}{1+\exp(-\mathbf{w}^\top\mathbf{x})}, \\
+P(y=0\,|\,\mathbf{x};\mathbf{w}) &= 1 - f_\mathbf{w}(\mathbf{x}) \;=\; \frac{\exp(-\mathbf{w}^\top\mathbf{x})}{1+\exp(-\mathbf{w}^\top\mathbf{x})}.
+\end{align}
+\examflag{}This is past paper Q4(e). 2 marks. Memorise the form.
+
+\begin{center}
+
+\footnotesize\textit{Five logistic curves $\sigma(w_0 + w_1 x)$ for different weight vectors $\mathbf{w}$, all plotted over the same $x$-axis. \textbf{Black} ($w_0=0, w_1=1$): the canonical centred sigmoid. \textbf{Red} ($2+x$): a positive bias $w_0=2$ shifts the curve \emph{left} --- the boundary where $\sigma = 0.5$ moves to $x = -2$. \textbf{Green} ($0.5x$): a smaller slope $w_1=0.5$ produces a \emph{shallower} curve --- the model is less confident across a wider range of $x$. \textbf{Blue} ($-0.5x$): a negative slope \emph{flips} the curve, so class 1 is more probable on the left. \textbf{Cyan} ($-1+2x$): a steep negative-bias curve with the boundary at $x = 0.5$. The dashed grey line at $\sigma = 0.5$ marks the decision threshold --- wherever a curve crosses it is the decision boundary $w_0 + w_1 x = 0$.}
+\end{center}
+
+\textbf{Why the weights are tuned — class imbalance.} When the dataset is \emph{imbalanced} (the vast majority of examples fall in one class — the lecturer's example: a few maths students choosing units versus a hundred computer-science students), the standard centred sigmoid ``may not be good enough.'' Adding coefficients to shift and reshape the curve — e.g.\ moving it to the left — hands the minority class more probability space, so it is not systematically swamped by the majority. This is parameter tuning driven by the data distribution, not a change to the model form.
+
+\begin{notebox}[: ``tuning the weights'' does not change the model --- it \emph{is} the optimiser]
+A point that confuses students: imbalance does \emph{not} require a new or modified model. The model is \emph{always} the same single equation,
+\[
+f_\mathbf{w}(\mathbf{x}) \;=\; \sigma(\mathbf{w}^\top\mathbf{x}),
+\]
+with the same sigmoid and the same shape of weight vector. There is \emph{no} extra hyperparameter, no special ``imbalance mode.''
+
+So what does ``tuning'' mean? It is simply \textbf{what maximum-likelihood gradient ascent naturally does} when handed skewed data. To maximise the log-likelihood on an imbalanced set, the optimiser discovers it should learn a large bias term $w_0$ --- which slides the whole sigmoid curve left or right, i.e.\ \emph{moves the decision boundary} $\mathbf{w}^\top\mathbf{x}=0$ --- and possibly a gentler slope, so the minority class is allotted a fair share of probability space. The curves drawn in the figure above (different $w_0$, different slope) are not different models; they are the \emph{same} model with different $\mathbf{w}$. ``Tuning under imbalance'' is just the optimiser finding the best $\mathbf{w}$ for a lopsided dataset --- nothing in the model form changes.
+\end{notebox}
+
+\subsection{Compact likelihood — the exponent trick}
+
+For a single sample, the per-sample likelihood can be written as
+\[
+\boxed{\;p(y\,|\,\mathbf{x};\mathbf{w}) \;=\; \big[f_\mathbf{w}(\mathbf{x})\big]^y\,\big[1-f_\mathbf{w}(\mathbf{x})\big]^{1-y}.\;}
+\]
+\textbf{Why this works.} For $y=1$: the second factor's exponent is $1-1=0$, so it becomes $1$, leaving $f_\mathbf{w}(\mathbf{x}) = P(y=1|\mathbf{x})$. For $y=0$: the first factor's exponent is $0$, leaving $1-f_\mathbf{w}(\mathbf{x}) = P(y=0|\mathbf{x})$. \emph{The exponents act as on/off switches.}
+
+\examflag{}Past paper Q4(f). The compact form is what makes the log-likelihood manageable — without it, the log-likelihood would have a nasty case split.
+
+\subsection{Binary only --- and the multinomial extension}
+
+\begin{notebox}[: why standard logistic regression is binary, and what to do for 3+ classes]
+Standard logistic regression is \emph{intrinsically two-class}. The sigmoid emits exactly \emph{one} number $p = P(y=1\,|\,\mathbf{x})$, and the second class is forced to take whatever is left over: $P(y=0\,|\,\mathbf{x}) = 1-p$. One sigmoid output simply cannot describe three or more classes.
+
+\textbf{Multinomial logistic regression} (a.k.a.\ softmax regression) generalises it. Instead of one weight vector, keep \emph{one per class}: each class $k$ gets its own linear score
+\[
+z_k \;=\; \mathbf{w}_k^\top\mathbf{x}.
+\]
+These raw scores are combined by the \textbf{softmax} function:
+\[
+P(y = k\,|\,\mathbf{x}) \;=\; \frac{\exp(z_k)}{\sum_{j}\exp(z_j)}.
+\]
+The exponential makes every term positive, and dividing by the sum forces the class probabilities to \emph{sum to 1} --- a valid distribution over all classes. \textbf{The sigmoid is just the two-class special case of softmax}: with two classes, $\exp(z_1)/(\exp(z_0)+\exp(z_1))$ reduces, after dividing through by $\exp(z_1)$, to $1/(1+\exp(-(z_1-z_0)))$ --- a sigmoid of the score difference. The unit examines only the binary case; know that the multi-class route exists and is named.
+\end{notebox}
+
+% =====================================================================
+\section{Maximum likelihood estimation}
+
+\subsection{Likelihood and log-likelihood}
+
+For $N$ i.i.d.\ samples:
+\[
+L(\mathbf{w}) \;=\; \prod_{i=1}^N p(y_i\,|\,\mathbf{x}_i;\mathbf{w}) \;=\; \prod_{i=1}^N [f_\mathbf{w}(\mathbf{x}_i)]^{y_i}[1-f_\mathbf{w}(\mathbf{x}_i)]^{1-y_i}.
+\]
+Take the log to convert the product to a sum:
+\[
+\boxed{\;\log L(\mathbf{w}) \;=\; \sum_{i=1}^N \big[y_i\log f_\mathbf{w}(\mathbf{x}_i) + (1-y_i)\log(1-f_\mathbf{w}(\mathbf{x}_i))\big].\;}
+\]
+\examflag{}Past paper Q4(g). 2 marks. The log-likelihood is also called the \textbf{(negative) cross-entropy loss} when written as $-\log L$ — same object, sign flipped, used in deep learning literature.
+
+\subsection{Why no closed form}
+
+Unlike linear regression, where setting $\nabla L = \mathbf{0}$ produces a tractable linear system, here the gradient involves $\sigma(\mathbf{w}^\top\mathbf{x})$ — a transcendental function of $\mathbf{w}$. There is no finite-step algebraic solution. We must optimise iteratively.
+
+The good news: $\log L(\mathbf{w})$ is \textbf{concave in $\mathbf{w}$} (its Hessian is negative semi-definite), so it has no spurious local maxima --- every local maximum is a global maximum, and gradient ascent cannot get trapped the way it can on a non-convex loss. Two caveats worth knowing for the exam: concavity gives a \emph{global} maximum but not a \emph{unique} one --- uniqueness requires \emph{strict} concavity, i.e.\ $\mathbf{X}$ of full column rank; and on linearly separable data no finite maximiser exists at all, because the optimiser drives $\|\mathbf{w}\|\to\infty$ (the overfitting failure mode handled by regularisation in \S8).
+
+\subsection{Gradient of the log-likelihood}
+
+\begin{exbox}[\doflag{}Compute $\partial \log L / \partial w_j$]
+Start from a single term: $\ell_i(\mathbf{w}) = y_i\log f_\mathbf{w}(\mathbf{x}_i) + (1-y_i)\log(1-f_\mathbf{w}(\mathbf{x}_i))$, where $f_\mathbf{w}(\mathbf{x}_i) = \sigma(z_i)$ and $z_i = \mathbf{w}^\top\mathbf{x}_i$.\\[0.3em]
+\textbf{Step 1.} $\partial z_i/\partial w_j = x_{ij}$ (the $j$th coordinate of $\mathbf{x}_i$).\\
+\textbf{Step 2.} $\partial f/\partial w_j = \sigma'(z_i)\,x_{ij} = f_\mathbf{w}(\mathbf{x}_i)(1-f_\mathbf{w}(\mathbf{x}_i))\,x_{ij}$.\\
+\textbf{Step 3.} Chain rule on $\log f$ and $\log(1-f)$:
+\[
+\frac{\partial\ell_i}{\partial w_j} = y_i\cdot\frac{1}{f}\cdot f(1-f)\,x_{ij} + (1-y_i)\cdot\frac{-1}{1-f}\cdot f(1-f)\,x_{ij}.
+\]
+\textbf{Step 4 — simplify.} The $f$ in the first term cancels; the $(1-f)$ in the second cancels:
+\[
+\frac{\partial\ell_i}{\partial w_j} = y_i(1-f)\,x_{ij} - (1-y_i)f\,x_{ij} = (y_i - f)\,x_{ij}.
+\]
+\textbf{Step 5 — sum over samples:}
+\[
+\frac{\partial\log L}{\partial w_j} \;=\; \sum_{i=1}^N (y_i - f_\mathbf{w}(\mathbf{x}_i))\,x_{ij}.
+\]
+\end{exbox}
+
+\textbf{Vectorised form}:
+\[
+\nabla_\mathbf{w}\log L(\mathbf{w}) \;=\; \mathbf{X}^\top(\mathbf{y} - \boldsymbol\sigma), \qquad \boldsymbol\sigma = [\sigma(\mathbf{w}^\top\mathbf{x}_1), \ldots, \sigma(\mathbf{w}^\top\mathbf{x}_N)]^\top.
+\]
+\textbf{Read this.} The gradient is the input matrix multiplied by the vector of \emph{prediction errors} $y_i - \hat y_i$. Same structural form as linear regression's gradient $\mathbf{X}^\top(\mathbf{X}\mathbf{w} - \mathbf{y})$ — feature-weighted residuals — only the residuals are now $(y_i - \sigma_i)$ rather than $(y_i - \mathbf{w}^\top\mathbf{x}_i)$.
+
+\subsection{Gradient ascent training}
+
+Apply Wk7's generic loop, ascending the log-likelihood (equivalently, descending the negative log-likelihood):
+
+\begin{exbox}[Logistic regression training via gradient ascent]
+\textbf{Inputs:} step size $\alpha > 0$, tolerance criterion (e.g.\ ``$\log L$ stops increasing'').\\[0.2em]
+\textbf{1.} $t \leftarrow 0$. Initial guess $\mathbf{w}_0$ (e.g.\ $\mathbf{0}$).\\
+\textbf{2.} While not terminated:\\
+\quad\quad (a) Compute $\boldsymbol\sigma_i = \sigma(\mathbf{w}_t^\top\mathbf{x}_i)$ for all $i$.\\
+\quad\quad (b) Compute $\nabla\log L(\mathbf{w}_t) = \mathbf{X}^\top(\mathbf{y} - \boldsymbol\sigma)$.\\
+\quad\quad (c) $\mathbf{w}_{t+1} \leftarrow \mathbf{w}_t + \alpha\,\nabla\log L(\mathbf{w}_t)$.\\
+\quad\quad (d) $t \leftarrow t+1$.\\
+\textbf{3.} Return $\mathbf{w}_t$.
+\end{exbox}
+
+Termination is typically based on the log-likelihood plateauing, a small gradient norm, or a max-iteration cap — all the standard Wk7 §3.1 termination criteria, applied to the new objective.
+
+\textbf{Newton's method (Wk9) is a strong alternative.} Logistic regression's Hessian has a clean form — $-\mathbf{X}^\top\mathbf{S}\mathbf{X}$ where $\mathbf{S} = \mathrm{diag}(\sigma_i(1-\sigma_i))$ — and Newton's converges in a handful of iterations. The classical algorithm is called \emph{iteratively reweighted least squares} (IRLS) and is what most stats software actually runs.
+
+% =====================================================================
+\section{Decision boundary}
+
+\subsection{Where does the model say ``class 1'' vs ``class 0''?}
+
+The natural rule: predict 1 if $f_\mathbf{w}(\mathbf{x}) \ge 0.5$, else 0. By the sigmoid's symmetry, $f_\mathbf{w}(\mathbf{x}) = 0.5 \iff \mathbf{w}^\top\mathbf{x} = 0$. So the decision boundary is the hyperplane
+\[
+\boxed{\;\mathbf{w}^\top\mathbf{x} \;=\; 0.\;}
+\]
+\textbf{This is a linear decision boundary.} For 2D inputs, it's a line. For 3D, a plane. For $M$-D, an $(M-1)$-dimensional hyperplane. Same shape as the SVM boundary you will see in Wks 25--26.
+
+\begin{exbox}[Sigmoid evaluation and threshold inversion]
+\textbf{Setup.} A univariate logistic model is $f(x) = \sigma(-3 + 2x)$.\\[0.2em]
+\textbf{(a) Compute $P(y=1\,|\,x=2)$.} The linear term is $z = -3 + 2(2) = 1$, so
+\[
+P(y=1\,|\,x=2) = \sigma(1) = \frac{1}{1+e^{-1}} \approx 0.731.
+\]
+\textbf{(b) Find $x$ where $p = 0.5$.} Invert the sigmoid using the logit: $p = 0.5 \Rightarrow \mathrm{logit}(0.5) = \log(0.5/0.5) = \log 1 = 0$. So the linear term must be zero:
+\[
+-3 + 2x = 0 \quad\Longrightarrow\quad x = 1.5.
+\]
+\textbf{(c) Range predicted as class 1 at a $0.5$ threshold.} Predict class 1 when $f(x) \ge 0.5$, i.e.\ when $-3 + 2x \ge 0$ (the sigmoid is monotone, so the threshold on $p$ maps to a threshold on $z$):
+\[
+\boxed{\;x \ge 1.5.\;}
+\]
+\end{exbox}
+
+\begin{center}
+
+\footnotesize\textit{The linear decision boundary of logistic regression in the univariate case ($f(\mathbf{x}) = \sigma(w_0 + w_1 x)$). The \textbf{blue curve} is $p(1|\mathbf{x})$ --- the probability of class 1 --- and the \textbf{red curve} is $p(0|\mathbf{x}) = 1 - p(1|\mathbf{x})$. The two curves cross at exactly $p = 0.5$, marked by the vertical dashed line: this is the decision boundary $w_0 + w_1 x = 0$ (here at $x \approx -5$). Left of the boundary the model predicts $y=0$; right, $y=1$. Notice that the boundary is a \emph{single point} on a 1-D input --- in general, it is a hyperplane of dimension $M-1$ in an $M$-dimensional input space.}
+\end{center}
+
+\textbf{The threshold 0.5 is a choice, not a law.} The boundary sits at $p = 0.5$ \emph{by default}, but the lecturer is explicit that this is a modelling decision — ``it can be 0.6 or whatever.'' Picking a different threshold trades false positives against false negatives (useful when the two error types have different costs). Note also what does \emph{not} move the boundary: the \emph{steepness} of the sigmoid (its slope) only controls how sharply confidence changes around the boundary — it does not relocate it. Only the bias $w_0$ shifts where $\mathbf{w}^\top\mathbf{x} = 0$ lies.
+
+\begin{exbox}[2-D decision boundary from a weight vector]
+\textbf{Setup.} A trained logistic model has weights $\mathbf{w} = [-2, 1, 3]^\top$ and inputs are augmented as $\mathbf{x} = [1, x_1, x_2]^\top$.\\[0.2em]
+\textbf{(a) Boundary equation.} The decision boundary is $\mathbf{w}^\top\mathbf{x} = 0$ (where $p = 0.5$):
+\[
+-2 + x_1 + 3x_2 \;=\; 0.
+\]
+\textbf{(b) As a line $x_2 = g(x_1)$.} Put $x_2$ on one side:
+\[
+3x_2 = 2 - x_1 \quad\Longrightarrow\quad x_2 \;=\; \frac{2 - x_1}{3}.
+\]
+A straight line, confirming the boundary is linear in the input space.\\[0.2em]
+\textbf{(c) Classify the test point $(x_1, x_2) = (1, 1)$.} Evaluate $\mathbf{w}^\top\mathbf{x} = -2 + 1 + 3(1) = 2$. Since $2 > 0$, we have $\sigma(2) \approx 0.88 > 0.5$, so the point is predicted \textbf{class 1}. (You need not compute $\sigma$ exactly — the \emph{sign} of $\mathbf{w}^\top\mathbf{x}$ already decides the class.)
+\end{exbox}
+
+\subsection{Limitation — non-linear data}
+
+If the true class boundary is not linear (e.g.\ the data forms two interleaved spirals or a circular cluster surrounded by a ring), no $\mathbf{w}$ can capture it. Concrete example from the slides: red points in a circle, blue points outside — no linear classifier can separate these.
+
+\textbf{Fix.} Two options:
+\begin{enumerate}
+  \item \textbf{Feature engineering.} Pre-process $\mathbf{x}$ into non-linear features (e.g.\ $\mathbf{x}\to[1, x_1, x_2, x_1^2, x_2^2, x_1 x_2]$) so the boundary is linear in the new feature space. Logistic regression then works.
+  \item \textbf{Use a richer model.} Random Forests (Wk4), kernel SVM (Wk26), neural networks. Each gets non-linear decision regions ``for free.''
+\end{enumerate}
+
+\examflag{}A standard exam question asks you to identify when logistic regression is insufficient. Answer: \emph{the decision boundary is always linear in the input space; data with non-linear structure (e.g.\ a circular boundary) cannot be perfectly classified without non-linear feature engineering or a richer model.}
+
+% =====================================================================
+\section{Overfitting and regularisation}
+
+\textbf{Past paper Q4(h):} \emph{How does logistic regression deal with overfitting? Explain your answer.}
+
+Logistic regression overfits when the data is (near-)separable: the optimiser pushes $\|\mathbf{w}\|$ to infinity to make the sigmoid output 0 or 1 exactly on every training point. The training log-likelihood goes to $0^+$ (the constant maximum) but the model is brittle on test data.
+
+\begin{pitfallbox}[: linearly separable data drives $\|\mathbf{w}\|\to\infty$ --- there is no finite optimum]
+Why exactly does separability break the optimiser? If the data is perfectly linearly separable, some $\mathbf{w}$ classifies \emph{every} training point correctly. But maximum likelihood is \emph{greedy for confidence} --- it does not just want $p > 0.5$ on the class-1 points, it wants $p$ as close to $1$ as possible, because that is what makes $\log L$ larger.
+
+To push the sigmoid output to \emph{exactly} $1$ you need $z = \mathbf{w}^\top\mathbf{x} = +\infty$ (and $-\infty$ for class 0). The inputs $\mathbf{x}$ are fixed data, so the \emph{only} lever the optimiser has is to scale $\|\mathbf{w}\|$ upward without bound. Every gradient-ascent step finds it can do slightly better by making $\mathbf{w}$ a bit longer in the same direction --- so $\|\mathbf{w}\|\to\infty$ and \textbf{no finite maximiser exists}. The smooth S-curve hardens into a near-vertical step: arbitrarily confident, and brittle.
+
+\textbf{Regularisation cures it.} An $L_2$ penalty (equivalently, a Gaussian-prior MAP estimate) adds a $\tfrac{\lambda}{2}\|\mathbf{w}\|^2$ cost that grows without bound as $\|\mathbf{w}\|$ grows. Now there is a finite trade-off point between ``more confident'' and ``shorter $\mathbf{w}$,'' so a unique, finite, well-calibrated solution exists again.
+\end{pitfallbox}
+
+\textbf{The fix is regularisation.} Add a penalty on $\|\mathbf{w}\|$ to the log-likelihood:
+\[
+\mathbf{w}_*^{\text{reg}} \;=\; \arg\max_\mathbf{w}\big(\log L(\mathbf{w}) - \tfrac{\lambda}{2}\|\mathbf{w}\|^2\big).
+\]
+Equivalently, minimise the negative regularised log-likelihood. The penalty pulls $\mathbf{w}$ toward zero, preventing the runaway growth that drives overfitting.
+
+\begin{notebox}[: this is MAP with a Gaussian prior — recall Wk10]
+The L2-regularised logistic regression is the MAP estimator with prior $\mathbf{w}\sim\mathcal{N}(\mathbf{0},\mathbf{I}/\lambda)$. The structure is identical to Wk10 §4.4: posterior $\propto$ likelihood $\times$ prior, and the prior contributes the L2 penalty. Wk21 develops the full regularisation story.
+\end{notebox}
+
+\textbf{Single-word answer earns the mark}; a worked example with regularisation strength $\lambda$ and the resulting bias-variance behaviour earns full marks. (Per Wk30b walkthrough.)
+
+\subsection{Sensitivity to feature scaling and to outliers}
+
+Two further practical weaknesses, both easy to overlook and both with clean fixes.
+
+\textbf{Feature scaling.} If features live on wildly different scales (say, ``age'' in years $\sim$ tens, ``income'' in pounds $\sim$ tens of thousands), two things go wrong:
+\begin{itemize}
+  \item \emph{Slow optimisation.} The log-likelihood surface becomes \emph{elliptical} --- steep along the small-scale feature's axis, shallow along the large-scale one. Gradient ascent then \emph{zig-zags} across the long valley instead of heading straight to the optimum, and converges slowly.
+  \item \emph{Unfair regularisation.} The $L_2$ penalty $\tfrac{\lambda}{2}\|\mathbf{w}\|^2$ charges \emph{every} weight equally. But a small-scale feature \emph{needs} a large weight just to contribute a comparable amount to $z = \mathbf{w}^\top\mathbf{x}$ --- so the penalty punishes it for an artefact of its units, not its usefulness.
+\end{itemize}
+\textbf{Fix:} \emph{standardise} every feature to mean $0$, variance $1$ before training. The surface becomes near-spherical (fast, straight convergence) and the penalty treats all features on equal terms.
+
+\textbf{Outliers.} The cross-entropy loss $-\log p$ on a point of true class 1 \emph{diverges to $+\infty$} as the model's $p$ for that point goes to $0$. So a single \emph{mislabelled} or extreme point that the model is confidently wrong about incurs an enormous penalty --- and to relieve it, the optimiser drags the entire decision boundary over to accommodate that one point, distorting the fit for everyone else.
+\textbf{Fix:} use a \emph{robust} loss that \emph{caps} the penalty for confidently-wrong points, so no single outlier can dominate the objective.
+
+\begin{notebox}[: scaling/outlier sensitivity is a property of linear models, not of all classifiers]
+This brittleness to feature scale and to outliers is \emph{shared} by linear regression, Bayesian linear regression and logistic regression --- all of them combine features through a weighted sum $\mathbf{w}^\top\mathbf{x}$, which is exactly what makes raw scale and extreme values matter. Decision trees and random forests (Wks 2, 4) are \emph{immune}: a split tests only whether a feature value is above or below a threshold, so it depends purely on the \emph{order} of values, not their magnitude --- monotonic rescaling changes nothing, and an outlier simply ends up isolated in its own leaf rather than tilting a global boundary.
+\end{notebox}
+
+% =====================================================================
+\section{Summary}
+
+\textbf{What logistic regression buys you:}
+\begin{itemize}
+  \item \textbf{Probabilistic interpretation.} Output is a calibrated probability, not just a class label. Useful for downstream decision making (e.g.\ thresholds at different costs).
+  \item \textbf{Efficient training.} Concave log-likelihood, well-behaved gradient, optional Newton's method gives few-iteration convergence.
+  \item \textbf{Linear interpretability.} Each coefficient $w_j$ has a meaning: a one-unit increase in $x_j$ raises the log-odds of class 1 by $w_j$. Easy to explain to non-experts.
+\end{itemize}
+
+\textbf{What it doesn't:}
+\begin{itemize}
+  \item \textbf{Linear decision boundary only.} Insufficient for non-linearly separable data unless features are engineered.
+  \item \textbf{No closed form.} Must train iteratively.
+  \item \textbf{Sensitive to scaling and outliers.} Standardise features before training; consider robust losses for noisy labels.
+\end{itemize}
+
+% =====================================================================
+\section{Exam-mode answers (past paper Q4 anchored)}
+
+\begin{exambox}[{(a): Can we use linear regression for binary classification problems? Explain.}]
+\textit{\textbf{No, not directly}, for two reasons. (i) Linear regression's output is unbounded over $\mathbb{R}$, so it cannot be interpreted as a probability without artificial clipping. (ii) Squared loss penalises outputs far from $\{0,1\}$, but pushes the prediction line in directions that distort the implied threshold whenever data has imbalance or input-space outliers. The principled fix is to compose the linear function with a smooth squashing function — the sigmoid — which gives logistic regression. (2 marks)}
+\end{exambox}
+
+\begin{exambox}[{(b): Why is the sigmoid function used in logistic regression?}]
+\textit{Two reasons: (i) the sigmoid maps any real value into $(0,1)$, so the output can be interpreted as a class probability; (ii) the sigmoid is smooth and differentiable everywhere, so gradient-based training works without case splits. (2 marks)}
+\end{exambox}
+
+\begin{exambox}[{\doflag{}(c): Derive $\sigma'(z)$.}]
+\textit{From $\sigma(z) = (1+e^{-z})^{-1}$, by the chain rule $\sigma'(z) = e^{-z}/(1+e^{-z})^2$. Factor: $= \sigma(z)\cdot e^{-z}/(1+e^{-z}) = \sigma(z)(1-\sigma(z))$, since $e^{-z}/(1+e^{-z}) = 1-\sigma(z)$. Therefore $\sigma'(z) = \sigma(z)(1-\sigma(z))$. (2 marks)}
+\end{exambox}
+
+\begin{exambox}[{\doflag{}(d): Derive $\mathrm{logit}(p)$.}]
+\textit{Set $p = 1/(1+e^{-x})$ and solve for $x$. Cross-multiply: $p(1+e^{-x}) = 1$, so $pe^{-x} = 1-p$ and $e^{-x} = (1-p)/p$, hence $e^x = p/(1-p)$. Taking logs: $\mathrm{logit}(p) = x = \log(p/(1-p))$. (2 marks)}
+\end{exambox}
+
+\begin{exambox}[{\doflag{}(e): With $z = \mathbf{w}^\top\mathbf{x}$, $\mathbf{w} = [w_0, w_1]^\top$, $\mathbf{x} = [1, x]^\top$, derive $P(y=1|\mathbf{x};\mathbf{w})$ and $P(y=0|\mathbf{x};\mathbf{w})$.}]
+\textit{$P(y=1|\mathbf{x};\mathbf{w}) = \sigma(\mathbf{w}^\top\mathbf{x}) = 1/(1+\exp(-(w_0 + w_1 x)))$. By the law of total probability, $P(y=0|\mathbf{x};\mathbf{w}) = 1 - P(y=1|\mathbf{x};\mathbf{w}) = \exp(-(w_0+w_1 x))/(1+\exp(-(w_0+w_1 x)))$. (2 marks)}
+\end{exambox}
+
+\begin{exambox}[{\doflag{}(f): Write $p(y|\mathbf{x};\mathbf{w})$ as a single expression covering both labels.}]
+\textit{Use the exponent trick: $p(y|\mathbf{x};\mathbf{w}) = [f_\mathbf{w}(\mathbf{x})]^y\,[1-f_\mathbf{w}(\mathbf{x})]^{1-y}$. For $y=1$ the second factor is $1$, leaving $f_\mathbf{w}(\mathbf{x})$. For $y=0$ the first factor is $1$, leaving $1-f_\mathbf{w}(\mathbf{x})$. (2 marks)}
+\end{exambox}
+
+\begin{exambox}[{\doflag{}(g): Derive the log-likelihood $\log L(\mathbf{w})$ over $N$ data points.}]
+\textit{The dataset likelihood, by i.i.d.\ assumption, is $L(\mathbf{w}) = \prod_i p(y_i|\mathbf{x}_i;\mathbf{w}) = \prod_i [f_\mathbf{w}(\mathbf{x}_i)]^{y_i}[1-f_\mathbf{w}(\mathbf{x}_i)]^{1-y_i}$. Taking logs converts the product to a sum:}
+\[
+\log L(\mathbf{w}) = \sum_{i=1}^N\big[y_i\log f_\mathbf{w}(\mathbf{x}_i) + (1-y_i)\log(1-f_\mathbf{w}(\mathbf{x}_i))\big].
+\]
+\textit{(2 marks)}
+\end{exambox}
+
+\begin{exambox}[{(h): How does logistic regression deal with overfitting?}]
+\textit{Regularisation: add a penalty term to the log-likelihood that biases $\mathbf{w}$ towards zero. The standard choice is L2 / ridge (Gaussian prior on $\mathbf{w}$), giving the regularised objective $\log L(\mathbf{w}) - \tfrac{\lambda}{2}\|\mathbf{w}\|^2$. This prevents $\|\mathbf{w}\|$ from growing without bound on (near-)separable data. Equivalently, this is MAP estimation with a Gaussian prior — the structural identity from Wk10. The single-word answer ``regularisation'' earns the mark; a worked example with $\lambda$'s effect earns full marks. (2 marks)}
+\end{exambox}
+
+% =====================================================================
+\section*{Key equations cheat sheet}
+\addcontentsline{toc}{section}{Key equations cheat sheet}
+
+\begin{tabularx}{\linewidth}{@{}lX@{}}
+\toprule
+\thead{Object} & \thead{Formula} \\
+\midrule
+Sigmoid                 & $\sigma(z) = 1/(1+e^{-z})$ \\
+Sigmoid derivative      & $\sigma'(z) = \sigma(z)(1-\sigma(z))$ \\
+Logit (inverse sigmoid) & $\mathrm{logit}(p) = \log(p/(1-p))$ \\
+Model                   & $f_\mathbf{w}(\mathbf{x}) = \sigma(\mathbf{w}^\top\mathbf{x})$ \\
+$P(y=1|\mathbf{x};\mathbf{w})$ & $f_\mathbf{w}(\mathbf{x})$ \\
+$P(y=0|\mathbf{x};\mathbf{w})$ & $1 - f_\mathbf{w}(\mathbf{x})$ \\
+Compact likelihood      & $p(y|\mathbf{x};\mathbf{w}) = [f_\mathbf{w}(\mathbf{x})]^y[1-f_\mathbf{w}(\mathbf{x})]^{1-y}$ \\
+Log-likelihood          & $\sum_i[y_i\log f_\mathbf{w}(\mathbf{x}_i) + (1-y_i)\log(1-f_\mathbf{w}(\mathbf{x}_i))]$ \\
+Gradient                & $\nabla\log L(\mathbf{w}) = \mathbf{X}^\top(\mathbf{y}-\boldsymbol\sigma)$ \\
+Decision boundary       & $\mathbf{w}^\top\mathbf{x} = 0$ (linear hyperplane) \\
+Regularised objective   & $\log L(\mathbf{w}) - \tfrac{\lambda}{2}\|\mathbf{w}\|^2$ \\
+\bottomrule
+\end{tabularx}
+
+% =====================================================================
+\section*{Pitfalls and traps consolidated}
+\addcontentsline{toc}{section}{Pitfalls and traps consolidated}
+
+\begin{itemize}
+  \item \trapflag{}\textbf{$f_\mathbf{w}(\mathbf{x})$ is a probability, not a label.} The model output is in $(0,1)$. To get a label, threshold at 0.5. Conflating model output with predicted class is a classic exam slip.
+  \item \textbf{$p$ in $\mathrm{logit}(p)$ is not the binary label $y$.} $p$ is a probability in $(0,1)$; $y$ is in $\{0,1\}$. The lecturer flags this on slide 7.
+  \item \textbf{Logistic regression is a classifier despite its name.} ``Regression'' refers to the regression of \emph{log-odds} on features. The output is a probability/class.
+  \item \textbf{Linear decision boundary in input space.} The model is non-linear in $\mathbf{x}$ (sigmoid is non-linear), but the decision boundary is linear. Distinguish ``model is linear/non-linear'' from ``decision boundary is linear/non-linear.''
+  \item \textbf{No closed-form solution.} Setting the gradient to zero gives a transcendental equation. Iterative methods only.
+  \item \textbf{Concavity of log-likelihood.} Logistic regression's log-likelihood is concave in $\mathbf{w}$ (Hessian negative semi-definite), so gradient ascent is well-behaved. Do not confuse this with non-concave deep network losses.
+  \item \textbf{Overfitting symptom.} Without regularisation, on (near-)separable data the optimiser drives $\|\mathbf{w}\|\to\infty$. Regularisation is the textbook fix.
+  \item \textbf{Sigmoid and softmax.} Sigmoid is the binary case; softmax is the multi-class generalisation. The unit covers only binary; ``multinomial logistic regression'' uses softmax.
+  \item \textbf{Don't swap labels.} If $y\in\{-1,+1\}$ rather than $\{0,1\}$ the formulae change. Check the convention before computing anything.
+\end{itemize}
+
+% =====================================================================
+\section*{Self-check questions}
+\addcontentsline{toc}{section}{Self-check questions}
+
+\begin{enumerate}
+  \item Explain why ordinary linear regression is unsuitable for binary classification. Give two specific reasons.
+  \item Define the sigmoid function. State three of its properties.
+  \item Derive the sigmoid derivative $\sigma'(z) = \sigma(z)(1-\sigma(z))$ from first principles.
+  \item Derive the logit function $\mathrm{logit}(p) = \log(p/(1-p))$ as the inverse of the sigmoid.
+  \item Write the logistic regression model and the formulae for $P(y=1|\mathbf{x};\mathbf{w})$ and $P(y=0|\mathbf{x};\mathbf{w})$.
+  \item Show that $p(y|\mathbf{x};\mathbf{w}) = [f_\mathbf{w}(\mathbf{x})]^y[1-f_\mathbf{w}(\mathbf{x})]^{1-y}$ and explain the role of the exponents.
+  \item Derive the log-likelihood $\log L(\mathbf{w})$ for a dataset of $N$ i.i.d.\ samples.
+  \item Compute the gradient of the log-likelihood with respect to $w_j$ and write the vectorised form $\mathbf{X}^\top(\mathbf{y}-\boldsymbol\sigma)$. Highlight the structural similarity to linear regression's gradient.
+  \item Why does logistic regression have no closed-form solution? What concavity property of the log-likelihood ensures gradient ascent will not get trapped in a sub-optimal local maximum?
+  \item Show that the logistic regression decision boundary is the hyperplane $\mathbf{w}^\top\mathbf{x} = 0$.
+  \item Describe a binary classification scenario where logistic regression must fail and explain why. Suggest one fix.
+  \item How does logistic regression handle overfitting? Connect your answer to MAP estimation with a Gaussian prior (Wk10).
+  \item Compare logistic regression with a Random Forest classifier (Wk4) on (a) decision boundary shape, (b) interpretability of coefficients, (c) handling of non-linear data.
+  \item True or false: ``Logistic regression assumes the features are linearly separable.'' Justify.
+  \item Explain why the sum $\sum_i (y_i - f_\mathbf{w}(\mathbf{x}_i))\mathbf{x}_i$ has a meaningful interpretation as the gradient — describe the physical analogy with weighted residuals from linear regression.
+\end{enumerate}
+
+\end{document}

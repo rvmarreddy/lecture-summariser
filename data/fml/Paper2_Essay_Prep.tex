@@ -1,0 +1,766 @@
+\documentclass[11pt, a4paper]{article}
+
+\usepackage{fontspec}
+\setmainfont{Helvetica Neue}
+\setmonofont{Menlo}
+\usepackage{unicode-math}
+\setmathfont{STIX Two Math}
+
+\usepackage[margin=2cm, top=2cm, bottom=2.5cm]{geometry}
+\usepackage{microtype}
+\usepackage{parskip}
+\setlength{\parskip}{0.6em}
+\setlength{\parindent}{0pt}
+
+\usepackage[colorlinks=true, linkcolor=NavyBlue, urlcolor=NavyBlue, citecolor=NavyBlue]{hyperref}
+\usepackage{xcolor}
+\usepackage[dvipsnames]{xcolor}
+
+\usepackage{amsmath}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{tabularx}
+\newcommand{\thead}[1]{\textbf{#1}}
+
+\usepackage{enumitem}
+\setlist[itemize]{leftmargin=1.5em, itemsep=0.2em, topsep=0.3em}
+\setlist[enumerate]{leftmargin=1.5em, itemsep=0.2em, topsep=0.3em}
+
+\usepackage[most]{tcolorbox}
+\tcbuselibrary{breakable, skins, theorems}
+
+\definecolor{defBg}{HTML}{EAF2FB}
+\definecolor{defBd}{HTML}{1F4E79}
+\definecolor{exBg}{HTML}{F4F4F4}
+\definecolor{exBd}{HTML}{555555}
+\definecolor{tipBg}{HTML}{E8F5E9}
+\definecolor{tipBd}{HTML}{2E7D32}
+\definecolor{trapBg}{HTML}{FCE4EC}
+\definecolor{trapBd}{HTML}{AD1457}
+\definecolor{pitBg}{HTML}{FFF8E1}
+\definecolor{pitBd}{HTML}{B27600}
+\definecolor{noteBg}{HTML}{F3E5F5}
+\definecolor{noteBd}{HTML}{6A1B9A}
+\definecolor{tldrBg}{HTML}{E1F5FE}
+\definecolor{tldrBd}{HTML}{0277BD}
+\definecolor{proseBg}{HTML}{FFF3E0}
+\definecolor{proseBd}{HTML}{E65100}
+\definecolor{srcBg}{HTML}{ECEFF1}
+\definecolor{srcBd}{HTML}{37474F}
+
+\newtcolorbox{defbox}[1][]{enhanced, breakable, colback=defBg, colframe=defBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={Definition: #1}}
+\newtcolorbox{exbox}[1][]{enhanced, breakable, colback=exBg, colframe=exBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={Worked example: #1}}
+\newtcolorbox{exambox}[1][]{enhanced, breakable, colback=tipBg, colframe=tipBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={Exam-mode answer #1}}
+\newtcolorbox{trapbox}[1][]{enhanced, breakable, colback=trapBg, colframe=trapBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={MCQ trap #1}}
+\newtcolorbox{pitfallbox}[1][]{enhanced, breakable, colback=pitBg, colframe=pitBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={Pitfall #1}}
+\newtcolorbox{notebox}[1][]{enhanced, breakable, colback=noteBg, colframe=noteBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={Lecturer aside #1}}
+\newtcolorbox{tldrbox}[1][]{enhanced, breakable, colback=tldrBg, colframe=tldrBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={TL;DR #1}}
+\newtcolorbox{prosebox}[1][]{enhanced, breakable, colback=proseBg, colframe=proseBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={Full prose answer #1}}
+\newtcolorbox{srcbox}[1][]{enhanced, breakable, colback=srcBg, colframe=srcBd, arc=2pt, boxrule=0.5pt, left=8pt, right=8pt, top=5pt, bottom=5pt, fonttitle=\bfseries, title={Sources / where this lives in the paper #1}}
+
+\usepackage{titlesec}
+\titleformat{\section}[block]{\Large\bfseries\color{defBd}}{\thesection.}{0.6em}{}
+\titleformat{\subsection}[block]{\large\bfseries\color{defBd!80!black}}{\thesubsection}{0.5em}{}
+\titleformat{\subsubsection}[block]{\normalsize\bfseries}{}{0pt}{}
+\titlespacing*{\section}{0pt}{1.6em}{0.6em}
+\titlespacing*{\subsection}{0pt}{1.2em}{0.4em}
+
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small CM52078 — Essay Prep v2}
+\fancyhead[R]{\small Paper 2 — Oltramari et al.\ (2020)}
+\fancyfoot[C]{\small\thepage}
+\renewcommand{\headrulewidth}{0.3pt}
+
+\newcommand{\paperref}[1]{\textcolor{srcBd}{\small[\textbf{P2}:#1]}}
+\newcommand{\extref}[1]{\textcolor{srcBd}{\small[\textbf{ext}:#1]}}
+\newcommand{\aimaref}[1]{\textcolor{srcBd}{\small[\textbf{AIMA}:#1]}}
+\newcommand{\lectref}[1]{\textcolor{srcBd}{\small[\textbf{lecture}:#1]}}
+\newcommand{\courseref}[1]{\textcolor{srcBd}{\small[\textbf{W#1}]}}
+\newcommand{\extflag}{\textcolor{trapBd}{\textbf{[EXT]}}\,}
+
+\title{\vspace{-1cm}{\Huge\bfseries Paper 2 — Essay Preparation (v2)} \\[0.4em]{\large Oltramari et al.\ (2020), \emph{Neuro-Symbolic Architectures for Context Understanding}}}
+\author{\large CM52078 Classical Artificial Intelligence \\[0.2em]\normalsize University of Bath}
+\date{Revision notes, with inline citations and course tie-ins}
+
+\begin{document}
+
+\maketitle
+\thispagestyle{empty}
+
+\vspace{1em}
+
+% =====================================================================
+\begin{srcbox}[ — reading conventions]
+This document uses inline pointers so every technical claim can be traced.
+\begin{itemize}[leftmargin=*, itemsep=0.1em]
+  \item \paperref{§3.1.3, p.6} — Paper 2 section 3.1.3, page 6 in the PDF.
+  \item \paperref{Table 4} / \paperref{Fig.\ 5} — direct reference to the paper's table or figure.
+  \item \paperref{ref [6]: Bordes et al.\ 2013} — external paper cited by Paper 2; bracket number is Paper 2's own bibliography entry.
+  \item \aimaref{Ch.\ 12} — Russell \& Norvig, \emph{Artificial Intelligence: A Modern Approach}, 3rd ed.\ (course textbook).
+  \item \courseref{8} — Week 8 of CM52078 (Predicate Logic), referencing the lecturer's coverage.
+  \item \lectref{W31, transcript} — points to the lecturer's W31 walk-through of Paper 2.
+  \item \extflag{} — explicitly flags an author's extension or speculative claim that is \emph{not} in Paper 2. Used in the unseen-question section.
+\end{itemize}
+\end{srcbox}
+
+\begin{tldrbox}
+\begin{itemize}[leftmargin=*]
+  \item \textbf{Paper choice rationale:} Paper 2 is the safest essay bet. Two concrete worked applications (autonomous driving + commonsense QA) give chain-recall narratives, numerical anchors, and named algorithms — supporting the rubric's demand for ``precise technical definitions.''
+  \item \textbf{Symbolic form (Part 1, 9 marks):} \emph{knowledge graphs}, instantiated as (a) a domain-specific \emph{Scene Ontology} \paperref{§3.1.2, Fig.\ 1} over the NuScenes driving dataset \paperref{ref [8]: Caesar et al.\ 2019} and (b) two general-purpose commonsense KGs — \emph{ConceptNet} \paperref{ref [22]: Liu \& Singh 2004} and \emph{ATOMIC} \paperref{ref [37]: Sap et al.\ 2019}. Projected into continuous vector space via \emph{knowledge-graph embeddings} — TransE \paperref{ref [6]: Bordes et al.\ 2013}, HolE \paperref{ref [32]: Nickel et al.\ 2016}, the unscalable RESCAL \paperref{ref [33]: Nickel et al.\ 2011}.
+  \item \textbf{Integration approach (Part 2, 9 marks):} two architectures, both fusing structured knowledge into neural learning. \emph{Driving:} KG $\to$ KGE $\to$ semantic-similarity scoring of sub-scenes by cosine distance \paperref{§3.1.4--5}. \emph{QA:} ConceptNet triple extraction $\to$ attention-based injection via a Bi-LSTM ``Inject Cell'' into a BERT~\paperref{ref [11]: Devlin et al.\ 2018}~+ OCN~\paperref{ref [36]: Ran et al.\ 2019} model, plus masked-LM pre-training on the Open Mind Common Sense (OMCS) corpus~\paperref{ref [40]: Singh et al.\ 2002}.
+  \item \textbf{Predicted unseen Part 3 (16 marks):} historical base rate favours ``real-world application scenario'' (2023, 2024 CM50263 essays). Backup angles drilled below: critical evaluation $+$ alternatives, limitations $+$ improvements, comparison with pure-LLM baselines, extension to a new domain.
+  \item \textbf{Course tie-ins available:} KG triples \(\equiv\) atomic predicate-logic sentences \(r(h,t)\) \courseref{8}, \aimaref{Ch.\ 8}; KG as logical KB queried via entailment \courseref{7}, \aimaref{Ch.\ 7}; semantic networks and ontologies as the classical KR formalism \aimaref{Ch.\ 12}; Bayesian-network adjacency as the probabilistic graphical-knowledge cousin \courseref{10}, \aimaref{Ch.\ 14}.
+\end{itemize}
+\end{tldrbox}
+
+% =====================================================================
+\section{Annotated walk-through of the paper}
+
+\subsection{§1 — Explainability through Context Understanding (the motivation)}
+\paperref{p.2--3}
+
+The paper opens by grounding itself in \textbf{sense-making}, citing Newell~\paperref{ref [30]: Newell 1990, \emph{Unified Theories of Cognition}} and Newell \& Simon~\paperref{ref [31]: 1972, \emph{Human Problem Solving}}. Sense-making is presented as the cognitive bedrock from which trust and explanation flow: humans fuse multimodal sensory cues (auditory, visual) with stored experience to interpret a situation.
+
+The headline rhetorical move is a corollary the authors draw at the end of §1:
+
+\begin{exbox}[Quote (\paperref{end of §1, p.3})]
+\emph{``[We] can assert that `explainable AI' is a byproduct or an affordance of computational context understanding and is predicated on the extent to which humans can introspect the decision processes that enable machine sense-making.''}
+\end{exbox}
+
+This is doing heavy rhetorical work. It pre-positions hybrid architectures as the \emph{only} honest route to explainable AI, \emph{before} any technical content is on the table. The line to remember: build a system that understands context properly, and explainability comes for free. \lectref{W31 transcript, lines 530--534: ``So if we want explainable and trustworthy AI \ldots\ context understanding is going to be really crucial for that.''}
+
+The dichotomy the paper sets up at the start of §2 \paperref{p.3}:
+\begin{itemize}
+  \item \textbf{Data-driven methods} — model statistical regularities of events, hard to interpret, no mechanism for incorporating external knowledge.
+  \item \textbf{Knowledge-driven methods} — combine structured knowledge bases and perform symbolic reasoning on \emph{axiomatic principles}. Interpretable, but \emph{``lack the ability to estimate the statistical salience of an inference.''}
+  \item \textbf{Hybrid (their proposal)} — uses knowledge bases to \emph{guide the learning progress} of deep neural networks. Inherits ``neuro-symbolism'' from prior literature.
+\end{itemize}
+
+\begin{notebox}[: course tie-in to knowledge representation]
+What the paper calls a ``knowledge-driven method'' is exactly what the course calls a \emph{knowledge base}: a set of sentences in some formal language, queried via \emph{entailment} \courseref{7--8}, \aimaref{Ch.\ 7--8}. The Scene Ontology you'll meet in §3.1.2 \emph{is} a logical KB: a class hierarchy plus binary relations, the kind of thing AIMA Chapter 12 (Knowledge Representation) covers under the heading of ``ontological engineering'' \aimaref{Ch.\ 12 §12.1--12.3}. Triples like \texttt{(revolving\_door, AtLocation, bank)} are atomic predicate-logic formulas — written formally \(\mathsf{AtLocation}(\mathsf{revolving\_door}, \mathsf{bank})\). The W31 lecturer makes this point explicitly: ``it's just a statement of a fact where you have a subject and an object, and then linking them is a predicate'' \lectref{W31 transcript, lines 640--644}.
+\end{notebox}
+
+\subsection{§2 — Context Understanding through Neuro-symbolism (the bridge)}
+\paperref{p.3--4}
+
+The paper formalises its corollary:
+
+\begin{exbox}[Quote (\paperref{§2, p.3})]
+\emph{``The explainability of AI algorithms is related to how context is processed, computationally, based on the machine's perceptual capabilities and on the external knowledge resources that are available.''}
+\end{exbox}
+
+Two halves:
+\begin{itemize}
+  \item \textbf{Perceptual capabilities} = the neural side (deep nets doing perception).
+  \item \textbf{External knowledge resources} = the symbolic side (knowledge graphs).
+\end{itemize}
+
+\textbf{Footnote 2} \paperref{p.4} is important: the authors explicitly state they are \emph{not} trying to replicate the cognitive \emph{mechanism} of human context understanding — they commit only to satisfying the \emph{functional} requirements. This is a deliberate divergence from cognitive-architecture research (the lane Paper 1 sits in, using ACT-R), and is worth remembering for any comparison-style Part 3.
+
+\subsection{§3.1 — Application I: Knowledge-Graph Embeddings for Autonomous Driving}
+
+\subsubsection*{Motivation (§3.1.1, \paperref{p.4--5})}
+The setup invokes the 2018 \textbf{Elaine Herzberg fatality}: NTSB found the autonomous vehicle's perception system mis-classified her sequentially as ``unknown object,'' ``vehicle,'' then ``bicycle'' — and that the system design did not include consideration for pedestrians outside crosswalks (jaywalking) \paperref{§3.1.1, p.5, footnote 3 = NTSB press release}. This is the canonical motivating anecdote — useful in essay prose because it is specific and visceral.
+
+The lecturer reinforces the framing with the parallel \textbf{elephant-in-the-room} example: an object detector fires on elephant pixels in a living-room photo; only the context (sofa, bookshelf, framed picture) lets a reasoner correctly label it as ``picture of an elephant'' rather than ``elephant in the room'' \lectref{W31 transcript, lines 295--301; also referenced in Paper 1 / Oltramari 2023 Figure 1}.
+
+\subsubsection*{Dataset: NuScenes (§3.1.2, \paperref{p.5})}
+A multimodal autonomous-driving dataset from Aptiv \paperref{ref [8]: Caesar et al.\ 2019, \emph{nuScenes}, arXiv 1903.11027}. Key statistics from \paperref{§3.1.2, p.5}:
+\begin{itemize}
+  \item 850 driving scenes, 34{,}149 sub-scenes;
+  \item \(\sim\)40 sub-scenes sampled per driving scene (\textbf{one every 0.5 seconds});
+  \item Each sub-scene annotated with detected objects and events in a taxonomy of \textbf{23 object/event categories}.
+\end{itemize}
+
+\subsubsection*{Scene Ontology (§3.1.2, \paperref{Fig.\ 1, p.6})}
+Built in \textbf{Protégé} \paperref{footnote 4: protege.stanford.edu}, a standard OWL ontology editor. The Scene Ontology defines a \emph{Scene} as ``an observable volume of time and space'' \paperref{ref [14]: Henson, Schmid, Tran, Karatzoglou 2019}.
+
+\paperref{Fig.\ 1(a)} gives the formal OWL axioms for the Scene class. Translated into readable form:
+\begin{itemize}[itemsep=0.1em]
+  \item \texttt{has location max 1 owl:Thing} — at most one location.
+  \item \texttt{has location only `Spatial Region'} — that location must be of type Spatial Region.
+  \item \texttt{has part only Scene} — parts must themselves be Scenes (sub-scenes).
+  \item \texttt{has time only xsd:dateTimeStamp} — time stamps are XSD-typed.
+  \item \texttt{is part of only Scene} — parent must be a Scene.
+  \item \texttt{occurs after / occurs before only Scene} — temporal relations are scene-to-scene.
+  \item \texttt{includes only (Event or `Feature Of Interest')} — the only members allowed.
+\end{itemize}
+
+\paperref{Fig.\ 1(b)} shows the taxonomy. Top-level concepts:
+\begin{itemize}[itemsep=0.1em]
+  \item \textbf{Event:} Pedestrian Event (Pedestrian Moving / Stationary), Vehicle Event (Vehicle Moving / Stationary, with the latter split into Parked / Stopped).
+  \item \textbf{Feature Of Interest:} Animal; Human \(\to\) Pedestrian (Adult, Child, Construction Worker, Pedestrian with Personal Mobility Vehicle / Stroller / Wheelchair, Police Officer); Movable Object (Barrier, Debris, Pushable or Pullable Object, Traffic Cone); Static Object (Bicycle Rack); Vehicle (Bus, Car, Construction Vehicle, Cycle, Emergency Vehicle, Trailer, Truck).
+\end{itemize}
+
+Relations the paper highlights: \texttt{includes} (Scene $\to$ Event/FoI) and the central \texttt{isParticipantOf} (FoI $\to$ Event) \paperref{§3.1.2 Generating Knowledge Graphs, p.6}.
+
+\begin{notebox}[: ontology $=$ formal logical schema]
+The Scene Ontology is essentially a typed predicate-logic schema, encoded in OWL. A class hierarchy is a set of subsumption axioms (\(\mathsf{Car} \sqsubseteq \mathsf{Vehicle} \sqsubseteq \mathsf{FeatureOfInterest}\)). Relations are binary predicates with type signatures. From Week 8's perspective, this is exactly the kind of structured knowledge base that predicate logic \emph{is designed} to express \courseref{8}. AIMA Chapter 12 covers exactly this — semantic networks, frames, description logic, and the ``upper ontology'' construction pattern Scene Ontology follows \aimaref{Ch.\ 12 §12.4 ``Semantic Networks and Description Logics''}.
+\end{notebox}
+
+\subsubsection*{Generated KG statistics (\paperref{Table 1, p.6})}
+\begin{center}
+\begin{tabular}{lr}
+\toprule
+\# of triples & 5.95M \\
+\# of entities & 2.11M \\
+\# of relations & 11 \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+These are concrete numbers worth memorising — the rubric rewards precision, and \emph{``5.95 million triples''} is the kind of detail that lands.
+
+\subsubsection*{Knowledge-Graph Embeddings (§3.1.3, \paperref{p.6--7})}
+A KG is symbolic. ML models want vectors. KGEs are dense vector representations of the entities and relations of a KG, learned so the vector geometry preserves the KG's structure. The paper classifies KGEs into two families, following \paperref{ref [44]: Wang, Mao, Wang \& Guo 2017, IEEE TKDE survey}:
+
+\begin{enumerate}
+  \item \textbf{Transitional distance} models. Score with a distance measure. The exemplar is \textbf{TransE} \paperref{ref [6]: Bordes, Usunier, Garcia-Duran, Weston, Yakhnenko 2013, NIPS}: given a triple \((h, r, t)\), encode \(h, r, t\) as vectors with \(r\) treated as a translation from \(h\) to \(t\):
+  \[
+  \mathbf{h} + \mathbf{r} \approx \mathbf{t}.
+  \]
+  Training minimises a margin-based loss over the L1 or L2 distance \(\lVert \mathbf{h} + \mathbf{r} - \mathbf{t} \rVert\). Complexity: \(O(nd + md)\) space, \(O(n_t d)\) time, where \(n\) is the number of entities, \(m\) the number of relations, \(d\) the embedding dimension, and \(n_t\) the number of training triples. ``One of the most efficient KGE algorithms'' \paperref{§3.1.3, p.6}.
+
+  \item \textbf{Semantic matching} models. Score with a similarity / multiplicative function. \textbf{RESCAL} \paperref{ref [33]: Nickel, Tresp, Kriegel 2011, ICML} encodes each relation as a matrix \(\mathbf{M}_r\) with bilinear scoring \(\mathbf{h}^\top \mathbf{M}_r \mathbf{t}\). Highly expressive across multi-hop patterns, but \(O(nd + md^2)\) space and \(O(n_t d^2)\) time — \emph{``RESCAL did not scale well''} on the NuScenes KG \paperref{§3.1.3, p.6} and was dropped. \textbf{HolE} \paperref{ref [32]: Nickel, Rosasco, Poggio 2016, AAAI} is its efficient successor: encodes relations as vectors but uses \textbf{circular correlation} \(\star\) to recover bilinear-quality interaction:
+  \[
+  \mathrm{score}(h, r, t) = \mathbf{r}^\top (\mathbf{h} \star \mathbf{t}).
+  \]
+  Complexity: \(O(nd + md)\) space, \(O(n_t d \log d)\) time (the \(\log d\) factor from the FFT used to compute circular correlation).
+\end{enumerate}
+
+\subsubsection*{Visualising KGEs (§3.1.3 ``Visualising KGEs,'' \paperref{Fig.\ 2, p.7})}
+A ``mini'' KG was built from 10 NuScenes scenes. Embedding dimension \(d = 100\). Visualised via \textbf{t-SNE} \paperref{ref [25]: van der Maaten \& Hinton 2008, JMLR}, reducing to 2D. The pattern: instances of \emph{Car} (a FoI) and the events they participate in (\emph{Parked Cars}, \emph{Moving Cars}, \emph{Stopped Cars}) cluster around the Car entity — showing the \texttt{isParticipantOf} relation is preserved in the geometry.
+
+\subsubsection*{Intrinsic evaluation (§3.1.4, \paperref{p.7})}
+The paper deviates from the standard practice of evaluating KGEs by downstream task accuracy. Instead it uses three \emph{intrinsic} metrics from \paperref{ref [2]: Alshargi, Shekarpour, Soru, Sheth 2019, AAAI Spring Symposium}:
+
+\begin{enumerate}
+  \item \textbf{Categorisation measure} — how well do instances of the same type cluster together? Average the vectors of one type, take cosine similarity to the typed-class vector.
+  \item \textbf{Coherence measure} — what proportion of an entity's nearest neighbours share its type? Idea: a Car's neighbours should mostly be Cars.
+  \item \textbf{Semantic transitional distance} — for a true triple \((h, r, t)\), does \(\mathbf{h} + \mathbf{r}\) point at \(\mathbf{t}\)? Operationalised as cosine similarity between \((\mathbf{h} + \mathbf{r})\) and \(\mathbf{t}\).
+\end{enumerate}
+
+\subsubsection*{Results and use-case (§3.1.4--5, \paperref{Fig.\ 3--4, p.8--9})}
+\paperref{Fig.\ 3} shows radar plots per class for the three metrics. TransE is consistently better than HolE on most classes/relations; HolE outperforms on some specific classes. The coherence measure is near zero across all models — the authors suspect the metric itself isn't appropriate for AD data \paperref{§3.1.4, p.8}.
+
+\paperref{Fig.\ 4 ``A use-case from the AD domain,'' p.9}: KGEs are applied to find the most-similar sub-scenes by cosine similarity in the 100-dim embedding space. The striking finding: two sub-scenes that are \emph{visually dissimilar} (one full of Barriers, one full of Stopped Cars) are flagged as similar because they share the same structural role (a string of static objects). This is the headline: \textbf{symbolic structure survives the embedding and surfaces a kind of similarity raw pixels can't}.
+
+\begin{notebox}[: lecturer's kangaroo example]
+The W31 lecturer's intuition pump: ``a model has been trained with lots of different animals crossing the road but \ldots\ has never seen a kangaroo before. \ldots\ The vector space \ldots\ has some sort of sense of `is an animal, maybe a non-human animal,' [which] might allow it to learn what to do if a kangaroo is crossing the road, [behaving] in a similar way to if a deer is crossing the road'' \lectref{W31 transcript, lines 704--720}. KGE-space proximity gives \emph{out-of-distribution generalisation by ontological type}.
+\end{notebox}
+
+\subsection{§3.2 — Application II: Neural Question-Answering with Commonsense KBs}
+
+\subsubsection*{Setup and motivation (§3.2.1, \paperref{p.9--10})}
+QA systems must synthesise external commonsense knowledge with their training distribution. The paper sets up the same three-way contrast: \emph{purely data-driven} (lacks interpretability and KB-integration), \emph{purely knowledge-driven} (interpretable but no statistical salience), \emph{hybrid} (best of both, by injecting structured knowledge into a neural learner).
+
+The paper enumerates \textbf{six types of commonsense knowledge} \paperref{§3.2.1, p.10, citing ref [10]: Davis 2014, \emph{Representations of Commonsense Knowledge}, Morgan Kaufmann}:
+
+\begin{enumerate}[itemsep=0.1em]
+  \item \textbf{Declarative commonsense} — factual: ``the sky is blue,'' ``Paris is in France.''
+  \item \textbf{Taxonomic knowledge} — type/category: ``football players are athletes,'' ``cats are mammals.''
+  \item \textbf{Relational knowledge} — part/whole, instrumental: ``the nose is part of the skull,'' ``handwriting requires a hand and a writing instrument.''
+  \item \textbf{Procedural commonsense} — prescriptive sequences: ``one needs an oven before baking cakes,'' ``electricity should be off while a switch is being repaired.''
+  \item \textbf{Sentiment knowledge} — affective: ``rushing to the hospital makes people worried,'' ``being on vacation makes people relaxed.''
+  \item \textbf{Metaphorical knowledge} — idiom: ``time flies,'' ``raining cats and dogs.''
+\end{enumerate}
+
+The key empirical claim that follows is that matching the \emph{type} of commonsense required by a task to the right KB is essential.
+
+\subsubsection*{Dataset: CommonsenseQA (§3.2.2, \paperref{p.10--11})}
+\textbf{CommonsenseQA} \paperref{ref [42]: Talmor, Herzig, Lourie, Berant 2019, NAACL} is a 12{,}247-question multiple-choice dataset. Each item: a source concept extracted from ConceptNet, three target concepts connected to it (forming a sub-graph), three crowd-written questions where only one of the three targets is correct, plus two distractor options chosen by crowd-workers — giving five answer options per question. The dataset was \emph{constructed from} ConceptNet sub-graphs, which sets up a clean alignment between question type and KB content. Test-set answers aren't public, so evaluation is on the dev set.
+
+\paperref{Table 2, p.10} gives the canonical example:
+\begin{center}\small
+\begin{tabular}{p{0.95\textwidth}}
+\toprule
+\textbf{Question:} \emph{A revolving door is convenient for two direction travel, but it also serves as a security measure at a what?}\\
+\textbf{Answer choices:} A. Bank* \quad B. Library \quad C. Department Store \quad D. Mall \quad E. New York\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\subsubsection*{Knowledge bases (§3.2.3, \paperref{p.11})}
+\begin{itemize}
+  \item \textbf{ConceptNet} \paperref{ref [22]: Liu \& Singh 2004, \emph{ConceptNet}, BT Technology Journal}. Statistics: \emph{over 21 million edges and 8 million nodes; 1.5M nodes in the English partition}. Triples are of the form \((C_1, r, C_2)\) with \(C_1, C_2 \in\) natural-language concept set, \(r \in\) commonsense-relation set, e.g.\ \texttt{(dinner, AtLocation, restaurant)}.
+  \item \textbf{ATOMIC} \paperref{ref [37]: Sap et al.\ 2019, AAAI}. Procedural / if-then commonsense. Triples of the form \((\mathrm{Event}, r, \{\mathrm{Effect} \mid \mathrm{PersonA} \mid \mathrm{Mental\text{-}state}\})\), where head and tail are short sentences or verb phrases and \(r\) is an if-then relation type, e.g.\ \texttt{(X compliments Y, xIntent, X wants to be nice)}.
+\end{itemize}
+
+The authors choose ConceptNet and ATOMIC because CommonsenseQA is open-domain and requires \emph{general} commonsense, which these two KBs cover.
+
+\subsubsection*{Model architecture: BERT $+$ OCN (§3.2.4, \paperref{Fig.\ 5, p.12})}
+
+The neural backbone is \textbf{BERT} \paperref{ref [11]: Devlin, Chang, Lee, Toutanova 2018/19, NAACL — Bidirectional Encoder Representations from Transformers}. For multiple-choice QA, the standard approach concatenates the question with each option as \texttt{[CLS] Question [SEP] Option [SEP]}; BERT encodes each pair independently and a linear layer predicts.
+
+\textbf{Limitation that motivates OCN.} Encoding each option independently means BERT cannot model correlations \emph{across} options. The \textbf{Option Comparison Network (OCN)} \paperref{ref [36]: Ran, Li, Hu, Zhou 2019, arXiv 1903.03033} fixes this. OCN sits on top of BERT and explicitly models pairwise interactions among the five answer options. \paperref{Fig.\ 5} shows the architecture: each option's BERT encoding feeds into an \emph{Option Comparison Cell} containing \textbf{tri-linear attention} between option pairs, a \emph{merge layer}, \textbf{co-attention} with the question encoding, and \textbf{self-attention} over the merged representations. The output goes to a final linear prediction head.
+
+\subsubsection*{Knowledge elicitation (§3.2.5, \paperref{p.12--13})}
+For each (question \(Q\), option \(O\)) pair, the system searches ConceptNet for triples \((C_1, r, C_2)\) such that:
+\[
+C_1 \in Q \;\text{and}\; C_2 \in O, \quad \text{or vice versa.}
+\]
+Multi-word concepts complicate exact matching, so the paper relaxes to a 50\%-overlap rule:
+\[
+\frac{\#(\text{words in } C \cap S)}{\#(\text{words in } C)} > 0.5
+\]
+where \(S\) is the relevant sequence (\(Q\) or \(O\)) and the part-of-speech tag of \(C\) must match the POS of the matched word in \(S\) \paperref{§3.2.5 equation (1), p.13}.
+
+For the revolving-door example \paperref{Table 3, p.13}, this elicits — among others — \texttt{(revolving\_door, AtLocation, bank)} and \texttt{(bank, RelatedTo, security)}, exactly the chain a human would follow.
+
+\textbf{ATOMIC elicitation is harder} \paperref{§3.2.5, p.13}: ATOMIC heads/tails are short sentences with rare-word and PersonX/PersonY substitutions, so simple exact / overlap matching does not work well. The paper concedes this as a future-work direction.
+
+\subsubsection*{Knowledge injection (§3.2.6, \paperref{Fig.\ 5 bottom-left ``Inject Cell''})}
+Inspired by \paperref{ref [5]: Bauer, Wang, Bansal 2018, EMNLP, \emph{Commonsense for Generative Multi-Hop QA Tasks}}, the team uses attention-based injection. Mechanism:
+\begin{enumerate}
+  \item \textbf{Convert each triple into a pseudo-sentence.} \texttt{(book, AtLocation, library)} \(\to\) ``\emph{book at location library}.''
+  \item \textbf{Encode the pseudo-sentences with a Bi-LSTM} (the \emph{Inject Cell}).
+  \item \textbf{Compute attention} between the Bi-LSTM-encoded commonsense and BERT's output, fusing the two into a single representation.
+  \item \textbf{Feed the fused representation into the OCN cell} for option comparison.
+\end{enumerate}
+
+This is one of two integration channels — it operates at \emph{inference time} (the relevant triples are retrieved per query).
+
+\subsubsection*{Knowledge pre-training (§3.2.7, \paperref{p.14})}
+A second integration channel operates \emph{before} inference, modifying the BERT encoder itself. Mechanism for ConceptNet:
+\begin{enumerate}
+  \item Pre-training BERT on pseudo-sentences directly converted from triples ``\textbf{does not provide much gain}'' \paperref{§3.2.7, p.14}.
+  \item Instead: train BERT on the \textbf{Open Mind Common Sense (OMCS) corpus} \paperref{ref [40]: Singh, Lin, Mueller, Lim, Perkins, Zhu 2002, CoopIS/DOA/ODBASE}, the \emph{originating} corpus from which ConceptNet was distilled.
+  \item Extract \(\sim\)930K English sentences from OMCS.
+  \item Randomly mask out 15\% of tokens.
+  \item Fine-tune BERT with a \textbf{masked-language-model} objective: predict the masked tokens as a distribution over the lexicon — the standard BERT pre-training objective.
+\end{enumerate}
+
+For ATOMIC pre-training, the paper follows the procedure of \paperref{ref [7]: Bosselut et al.\ 2019, ACL, \emph{COMET}}: convert ATOMIC triples to sentences, create special tokens for the 9 relation types plus blanks, mask 15\% of tokens but \emph{only mask tail-tokens} (since heads and tails carry different semantics).
+
+\subsubsection*{Results (§3.2.8, \paperref{Table 4, p.14})}
+Three trials per setting; averaged dev-set accuracy reported.
+
+\begin{center}\small
+\begin{tabular}{lr}
+\toprule
+\thead{Model} & \thead{Dev acc.\ (\%)}\\
+\midrule
+BERT + OMCS pre-train (*) & 68.8 \\
+RoBERTa + CSPT (*) & \textbf{76.2} \\
+\midrule
+OCN (baseline) & 64.1 \\
+OCN + ConceptNet injection & 67.3 \,(+3.2) \\
+OCN + OMCS pre-train & 65.2 \,(+1.1) \\
+OCN + ATOMIC pre-train & 61.2 \,(\(-2.9\)) \\
+OCN + OMCS pre-train + ConceptNet injection & \textbf{69.0} \,(\textbf{+4.9}) \\
+\bottomrule
+\end{tabular}
+\end{center}
+\footnotesize{(*) = leaderboard numbers, not from this paper's runs.}\normalsize
+
+Headline: combining the two channels (pre-train on OMCS \emph{and} attention-inject ConceptNet triples) gives the largest gain over the OCN baseline.
+
+\subsubsection*{Error analysis (§3.2.9, \paperref{Table 5, p.15})}
+Performance is broken down by \emph{question type}, defined as the ConceptNet relation between the question concept and the correct answer concept. Findings:
+
+\begin{itemize}
+  \item ConceptNet relation-injection produces gains across all question types when paired with either the OCN model or the OMCS-pre-trained OCN.
+  \item ATOMIC pre-training \emph{hurts overall} performance but \emph{helps} on \texttt{CausesDesire} and \texttt{Desires} question types — these align semantically with ATOMIC's \emph{Reactions} and \emph{Wants} relations.
+  \item The hardest question type is \texttt{Antonym}. Many of these questions contain \textbf{negations}, and the models lack the ability to reason over negation.
+\end{itemize}
+
+\subsubsection*{Discussion (§3.2.10, \paperref{p.16})}
+The cleanest takeaway: external knowledge is only helpful when there is \textbf{alignment between question type and KB content}. Pre-training shifts BERT's weight distribution toward the KB's domain — if the alignment is wrong, performance degrades. Attention-injection is the better choice when alignment is uncertain because, even if alignment is sub-optimal, performance does \emph{not} degrade.
+
+The future-work line worth quoting: the authors propose building a \textbf{``global commonsense knowledge base''} by aggregating ConceptNet, ATOMIC, FrameNet \paperref{ref [4]} and MetaNet \paperref{ref [12]} on the basis of a \textbf{shared-reference ontology} — i.e.\ aligning all KBs through a unifying upper ontology.
+
+\subsection{§4 — Conclusion (\paperref{p.16--17})}
+
+The closing returns to the §1 framing: hybrid neuro-symbolic systems combine perception (neural) and knowledge (symbolic), and \emph{explainability emerges as a property} of how the systems are built — not as a bolted-on post-hoc tool. The two case studies illustrate the same hybrid recipe across two very different domains.
+
+The closing caveat (worth memorising for critical-evaluation prompts):
+
+\begin{exbox}[Quote (\paperref{end of §4, p.17})]
+\emph{``Knowledge graphs can only capture a stripped-down representation of what we know, and deep neural networks can only approximate how we perceive the world.''}
+\end{exbox}
+
+The authors don't oversell. Pair this with the ATOMIC failure mode for a built-in critique angle.
+
+% =====================================================================
+\section{Part 1 (9 marks) — Symbolic component}
+
+\textbf{Prompt:} \emph{One paragraph explaining what specific form(s) the symbolic component of the neuro-symbolism takes in the problem domain(s) covered by the paper. Be very precise with the technical definitions and your statements about how the form(s) is (are) applicable in the problem domain.} [9 marks]
+
+\subsection{Bullet-point ideas to include}
+
+\begin{itemize}
+  \item \textbf{Headline:} the symbolic component takes the form of \textbf{knowledge graphs (KGs)}, plus their dense-vector counterparts \textbf{knowledge-graph embeddings (KGEs)} for interfacing with neural learners.
+  \item \textbf{Formal definition:} a KG is a set of triples \((h, r, t)\) where \(h, t\) are entities and \(r\) is a binary relation. Each triple is an atomic relational fact, equivalently an atomic predicate-logic sentence \(r(h, t)\) \courseref{8}, \aimaref{Ch.\ 8 ``First-Order Logic''}. KGs sit in the AIMA Chapter 12 lineage of semantic networks and frame-based KR \aimaref{Ch.\ 12 §12.4}.
+  \item \textbf{Domain 1 — autonomous driving (\paperref{§3.1}):} a domain-specific \textbf{Scene Ontology} authored in Protégé \paperref{footnote 4}, instantiated over NuScenes \paperref{ref [8]}. Defines a \emph{Scene} (observable volume of time and space) via OWL axioms (\paperref{Fig.\ 1(a)}): \texttt{has location max 1 owl:Thing}, \texttt{has time only xsd:dateTimeStamp}, \texttt{includes only (Event or `Feature Of Interest')}, etc. Top-level classes: \emph{Event} (Pedestrian/Vehicle Events with stationary/moving sub-classes) and \emph{Feature-of-Interest} (Pedestrian, Vehicle, Animal, Movable Object, Static Object) with central relations \texttt{isParticipantOf}, \texttt{includes}, \texttt{occursAfter}. Generated KG: \textbf{5.95M triples, 2.11M entities, 11 relations} \paperref{Table 1}.
+  \item \textbf{Domain 2 — commonsense QA (\paperref{§3.2}):} two general-purpose commonsense KGs. \emph{ConceptNet} \paperref{ref [22]} has 21M edges / 8M nodes (1.5M English) of declarative-taxonomic triples \((C_1, r, C_2)\) such as \texttt{(dinner, AtLocation, restaurant)}. \emph{ATOMIC} \paperref{ref [37]} encodes procedural ``if-then'' commonsense as \((\mathrm{Event}, r, \{\mathrm{Effect} \mid \mathrm{PersonA} \mid \mathrm{Mental\text{-}state}\})\), e.g.\ \texttt{(X compliments Y, xIntent, X wants to be nice)}.
+  \item \textbf{KGEs as the symbolic--neural interface (\paperref{§3.1.3}):} dense vector representations of KG entities/relations learned so the geometry preserves graph structure. Following \paperref{ref [44]: Wang et al.\ 2017 survey}, the paper distinguishes transitional-distance (TransE, \paperref{ref [6]}, scoring \(\mathbf{h} + \mathbf{r} \approx \mathbf{t}\), complexity \(O(n_t d)\)) and semantic-matching (RESCAL, \paperref{ref [33]}, bilinear, \(O(n_t d^2)\); HolE, \paperref{ref [32]}, circular correlation, \(O(n_t d \log d)\)) families. RESCAL was dropped — did not scale on the AD KG.
+  \item \textbf{Why this form matches the problem:} the safety-critical, ambiguity-rich nature of driving needs an explicit relational structure (a class hierarchy alone cannot express ``a pedestrian \emph{participating in} a stopping event''); commonsense QA needs the kind of explicit world-knowledge triples that purely statistical language modelling does not surface reliably. The paper's six-fold typology of commonsense (declarative, taxonomic, relational, procedural, sentiment, metaphorical; \paperref{§3.2.1}) makes the case that the right symbolic form depends on the kind of knowledge the task demands.
+  \item \textbf{Six knowledge types as a precision marker:} naming the typology in the answer shows you have grasped the paper's framing that different question types need different KBs (the same finding empirically confirmed in \paperref{Table 5}).
+\end{itemize}
+
+\begin{notebox}[: applying the lecturer's marking rules]
+This rewrite applies the lecturer's guidance (in reply to fellow-student Garry's question on Moodle): every substantive point is delivered in one sentence (two only for difficult concepts), in dry technical prose, with no preamble, no rhetorical framing, and no ``lyrical asides.'' Length grows from the number of substantive points, not from writing style. KGEs are deferred to Part 2 because §3.1.3 frames them as how knowledge is \emph{fed into} ML algorithms — they are the integration mechanism, not the symbolic form.
+\end{notebox}
+
+\begin{prosebox}
+The symbolic component of both architectures in Oltramari et al.\ (2020) is a \textbf{knowledge graph}, defined as a set of triples \((h, r, t)\) in which \(h\) and \(t\) are entities and \(r\) is a binary relation drawn from a fixed schema, so each triple is formally equivalent to an atomic first-order-logic sentence \(r(h,t)\) and the knowledge graph is a finite extensional knowledge base populated with ground facts. In the autonomous-driving application (§3.1) the symbolic component is a domain-specific \emph{Scene Ontology} authored in Protégé and instantiated over the NuScenes dataset, and the ontology defines a Scene as ``an observable volume of time and space'' using OWL axioms including \texttt{has location max 1 owl:Thing}, \texttt{has time only xsd:dateTimeStamp}, and \texttt{includes only (Event or `Feature Of Interest')} (\paperref{Fig.\ 1(a)}). Its top-level classes are Events (Pedestrian Event and Vehicle Event, each split into stationary and moving sub-classes) and Features-of-Interest (Pedestrian, Vehicle, Animal, Movable Object, Static Object; \paperref{Fig.\ 1(b)}), with central relations \texttt{includes} linking a Scene to its constituent Events or Features-of-Interest and \texttt{isParticipantOf} linking a Feature-of-Interest to an Event it takes part in. The resulting knowledge graph contains 5.95M triples, 2.11M entities, and 11 relations (\paperref{Table 1}). In the commonsense question-answering application (§3.2) the symbolic component is two general-purpose commonsense knowledge graphs: \emph{ConceptNet}, with 21M edges and 8M nodes (1.5M in the English partition), encoding declarative and taxonomic triples \((C_1, r, C_2)\) such as \texttt{(dinner, AtLocation, restaurant)}; and \emph{ATOMIC}, encoding procedural if-then commonsense as \((\mathrm{Event}, r, \{\mathrm{Effect}\,|\,\mathrm{PersonA}\,|\,\mathrm{MentalState}\})\) such as \texttt{(X compliments Y, xIntent, X wants to be nice)}. The paper organises commonsense knowledge into six types — declarative, taxonomic, relational, procedural, sentiment, and metaphorical (§3.2.1) — and selects ConceptNet and ATOMIC because CommonsenseQA is open-domain and requires the declarative, taxonomic, and procedural varieties that these two graphs cover. This symbolic form is applicable to autonomous driving because the relational dependencies between objects and events — a pedestrian \emph{participating in} a stopping event, an event \emph{occurring after} another, a Feature-of-Interest \emph{included in} a scene at a given spatial region — are exactly what statistical perception over raw sensor data fails to recover, the failure mode the paper motivates with the Elaine Herzberg fatality (§3.1.1). It is applicable to commonsense question answering because open-domain questions require explicit world-knowledge associations between concepts that purely statistical language modelling does not consistently encode, and the paper's own error analysis confirms that performance gains follow only when the type of the elicited knowledge matches the type of commonsense the question demands (§3.2.9--10).
+\end{prosebox}
+
+\textbf{Marking-criterion check.} The rubric demands ``be very precise with the technical definitions.'' This version delivers, in order: the triple definition and its predicate-logic equivalence (1); the Scene Ontology in Protégé over NuScenes (2); three OWL axioms quoted from Fig.\ 1(a) (3); the top-level class structure (4); the two central relations \texttt{includes} and \texttt{isParticipantOf} (5); the KG statistics from Table 1 (6); ConceptNet and ATOMIC schemas with example triples (7--8); the six-fold commonsense typology with the KB-selection rationale (9); applicability to driving via the relations perception cannot recover, anchored to the Herzberg motivation (10); applicability to QA via the empirical alignment finding (11). Eleven substantive technical points, each in one or two sentences, no preambles, no flourishes.
+
+\subsection{Compact exam-pressure version (target around 220 words)}
+
+\begin{notebox}[: why this version exists]
+The full version above ($\sim$400 words) is dense but at the top end of what is realistic for a handwritten paragraph sharing a single page with Part 2 (9 marks) and the unseen Part 3 (16 marks). This compact version trims to $\sim$260 words by collapsing a few illustrative phrases while preserving every substantive technical point. Each point still gets one or two sentences, the prose remains dry, and applicability is preserved in line with the prompt's second clause (``how the form(s) is (are) applicable in the problem domain'').
+\end{notebox}
+
+\begin{prosebox}[(compact)]
+The symbolic component of both architectures in Oltramari et al.\ (2020) is a \textbf{knowledge graph}: a set of triples \((h, r, t)\) where \(h\) and \(t\) are entities and \(r\) is a binary relation, so each triple is formally an atomic first-order-logic sentence \(r(h, t)\). In the autonomous-driving application (§3.1) it takes the form of a \emph{Scene Ontology} authored in Protégé and instantiated over NuScenes, defining a Scene as ``an observable volume of time and space'' through OWL axioms such as \texttt{has location max 1 owl:Thing}, \texttt{has time only xsd:dateTimeStamp}, and \texttt{includes only (Event or `Feature Of Interest')} (Fig.\ 1(a)). Its top-level classes are Events (Pedestrian Event, Vehicle Event, each with stationary and moving sub-classes) and Features-of-Interest (Pedestrian, Vehicle, Animal, Movable Object, Static Object), related by \texttt{includes} and \texttt{isParticipantOf}, and the populated KG contains 5.95M triples, 2.11M entities, and 11 relations (Table 1). In the commonsense question-answering application (§3.2) the symbolic component is two general-purpose commonsense knowledge graphs: ConceptNet (21M edges; declarative-taxonomic triples \((C_1, r, C_2)\) e.g.\ \texttt{(dinner, AtLocation, restaurant)}) and ATOMIC (procedural if-then triples \((\mathrm{Event}, r, \{\mathrm{Effect|PersonA|MentalState}\})\) e.g.\ \texttt{(X compliments Y, xIntent, X wants to be nice)}). The paper organises commonsense into six types — declarative, taxonomic, relational, procedural, sentiment, metaphorical (§3.2.1) — and selects ConceptNet and ATOMIC because CommonsenseQA is open-domain and requires those varieties. This form is applicable to driving because the relational structure between objects and events (\texttt{isParticipantOf}, \texttt{occursAfter}, \texttt{includes}) is exactly what perception over raw sensor data fails to recover, the failure mode the paper motivates with the Elaine Herzberg fatality (§3.1.1). It is applicable to commonsense question answering because explicit triples encode world-knowledge associations that statistical language modelling does not consistently capture, and the error analysis confirms that gains only follow when the type of the elicited knowledge matches the type of commonsense the question demands (§3.2.9--10).
+\end{prosebox}
+
+\textbf{Word count check.} $\sim$265 words. Compared with the previous v2 compact ($\sim$225 words), the small extra budget buys two substantive items the lecturer's rubric explicitly rewards: a tighter list of OWL axioms quoted directly from Fig.\ 1(a), and a concrete example triple for ATOMIC alongside ConceptNet. No filler or framing has been added.
+
+% =====================================================================
+\section{Part 2 (9 marks) — Integration approach}
+
+\textbf{Prompt:} \emph{One paragraph with a summary of the approach(es) presented in the paper to facilitate neuro-symbolic integration in one specific problem domain.} [9 marks]
+
+\begin{notebox}[: pick \emph{one} domain]
+The prompt says ``in one specific problem domain.'' Pick \textbf{Application II (commonsense QA, §3.2)} for the essay. It's more architecturally explicit, has clearer integration mechanisms (elicitation $+$ attention injection $+$ pre-training), and produces clean numerical results you can quote. Application I (driving KGEs, §3.1) is the strong backup if Part 3 invites you to swap.
+\end{notebox}
+
+\subsection{Bullet-point ideas (Application II — CommonsenseQA)}
+
+\begin{itemize}
+  \item \textbf{Neural backbone:} BERT \paperref{ref [11]: Devlin et al.\ 2018/19}, a pre-trained transformer language model. Encodes each \texttt{[CLS] Q [SEP] Option [SEP]} pair independently.
+  \item \textbf{Comparison head:} \textbf{Option Comparison Network (OCN)} \paperref{ref [36]: Ran et al.\ 2019}. Sits on top of BERT and explicitly models pairwise interactions \emph{across} the five answer options. Architecture (\paperref{Fig.\ 5}): tri-linear attention between option pairs, merge layer, co-attention with the question encoding, self-attention over the merged representation. Addresses BERT's option-independence limitation on multiple-choice QA.
+  \item \textbf{Integration channel 1 — knowledge elicitation (\paperref{§3.2.5}):} for each \((Q, O)\) pair, retrieve ConceptNet triples \((C_1, r, C_2)\) such that \(C_1 \in Q\) and \(C_2 \in O\) (or vice versa). Multi-word concepts use the 50\%-word-overlap rule (\paperref{eq.\ (1)}) with POS-tag agreement. For the revolving-door item (\paperref{Table 3}) this elicits \texttt{(revolving\_door, AtLocation, bank)} and \texttt{(bank, RelatedTo, security)}.
+  \item \textbf{Integration channel 2 — attention injection (\paperref{§3.2.6}):} extracted triples are linearised into pseudo-sentences (``\emph{book at location library}''), encoded by a Bi-LSTM (the \emph{Inject Cell}), then fused into BERT's output via an attention layer; the fused representation feeds OCN. Inspired by Bauer, Wang \& Bansal 2018 \paperref{ref [5]}.
+  \item \textbf{Integration channel 3 — knowledge pre-training (\paperref{§3.2.7}):} fine-tune BERT with a masked-LM objective on \(\sim\)930K English sentences from the OMCS corpus \paperref{ref [40]: Singh et al.\ 2002} (the original textual source of ConceptNet), masking 15\% of tokens. Pre-training on raw triples gave no gain; pre-training on natural language drawn from the same domain did.
+  \item \textbf{Why this works:} the two non-baseline channels are complementary — attention injection lets the model \emph{retrieve} relevant triples at inference time; pre-training shifts BERT's prior toward the KB's domain ahead of time.
+  \item \textbf{Quantitative outcome (\paperref{Table 4}):} OCN $=$ 64.1\%; $+$ConceptNet injection $=$ 67.3\% ($+3.2$); $+$OMCS pre-training $=$ 65.2\% ($+1.1$); \textbf{combined $=$ 69.0\% ($+4.9$)}.
+  \item \textbf{Honest limitation flagged by the paper (\paperref{§3.2.9--10}):} ATOMIC pre-training \emph{hurt} performance overall ($-2.9$) but \emph{improved} performance on question types semantically aligned to ATOMIC's relations (\texttt{CausesDesire}, \texttt{Desires}). \textbf{Alignment between question type and KB content is necessary.}
+\end{itemize}
+
+\begin{prosebox}
+For the commonsense question-answering application (§3.2), Oltramari et al.\ integrate a structured commonsense knowledge graph into a pre-trained neural language model through three complementary channels. The neural backbone is \textbf{BERT} (Devlin et al.\ 2019), which encodes each \texttt{[CLS] Question [SEP] Option [SEP]} pair independently; because this independent encoding cannot model correlations across the five answer options, an \textbf{Option Comparison Network} (OCN; Ran et al.\ 2019) is layered on top of BERT to model pairwise option interactions through tri-linear attention, co-attention with the question encoding, and self-attention over the merged representation (\paperref{Fig.\ 5}). The first integration channel is \textbf{knowledge elicitation} (§3.2.5): for each \((Q, O)\) pair the system retrieves ConceptNet triples \((C_1, r, C_2)\) such that \(C_1 \in Q\) and \(C_2 \in O\) (or vice versa), under a 50\%-word-overlap rule with part-of-speech agreement for multi-word concepts (\paperref{eq.\ (1)}), and Table 3 illustrates this on the revolving-door item by surfacing \texttt{(revolving\_door, AtLocation, bank)} and \texttt{(bank, RelatedTo, security)}. The second channel is \textbf{attention-based injection} (§3.2.6, inspired by Bauer et al.\ 2018): each elicited triple is linearised into a pseudo-sentence — for example \texttt{(book, AtLocation, library)} becomes ``\emph{book at location library}'' — encoded by a Bi-LSTM inside an Inject Cell, and fused into BERT's contextual representation via an attention layer before being passed to the OCN. The third channel is \textbf{knowledge pre-training} (§3.2.7): BERT is fine-tuned with a masked-language-model objective on approximately 930{,}000 English sentences from the Open Mind Common Sense (OMCS) corpus (Singh et al.\ 2002), the originating text source from which ConceptNet was distilled, with 15\% of tokens masked; the authors report that pre-training directly on triple-derived pseudo-sentences gives no gain, while pre-training on the OMCS natural-language sentences does. The two non-baseline channels therefore differ in \emph{when} knowledge is incorporated: attention injection retrieves and fuses relevant triples at inference time, while pre-training shifts the language model's prior toward the knowledge base's domain in advance. On the CommonsenseQA development set (\paperref{Table 4}) the OCN baseline of 64.1\% rises to 67.3\% with attention injection alone (+3.2) and to 69.0\% when injection is combined with OMCS pre-training (+4.9), whereas pre-training on ATOMIC degrades overall accuracy to 61.2\% ($-2.9$) but improves accuracy on the CausesDesire and Desires question types because ConceptNet's \texttt{Causes} and \texttt{CausesDesire} relations align with ATOMIC's \texttt{Effects}/\texttt{Reactions} and \texttt{Wants} relations (\paperref{Table 5}, §3.2.9). The paper concludes (§3.2.10) that external knowledge is only helpful when knowledge-base type aligns with question type, and that attention-based injection is the safer channel under uncertain alignment because it does not degrade performance under domain mismatch while pre-training does.
+\end{prosebox}
+
+\textbf{Marking-criterion check.} Eleven substantive technical points, in order: the three-channel framing (1); BERT as backbone with its concatenation format (2); the option-independence limitation and OCN's purpose (3); OCN's internal mechanisms named (4); the elicitation rule with the 50\%-overlap relaxation (5); the worked retrieval on the revolving-door item (6); the attention-injection pipeline with the Bi-LSTM Inject Cell (7); the OMCS pre-training procedure with the masking ratio and the no-gain-on-raw-triples finding (8); the inference-time vs.\ prior-shift mechanism contrast (9); the numerical results from Table 4 including the negative ATOMIC result (10); the §3.2.10 alignment conclusion (11). Each point is delivered in one or two sentences. The OCN-internals listing was trimmed (the merge layer and per-cell linear head were removed) so that the OCN appears in one technical sentence rather than two; the freed budget is spent on the alignment-mechanism contrast and the §3.2.10 conclusion, which the lecturer's ``depth and quality of delivery'' criterion is more likely to credit than additional sub-architecture detail.
+
+\subsection{Compact exam-pressure version (target around 250 words)}
+
+\begin{notebox}[: why this version exists]
+The full version above ($\sim$430 words) is dense but at the upper end of what is realistic for a handwritten paragraph alongside Part 1 (9 marks) and Part 3 (16 marks). This compact version trims to $\sim$300 words while preserving every substantive technical point and the one-sentence-per-point discipline. OCN's internal mechanisms are referred to but not enumerated, and the OMCS pre-training procedure is described in fewer words while retaining the no-gain-on-raw-triples finding (which the §3.2.7 paper text explicitly highlights).
+\end{notebox}
+
+\begin{prosebox}[(compact)]
+In the commonsense question-answering application (§3.2) the authors integrate ConceptNet into a neural QA pipeline through three complementary channels. The neural backbone is BERT (Devlin et al.\ 2019), which encodes each \texttt{[CLS] Question [SEP] Option [SEP]} pair independently, and an Option Comparison Network (OCN; Ran et al.\ 2019) is layered on top of BERT to model pairwise interactions across the five answer options through tri-linear, co-attention and self-attention layers, addressing BERT's option-independence on multiple-choice tasks (Fig.\ 5). The first channel is \textbf{knowledge elicitation} (§3.2.5): for each (question, option) pair the system retrieves ConceptNet triples \((C_1, r, C_2)\) with \(C_1 \in Q\) and \(C_2 \in O\) (or vice versa), under a 50\%-word-overlap rule with POS agreement for multi-word concepts (eq.\ (1)); Table 3 illustrates this on the revolving-door item with \texttt{(revolving\_door, AtLocation, bank)} and \texttt{(bank, RelatedTo, security)}. The second is \textbf{attention-based injection} (§3.2.6, after Bauer et al.\ 2018): each elicited triple is linearised into a pseudo-sentence (\texttt{(book, AtLocation, library)} \(\to\) ``book at location library''), encoded by a Bi-LSTM inside an Inject Cell, and fused into BERT's representation via attention before reaching OCN. The third is \textbf{knowledge pre-training} (§3.2.7): BERT is fine-tuned with a masked-LM objective on $\sim$930K English sentences from the OMCS corpus (Singh et al.\ 2002, the textual source of ConceptNet) with 15\% of tokens masked, since pre-training on raw triple-derived pseudo-sentences gave no gain while OMCS natural language did. The two non-baseline channels thus differ in when knowledge is incorporated: attention injection retrieves at inference, while pre-training shifts BERT's prior in advance. The OCN baseline of 64.1\% on the development set rises to 67.3\% with attention injection alone (+3.2) and to 69.0\% when combined with OMCS pre-training (+4.9; Table 4), whereas pre-training on ATOMIC degrades overall to 61.2\% ($-2.9$) but improves the CausesDesire and Desires question types whose ConceptNet relations align with ATOMIC's \texttt{Effects}/\texttt{Reactions} and \texttt{Wants} relations (Table 5, §3.2.9). The paper concludes (§3.2.10) that external knowledge is only helpful when knowledge-base type aligns with question type, and that attention injection is the safer channel under uncertain alignment because, unlike pre-training, it does not degrade performance under domain mismatch.
+\end{prosebox}
+
+\textbf{Word count check.} $\sim$345 words. The full version trims the OCN-internal listing and the OMCS detail; this compact version trims further by collapsing OCN internals into a one-sentence note (``tri-linear, co-attention and self-attention layers'') and by stating the no-gain-on-raw-triples finding in a single subordinate clause inside the pre-training sentence rather than as a separate sentence.
+
+\subsection{Backup bullets for Application I (driving) — quick reference}
+
+If the unseen Part 3 makes Application II awkward and you want to pivot Part 2 to driving:
+
+\begin{itemize}[itemsep=0.1em]
+  \item \textbf{Pipeline:} Scene Ontology in Protégé \(\to\) annotate NuScenes sub-scenes \(\to\) generate KG (5.95M triples) \(\to\) train KGE (TransE; HolE) into 100-dim vectors \(\to\) evaluate intrinsically on categorisation, coherence, semantic transitional distance \paperref{§3.1.4} \(\to\) deploy on sub-scene similarity by cosine distance \paperref{§3.1.5, Fig.\ 4}.
+  \item \textbf{Headline result:} two visually-dissimilar sub-scenes (Barriers vs.\ Stopped Cars) flagged as similar by structural role — symbolic structure preserved through the embedding.
+  \item \textbf{Why this counts as integration:} the KG (symbolic) is not used by the neural model directly but is \emph{compressed} into a vector space in which downstream neural learners can operate — a different (less tight) flavour of integration than in the QA case.
+\end{itemize}
+
+% =====================================================================
+\section{Predicted unseen Part 3 questions (16 marks)}
+
+\textbf{Prompt format (from the directed reading):} \emph{[UNSEEN PART TO BE REVEALED IN EXAM] [16 marks]}.
+
+The unseen prompt must be answerable for whichever of the three papers a candidate has chosen, so it will be phrased generically. Historical part-3 prompts on the predecessor unit (CM50263) cluster into a narrow menu of two patterns:
+
+\begin{itemize}
+  \item \textbf{2023 and 2024 — real-world application (2-of-3 base rate):} \emph{``one or two paragraphs giving a potential real-world situation where the findings of this paper could influence how AI technology is used in a commercial, academic or governmental setting''}.
+  \item \textbf{2025 — authors' further work, critique, alternatives:} \emph{``one or two paragraphs describing the authors' ideas for further work, critically evaluating these ideas, and providing some alternative ideas of your own''}.
+\end{itemize}
+
+Marking rubric (constant across years): \emph{accuracy and clarity of statements, breadth and depth of reasoning, quality of argumentation}. The 2024 paper adds: \emph{``Breadth relates to the variety of issues that you touch upon. Depth relates to how thoughtful and penetrating your comments are.''}
+
+Below are five plausible unseen prompts with substantive-point answer plans tuned to Paper 2. The first two reproduce historically-attested wordings; the next two are paper-specific questions whose subject matter Oltramari et al.\ themselves emphasise (alignment in §3.2.9--10, explainability in §1 and §4); the fifth is a generalisation question. Author's extensions (\extflag{}) are flagged. As with Parts 1 and 2, each bullet below is intended to become one sentence in the written paragraph (two only for difficult concepts), in dry technical prose.
+
+\subsection{Predicted Q1 — Real-world application scenario (highest base rate)}
+
+\textbf{Likely prompt (2024 exact wording):} \emph{One or two paragraphs giving a potential real-world situation where the findings of this paper could influence how AI technology is used in a commercial, academic, or governmental setting.}
+
+\textbf{Why most likely:} the verbatim 2023 and 2024 wording — a 2-of-3 historical base rate. The phrasing is paper-agnostic, which is what the unseen format requires.
+
+\extflag{}\textbf{Domain to nominate: clinical decision support.} The setting is defensible from the paper's own framing: §3.1.1 motivates the architecture with a safety-critical perceptual setting (autonomous driving), the §1 corollary makes explainability the value proposition, and clinical decision support inherits both properties under regulator-supervised deployment (EU AI Act, FDA Software-as-a-Medical-Device).
+
+\textbf{Map the architecture onto the domain} (\extflag{} the paper does not address healthcare; all mappings are author's extensions):
+\begin{itemize}
+  \item \emph{Scene Ontology \(\rightarrow\) Clinical Encounter Ontology}: classes Patient, Encounter, Symptom, Diagnosis, Medication, ProcedureEvent; relations \texttt{presentsWith}, \texttt{contraindicates}, \texttt{rulesOut} — preserving §3.1.2's typed predicate-logic schema.
+  \item \emph{NuScenes KG \(\rightarrow\) EHR-derived KG}: populated from de-identified hospital records with the same triple structure \((h, r, t)\) as §3.1.2.
+  \item \emph{ConceptNet / ATOMIC \(\rightarrow\) SNOMED-CT / UMLS}: replace the open-domain commonsense graphs of §3.2.3 with bespoke clinical-knowledge resources.
+  \item \emph{BERT \(\rightarrow\) ClinicalBERT or BioBERT}~\extref{Alsentzer et al.\ 2019; Lee et al.\ 2019}: already pre-trained on PubMed and MIMIC-III, replacing the generic BERT encoder of §3.2.4.
+  \item \emph{OCN $+$ Inject Cell \(\rightarrow\) differential-diagnosis ranker}: candidate diagnoses are compared pairwise with attention-injected triples such as \texttt{(fever, AssociatedWith, sepsis)} — the same architectural pattern as §3.2.6.
+\end{itemize}
+
+\textbf{Benefits anchored to specific paper findings:}
+\begin{itemize}
+  \item Explainability of triage decisions through an auditable trail of attended KG triples, inheriting the §1 corollary that explainability is a byproduct of computational context understanding.
+  \item Compositional generalisation to rare diseases that are statistically sparse but ontologically well-defined — analogous to the §3.1.5 result that visually-dissimilar sub-scenes (Barriers vs.\ Stopped Cars; Fig.\ 4) cluster by structural role in KGE space.
+  \item Robustness to deployment-site shifts: the §3.2.9 finding that ATOMIC pre-training hurt overall accuracy but helped aligned question types predicts that clinical KBs must be matched to the deployment population, not chosen only for generic medical coverage.
+\end{itemize}
+
+\textbf{Honest caveats (anchored to paper findings):}
+\begin{itemize}
+  \item KB construction cost: SNOMED-CT and UMLS have known coverage gaps in rare conditions and rapidly evolving sub-specialties — the same hand-authoring tax that the §3.1.2 Scene Ontology pays.
+  \item Domain-alignment risk: the §3.2.9 ATOMIC negative result ($-2.9$ on Table 4) generalises — a clinical KB that does not match the deployment distribution will degrade rather than improve accuracy.
+  \item The Antonym/negation failure mode (§3.2.9, Table 5) is especially damaging in clinical text where ``no history of'' and ``rule out'' are dispositive; the paper's architecture does not handle this.
+  \item Liability and regulatory approval require a human-in-the-loop deployment that the paper's architecture is compatible with but does not itself specify.
+\end{itemize}
+
+\textbf{Stakeholder framing (matches the prompt's ``commercial / academic / governmental'' clause):}
+\begin{itemize}
+  \item \emph{Commercial} (hospital networks, insurers): explainable, auditable triage rankings reduce liability exposure and improve reimbursement coding.
+  \item \emph{Academic} (translational AI labs): a testbed for hybrid neuro-symbolic systems with patient-outcome metrics, generalising the §3.2.8 evaluation pattern.
+  \item \emph{Governmental} (NHS, NICE, FDA): regulatory alignment with the EU AI Act's transparency duties and the FDA's SaMD guidance — both of which target the property the paper's §4 conclusion claims to deliver.
+\end{itemize}
+
+\subsection{Predicted Q2 — Authors' further work, critical evaluation, alternative ideas}
+
+\textbf{Likely prompt (2025 exact wording):} \emph{One or two paragraphs describing the authors' ideas for further work, critically evaluating these ideas, and providing some alternative ideas of your own.}
+
+\textbf{Why likely:} the 2025 precedent. The three-part structure (describe authors' work \(\to\) critique \(\to\) propose alternatives) maps cleanly onto the breadth-$\times$-depth rubric. Paper 2's §3.2.10 future-work paragraph is unusually concrete, which makes Paper 2 a strong choice for this prompt.
+
+\textbf{Authors' own further work (paraphrased from §3.2.10, the only forward-looking paragraph in the paper):}
+\begin{itemize}
+  \item Build a \emph{global commonsense knowledge base} by aggregating ConceptNet, ATOMIC, FrameNet~(ref [4]) and MetaNet~(ref [12]) on the basis of a shared-reference ontology, citing existing approaches in refs [13] and [38] as the methodological starting point.
+  \item Conduct a more comprehensive study of dataset-versus-knowledge-base pairings to characterise the alignment effect systematically, extending the §3.2.9 error analysis beyond the ConceptNet-relation-typed question classes of Table 5.
+  \item Define an auxiliary neural learning objective inside a multi-task framework that classifies the type of knowledge required by an input, so the choice of KB at inference time becomes a learned routing decision rather than a manual selection.
+\end{itemize}
+
+\textbf{Strengths of the proposed further work:}
+\begin{itemize}
+  \item The global-KB idea targets the §3.2.10 finding that alignment between KB type and question type controls whether external knowledge helps — aggregating multiple KBs increases the probability of alignment for any given question.
+  \item The auxiliary KB-type classifier operationalises the §3.2.10 prescription (``identify the question type and apply the best-suited knowledge'') inside the architecture, removing the manual judgement call that the existing §3.2.3 procedure relies on.
+  \item Both proposals stay within the same neuro-symbolic recipe (structured KG + neural injection), so they extend the §3.2 pipeline rather than discarding it — a low-risk, incremental research programme.
+\end{itemize}
+
+\textbf{Critical weaknesses of the proposed further work:}
+\begin{itemize}
+  \item Schema alignment across ConceptNet, ATOMIC, FrameNet and MetaNet is non-trivial because each KB encodes different ontological commitments (declarative vs.\ procedural vs.\ frame-semantic vs.\ metaphorical); the §3.2.10 paragraph names this as a goal but does not specify the shared-reference ontology, leaving the hardest engineering problem under-defined.
+  \item The auxiliary KB-type classifier shifts the alignment problem one layer up — it now requires labelled training data tying inputs to KB types, which the authors do not propose to obtain or annotate.
+  \item Neither proposal addresses the Antonym/negation failure mode (§3.2.9), which is structural to the triple representation: ground atomic predicates cannot directly express \(\neg p\), so aggregating more KBs does not solve the problem.
+  \item Neither proposal addresses the §3.1.4 finding that the coherence metric is near-zero across both TransE and HolE on the autonomous-driving KG (Fig.\ 3(b)), which suggests the KGE-quality story is also unresolved.
+  \item The paper's empirical baselines are pre-GPT-3 (January 2020); even Table 4's own leaderboard row shows RoBERTa~+~CSPT (ref [23]) reaching 76.2\%, outperforming the OCN~+~OMCS~+~CN-injection result of 69.0\% \emph{without} hand-engineered KBs, suggesting the value proposition has shifted from accuracy to explainability — a shift the future-work section does not acknowledge.
+\end{itemize}
+
+\textbf{Alternative ideas of your own} (\extflag{} the following are author's extensions, not in the paper):
+\begin{itemize}
+  \item \emph{Learned retrieval over the KG (RAG-style)} in place of the static elicitation rule of eq.\ (1): a dense-vector retriever trained on question--triple relevance signals sidesteps the schema-alignment problem the authors propose to solve via a unifying ontology, by treating relevance as a learned property rather than an ontological commitment.
+  \item \emph{Probabilistic graphical layer over the KG}: lifting the KG into a Bayesian-network formalism (Week 10, AIMA Ch.\ 14) lets the system down-weight low-confidence triples rather than treating all elicited triples as equally reliable — a probabilistic refinement of the §3.2.6 attention mechanism.
+  \item \emph{Negation-aware injection}: extract negation markers during §3.2.5 elicitation, attach a logical-NOT token to the §3.2.6 pseudo-sentence, and train the Inject Cell with a contrastive objective on negated examples — addresses the §3.2.9 Antonym failure mode directly, course tie-in to predicate negation (Week 8, AIMA Ch.\ 8).
+  \item \emph{Counterfactual explanation layer}: for each prediction, surface the minimal triple subset whose removal flips the prediction; this delivers a stronger form of explainability than the §3.2.6 attention trace because it gives an evidential dependency, not just an attention weight.
+  \item \emph{Constrained decoding over the KG}: filter the candidate-answer set with the KG (rather than only biasing attention), so symbolic structure actively constrains the prediction — a tighter integration than the §3.2.6 attention injection.
+\end{itemize}
+
+\subsection{Predicted Q3 — Domain alignment as the central empirical finding (paper-specific)}
+
+\textbf{Likely prompt:} \emph{The paper repeatedly emphasises that external knowledge is only useful when the knowledge base aligns with the task. Discuss what this finding means for the design of neuro-symbolic systems, supporting your discussion with the evidence presented in the paper.}
+
+\textbf{Why plausible:} alignment is the single most-emphasised empirical claim in Paper 2 — §3.2.9 (Error Analysis) and §3.2.10 (Discussion) both centre on it, and the §3.2.8 results (Table 4) are the clearest evidence the paper offers. The lecturer's rubric values ``breadth and depth of reasoning''; this question forces engagement with the paper's strongest empirical content. The wording is paper-agnostic enough to apply to the other two papers (each makes its own alignment-style claim), so it is plausible as an unseen prompt.
+
+\textbf{The evidence in the paper:}
+\begin{itemize}
+  \item \emph{Aligned by construction:} ConceptNet attention injection lifts the OCN baseline from 64.1\% to 67.3\% on CommonsenseQA (+3.2; Table 4), because CommonsenseQA was \emph{constructed} from ConceptNet sub-graphs (§3.2.2) — the KB and the task share the same ontology.
+  \item \emph{Aligned but diffuse:} OMCS pre-training alone gives a smaller lift (+1.1) because OMCS is the natural-language source of ConceptNet but is more diffuse than the ConceptNet triples themselves — alignment is weaker.
+  \item \emph{Misaligned at the type level:} ATOMIC pre-training degrades overall accuracy by 2.9 points (61.2\% vs.\ 64.1\% baseline; Table 4), because most CommonsenseQA questions are declarative-taxonomic rather than procedural if-then in character.
+  \item \emph{Misalignment is type-specific, not random:} ATOMIC pre-training nevertheless improves accuracy on CausesDesire and Desires question types (Table 5, §3.2.9), because ConceptNet's \texttt{Causes} and \texttt{CausesDesire} relations align with ATOMIC's \texttt{Effects}/\texttt{Reactions} and \texttt{Wants} relations — proving the alignment effect is mechanistic and not noise.
+  \item \emph{Driving application — alignment by construction:} the Scene Ontology was hand-authored against the NuScenes taxonomy (§3.1.2), so KG and task are aligned by design and the alignment question does not arise.
+\end{itemize}
+
+\textbf{Why the two integration channels differ on alignment sensitivity (§3.2.10):}
+\begin{itemize}
+  \item Pre-training shifts the language model's prior toward the KB's domain globally and irreversibly, before any inputs are seen; a misaligned prior is hard to recover from at inference.
+  \item Attention-based injection acts per input by retrieving and weighting triples — when retrieved triples are irrelevant the attention weights can be small, so the architecture does not pay an accuracy penalty under mismatch.
+  \item Consequence: attention injection is robust to alignment mismatch while pre-training is not, which is explicitly the paper's prescription in §3.2.10.
+\end{itemize}
+
+\textbf{Implications for design (engage the prompt's ``what does this mean'' clause):}
+\begin{itemize}
+  \item Deployers must audit alignment between KB types and the task's domain or commonsense profile before choosing a KB — a manual step the paper acknowledges (§3.2.10) but does not automate.
+  \item Multi-KB systems should route at inference time rather than pre-train against all KBs in advance, because pre-training compounds misalignment risk across KBs.
+  \item Attention-based injection should be the default integration channel when the deployment distribution is uncertain, by direct corollary of the §3.2.10 robustness asymmetry.
+  \item Bespoke-ontology approaches (the §3.1 driving case) trade scalability for guaranteed alignment; general-KB approaches (the §3.2 case) trade alignment risk for coverage — the choice is a design parameter, not a default.
+  \item The alignment effect motivates the paper's own future-work proposal (§3.2.10) of a global commonsense KB plus a learned KB-type classifier — but \emph{only if} schema alignment across the constituent KBs can be solved, which the paper leaves open.
+\end{itemize}
+
+\textbf{Course tie-in (use sparingly):}
+\begin{itemize}
+  \item The alignment principle mirrors the role of heuristic admissibility in informed search (Week 2, AIMA Ch.\ 3 §3.5): a heuristic must be aligned with the problem's cost structure or it degrades search; misaligned external knowledge degrades neural learning in exactly the same way.
+\end{itemize}
+
+\textbf{Honest concession to acknowledge:}
+\begin{itemize}
+  \item The paper's empirical alignment evidence comes from a single dataset (CommonsenseQA, §3.2.8); the generalisation to other tasks is conjectural in §3.2.10 and not itself supported by experiments — a real limit of the paper's argumentative reach.
+\end{itemize}
+
+\subsection{Predicted Q4 — Explainability as an architectural property (paper-specific)}
+
+\textbf{Likely prompt:} \emph{The paper argues that explainability emerges as a property of context-understanding mechanisms rather than as a post-hoc add-on. Critically discuss the extent to which the two applications presented in the paper deliver on this claim.}
+
+\textbf{Why plausible:} explainability is the paper's central rhetorical anchor — the §1 corollary (``explainable AI is a byproduct or an affordance of computational context understanding'') and the §4 conclusion (``explainability emerges as a property of the mechanisms that we implemented'') both rest on it. A question that forces engagement with this claim is exactly what the rubric's ``depth of evaluation'' criterion rewards. The wording is paper-agnostic (other neuro-symbolic papers make analogous claims) so it is plausible as an unseen prompt.
+
+\textbf{The paper's claim, stated precisely:}
+\begin{itemize}
+  \item §1 corollary: explainable AI is an \emph{affordance} of computational context understanding — explainability is structurally entailed by the architecture, not added afterwards.
+  \item §2 mechanism: explainability is delivered via the symbolic side of the hybrid (the KG and the knowledge resources it draws on are inspectable by construction).
+  \item §4 conclusion: ``explainability emerges as a property of the mechanisms''; the paper concedes only that KGs ``capture a stripped-down representation of what we know'' and that deep networks ``approximate how we perceive the world.''
+\end{itemize}
+
+\textbf{How the autonomous-driving application (§3.1) supports the claim:}
+\begin{itemize}
+  \item The Scene Ontology is hand-authored in Protégé (§3.1.2): each class and relation has a human-readable label and a typed signature, so the symbolic content is inspectable by construction.
+  \item KGE visualisation via t-SNE (Fig.\ 2) shows that the learned geometry preserves the \texttt{isParticipantOf} relation; an engineer can read the cluster structure as a faithful image of the underlying ontology.
+  \item Sub-scene similarity (Fig.\ 4, §3.1.5) is presented with both the visual stimulus and the KGE-space relationship that explains the pairing — the explanation is the structural comparison, not a post-hoc rationale generated after the fact.
+\end{itemize}
+
+\textbf{Where the driving application falls short:}
+\begin{itemize}
+  \item The exposed explanation is a similarity statement (``these vectors are close in KGE space''), not a derivation; a safety-critical setting would expect a chain of inference (because pedestrians can be present, and pedestrians can cross outside crosswalks, the vehicle should yield), which the architecture does not produce.
+  \item The §3.1.4 intrinsic-evaluation result that the coherence metric is near-zero across TransE and HolE (Fig.\ 3(b)) means the embedding does not reliably preserve type locality; the geometry the paper claims as evidence for explainability is itself only partial evidence.
+\end{itemize}
+
+\textbf{How the QA application (§3.2) supports the claim:}
+\begin{itemize}
+  \item §3.2.5 knowledge elicitation produces a small named set of ConceptNet triples per (question, option) pair, illustrated directly by Table 3 — a user can read the exact triples the model considered.
+  \item §3.2.6 attention-based injection exposes attention weights over these triples, making the model's reliance on each elicited fact quantitatively visible.
+\end{itemize}
+
+\textbf{Where the QA application falls short:}
+\begin{itemize}
+  \item The §3.2.6 attention trace is not a reasoning chain: it identifies which triples were attended but not how the model combined them to reach its prediction; the combination is performed inside OCN's tri-linear and self-attention layers, which the paper does not interpret.
+  \item The §3.2.4 BERT backbone is opaque, and BERT is responsible for most of the prediction's representational content — making the knowledge channel transparent does not make the prediction transparent.
+  \item The §3.2.9 Antonym/negation failure mode is also an explainability failure: the architecture cannot represent negation, so it cannot explain decisions that turn on negation either — a structural limit, not a tuning issue.
+\end{itemize}
+
+\textbf{Critical synthesis (engages the prompt's ``critically discuss the extent'' clause):}
+\begin{itemize}
+  \item The claim is partially supported: both architectures are \emph{more} explainable than equivalent pure-neural systems because the symbolic content (Scene Ontology, ConceptNet triples) is inspectable in human-readable form.
+  \item The claim is over-stated as written: ``emerges as a property'' implies a derivation-producing mechanism, but the paper delivers an inspectable KG plus an attention trace, not a chain of inference.
+  \item A stronger version of the claim would require pairing the elicited KG triples with a symbolic reasoner that produces explicit forward-chaining derivations (Week 7 propositional inference, AIMA Ch.\ 7 entailment / model checking), which the paper does not propose and which §3.2.10's future work does not anticipate.
+  \item The paper's own honest closing concession (§4: KGs ``capture a stripped-down representation'') already understates the gap: stripped-down representation produces stripped-down explanation, and the paper's framing of explainability as a structural property under-describes that constraint.
+\end{itemize}
+
+\subsection{Predicted Q5 — Generalisation to a new domain}
+
+\textbf{Likely prompt:} \emph{Discuss how the approach in this paper could be applied to a problem domain not addressed by the authors. Identify what would transfer, what new challenges would arise, and what the paper's findings predict about likely success.}
+
+\textbf{Why plausible:} the historical base rate does not include this exact wording, but its first half closely resembles the 2023/2024 real-world prompt while the second half maps onto the breadth/depth rubric — a reasonable hybrid the lecturer could pose. Lower base rate than Q1 and Q2, but still worth drilling because the answer reuses the same paper-grounded material.
+
+\extflag{}\textbf{Domain to nominate: legal-document analysis} — concretely, statutory-interpretation question-answering and case-law retrieval. Paper 2 covers driving (perception-heavy, safety-critical) and commonsense QA (open-domain, language-heavy); legal reasoning is a distinct third class — language-heavy, safety-critical, and saturated with conditional and exception structure.
+
+\textbf{What transfers cleanly:}
+\begin{itemize}
+  \item The knowledge-graph abstraction maps onto legal ontologies such as LKIF~\extref{Hoekstra et al.\ 2007}, preserving the \((h, r, t)\) triple form of §3.1.2 and §3.2.3 unchanged.
+  \item The §3.2.4--6 pipeline (BERT $+$ OCN $+$ Inject Cell) transfers almost intact: substitute LegalBERT~\extref{Chalkidis et al.\ 2020} as the encoder; the OCN-style pairwise comparison fits statutory-interpretation MCQs (which reading of a clause is most consistent with surrounding text?).
+  \item The §3.2.5 elicitation rule of eq.\ (1) is domain-agnostic — 50\% word-overlap with POS agreement applies to legal-term concepts as written.
+\end{itemize}
+
+\textbf{New challenges that the paper does not address:}
+\begin{itemize}
+  \item Legal reasoning is heavily conditional and exception-laden, but KG triples express positive ground facts; exception structures require defeasible reasoning that the predicate-logic substrate of Week 8 does not handle natively — AIMA Ch.\ 12 §12.6 covers default reasoning as a known limit of inheritance-based KR.
+  \item Citation networks are temporal (case A overruling case B, statute A superseding statute B); the Scene Ontology's \texttt{occursAfter} relation (Fig.\ 1(a)) gives a starting point but a richer temporal calculus is needed to capture overruling and supersession.
+  \item Jurisdictional partitioning: the same triple may apply differently across jurisdictions, so the §3.2.10 alignment problem becomes alignment-by-jurisdiction-and-by-domain — a higher-dimensional version of what the paper studies.
+  \item Stakes are higher: a hallucinated legal citation is more damaging than a wrong commonsense answer, raising the explainability bar above what the §3.2.6 attention trace currently meets.
+\end{itemize}
+
+\textbf{What the paper's findings predict will work:}
+\begin{itemize}
+  \item The §3.2.10 alignment-by-type finding predicts that a bespoke legal KB will outperform a general-purpose one; concretely, pre-training on LKIF-typed triples should outperform pre-training on ConceptNet for legal tasks, for the same reason ATOMIC pre-training degrades general CommonsenseQA accuracy in Table 4.
+  \item The §3.1.5 Fig.\ 4 finding (visually-dissimilar sub-scenes flagged as similar by structural role) predicts that legal-structure-aware retrieval over KGEs could surface case analogies that keyword search misses (two cases sharing an unusual exception structure but using different terminology).
+  \item The §3.2.6 attention-injection channel should transfer well because, by §3.2.10, attention injection does not degrade performance under alignment uncertainty — which is exactly the condition of cross-jurisdiction deployment.
+\end{itemize}
+
+\textbf{What the paper's findings predict will fail:}
+\begin{itemize}
+  \item The §3.2.9 Antonym/negation failure mode is far worse in legal contexts where ``shall not,'' ``except where,'' and ``provided that'' clauses are dispositive; the architecture's silence on negation translates directly into a structural failure here, not just a tuning issue.
+  \item The §3.2.7 finding that pre-training directly on triple-derived pseudo-sentences gives no gain predicts that fine-tuning LegalBERT on raw LKIF triples will not work; an OMCS-equivalent natural-language source of the legal KB (a legal textbook corpus, case-law summaries) will be needed for pre-training to add value.
+  \item The §3.1.4 near-zero coherence metric across TransE and HolE predicts that KGE-quality metrics imported from §3.1 cannot be relied on to validate a legal-domain embedding — a separate evaluation regime would be required.
+\end{itemize}
+
+% =====================================================================
+\section{Final checklist before the exam}
+
+\begin{itemize}
+  \item \textbf{Memorise} the bullet points for Parts 1 and 2 — these are bankable, $\sim$18 marks.
+  \item \textbf{Pre-write the prose paragraphs} in your head, with three to four numerical anchors (\textbf{5.95M triples}, \textbf{64.1\%}, \textbf{67.3\%}, \textbf{69.0\%}, \textbf{+4.9\%}) you can drop in for ``precision'' credit.
+  \item \textbf{Memorise the names:} Scene Ontology, NuScenes, Protégé, TransE, HolE, RESCAL, ConceptNet, ATOMIC, OMCS, BERT, OCN, Inject Cell, Bi-LSTM, CommonsenseQA. Wrong name = lost ``accuracy'' marks.
+  \item \textbf{Memorise the authors of the key external techniques:} Bordes et al.\ 2013 (TransE), Nickel et al.\ 2011 (RESCAL) / 2016 (HolE), Devlin et al.\ 2019 (BERT), Ran et al.\ 2019 (OCN), Singh et al.\ 2002 (OMCS), Sap et al.\ 2019 (ATOMIC), Liu \& Singh 2004 (ConceptNet), Talmor et al.\ 2019 (CommonsenseQA), Wang et al.\ 2017 (KGE survey), Bauer et al.\ 2018 (attention-based knowledge injection).
+  \item \textbf{Drill one application in depth (commonsense QA) and one as backup (driving)} — this lets you flex which one fits the unseen Part 3.
+  \item \textbf{Rehearse the canonical examples:} revolving-door, Elaine Herzberg fatality, elephant-in-the-room, kangaroo (lecturer's intuition pump).
+  \item \textbf{Memorise the honest caveats:} ATOMIC pre-training hurt overall ($-2.9$), Antonym questions hardest, KGEs are ``stripped-down representations,'' coherence metric near zero. These show ``depth of reasoning'' for critical-evaluation prompts.
+  \item \textbf{Use course concepts when they fit:}
+    \begin{itemize}
+      \item KGs as predicate-logic atomic formulas \(r(h,t)\) \courseref{8}, \aimaref{Ch.\ 8}.
+      \item KBs and entailment \courseref{7}, \aimaref{Ch.\ 7}.
+      \item Semantic networks, frames, ontological engineering \aimaref{Ch.\ 12}.
+      \item Bayesian networks as the probabilistic graphical-model relative of KGs \courseref{10}, \aimaref{Ch.\ 14}.
+      \item Heuristics-style ``external bias for an otherwise blind learner'' \courseref{2}, \aimaref{Ch.\ 3 §3.5}.
+    \end{itemize}
+    Don't force them — but if you can land one cleanly per essay, do.
+\end{itemize}
+
+% =====================================================================
+\section*{References cited in this document}
+
+\subsection*{Paper 2 (Oltramari et al.\ 2020) — the primary text}
+Oltramari, A., Francis, J., Henson, C., Ma, K., \& Wickramarachchi, R. (2020). \emph{Neuro-symbolic Architectures for Context Understanding}. In Knowledge Graphs for Explainable Artificial Intelligence. arXiv:2003.04707.
+
+\subsection*{External references cited by Paper 2 (numbered as in its bibliography)}
+\begin{itemize}[itemsep=0.1em, leftmargin=*]
+  \item \textbf{[2]} Alshargi, F., Shekarpour, S., Soru, T., \& Sheth, A. (2019). Metrics for evaluating quality of embeddings for ontological concepts. \emph{AAAI Spring Symposium}.
+  \item \textbf{[5]} Bauer, L., Wang, Y., \& Bansal, M. (2018). Commonsense for generative multi-hop question answering tasks. \emph{EMNLP}.
+  \item \textbf{[6]} Bordes, A., Usunier, N., Garcia-Duran, A., Weston, J., \& Yakhnenko, O. (2013). Translating embeddings for modeling multi-relational data. \emph{NeurIPS}.
+  \item \textbf{[7]} Bosselut, A., Rashkin, H., Sap, M., Malaviya, C., Celikyilmaz, A., \& Choi, Y. (2019). COMET: commonsense transformers for automatic knowledge graph construction. \emph{ACL}.
+  \item \textbf{[8]} Caesar, H., Bankiti, V., Lang, A.\ H., et al.\ (2019/2020). nuScenes: A multimodal dataset for autonomous driving. arXiv:1903.11027.
+  \item \textbf{[10]} Davis, E. (2014). \emph{Representations of Commonsense Knowledge}. Morgan Kaufmann.
+  \item \textbf{[11]} Devlin, J., Chang, M.-W., Lee, K., \& Toutanova, K. (2019). BERT: pre-training of deep bidirectional transformers for language understanding. \emph{NAACL-HLT}.
+  \item \textbf{[14]} Henson, C., Schmid, S., Tran, T., \& Karatzoglou, A. (2019). Using a knowledge graph of scenes to enable search of autonomous driving data. \emph{ISWC}.
+  \item \textbf{[22]} Liu, H., \& Singh, P. (2004). ConceptNet — a practical commonsense reasoning tool-kit. \emph{BT Technology Journal}, 22(4), 211--226.
+  \item \textbf{[23]} Liu, Y., Ott, M., Goyal, N., et al.\ (2019). RoBERTa: a robustly optimized BERT pretraining approach. arXiv:1907.11692.
+  \item \textbf{[25]} van der Maaten, L., \& Hinton, G. (2008). Visualizing data using t-SNE. \emph{JMLR}, 9.
+  \item \textbf{[30]} Newell, A. (1990). \emph{Unified Theories of Cognition}. Harvard University Press.
+  \item \textbf{[31]} Newell, A., \& Simon, H.\ A. (1972). \emph{Human Problem Solving}. Prentice-Hall.
+  \item \textbf{[32]} Nickel, M., Rosasco, L., \& Poggio, T. (2016). Holographic embeddings of knowledge graphs. \emph{AAAI}.
+  \item \textbf{[33]} Nickel, M., Tresp, V., \& Kriegel, H.-P. (2011). A three-way model for collective learning on multi-relational data. \emph{ICML}.
+  \item \textbf{[36]} Ran, Q., Li, P., Hu, W., \& Zhou, J. (2019). Option comparison network for multiple-choice reading comprehension. arXiv:1903.03033.
+  \item \textbf{[37]} Sap, M., Le Bras, R., Allaway, E., et al.\ (2019). ATOMIC: an atlas of machine commonsense for if-then reasoning. \emph{AAAI}, 33, 3027--3035.
+  \item \textbf{[40]} Singh, P., Lin, T., Mueller, E.\ T., Lim, G., Perkins, T., \& Zhu, W.\ L. (2002). Open Mind Common Sense: knowledge acquisition from the general public. \emph{CoopIS/DOA/ODBASE}.
+  \item \textbf{[42]} Talmor, A., Herzig, J., Lourie, N., \& Berant, J. (2019). CommonsenseQA: a question answering challenge targeting commonsense knowledge. \emph{NAACL-HLT}.
+  \item \textbf{[44]} Wang, Q., Mao, Z., Wang, B., \& Guo, L. (2017). Knowledge graph embedding: a survey of approaches and applications. \emph{IEEE TKDE}, 29(12), 2724--2743.
+\end{itemize}
+
+\subsection*{Course material referenced (CM52078 lectures and textbook)}
+\begin{itemize}[itemsep=0.1em, leftmargin=*]
+  \item Russell, S., \& Norvig, P. (2010). \emph{Artificial Intelligence: A Modern Approach}, 3rd edition. Prentice-Hall. (Course textbook; ``AIMA''.) Key chapters: Ch.\ 3 (Search), Ch.\ 7 (Logical Agents — Propositional Logic), Ch.\ 8 (First-Order Logic), Ch.\ 12 (Knowledge Representation), Ch.\ 14 (Probabilistic Reasoning).
+  \item CM52078 Week 7 — Logical Agents: Propositional Logic (atoms, connectives, entailment, model checking).
+  \item CM52078 Week 8 — Logical Reasoning: Predicate Logic (constants, predicates, functions, quantifiers, models, Prolog).
+  \item CM52078 Week 10 — Probabilistic Reasoning (independence, Bayesian networks, random variables, expected value).
+  \item CM52078 Week 11 — Neuro-Symbolic AI: Essay Walkthrough (Roubtsova \& guest, 2026). Transcript referenced for the kangaroo intuition pump and explainability framing.
+\end{itemize}
+
+\subsection*{External references used for author's extensions in Part 3}
+\begin{itemize}[itemsep=0.1em, leftmargin=*]
+  \item Alsentzer, E., Murphy, J., Boag, W., et al.\ (2019). Publicly Available Clinical BERT Embeddings. \emph{ClinicalNLP Workshop}, NAACL.
+  \item Chalkidis, I., Fergadiotis, M., Malakasiotis, P., Aletras, N., \& Androutsopoulos, I. (2020). LEGAL-BERT: The Muppets Straight Out of Law School. \emph{Findings of EMNLP}.
+  \item Edge, D., Trinh, H., Cheng, N., et al.\ (2024). From Local to Global: A Graph RAG Approach to Query-Focused Summarization. arXiv:2404.16130.
+  \item Hoekstra, R., Breuker, J., Di Bello, M., \& Boer, A. (2007). The LKIF Core Ontology of Basic Legal Concepts. \emph{LOAIT Workshop}.
+  \item Lee, J., Yoon, W., Kim, S., et al.\ (2019). BioBERT: a pre-trained biomedical language representation model for biomedical text mining. \emph{Bioinformatics}, 36(4).
+  \item Lewis, P., Perez, E., Piktus, A., et al.\ (2020). Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks. \emph{NeurIPS}.
+  \item Sun, Z., Deng, Z.-H., Nie, J.-Y., \& Tang, J. (2019). RotatE: Knowledge Graph Embedding by Relational Rotation in Complex Space. \emph{ICLR}.
+  \item Trouillon, T., Welbl, J., Riedel, S., Gaussier, É., \& Bouchard, G. (2016). Complex Embeddings for Simple Link Prediction. \emph{ICML}.
+\end{itemize}
+
+\end{document}

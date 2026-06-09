@@ -1,0 +1,499 @@
+\documentclass[11pt, a4paper]{article}
+
+% --- Fonts and engine ---
+\usepackage{fontspec}
+\setmainfont{Helvetica Neue}
+\setmonofont{Menlo}
+\usepackage{unicode-math}
+\setmathfont{STIX Two Math}
+
+% --- Layout ---
+\usepackage[margin=2cm, top=2cm, bottom=2.5cm]{geometry}
+\usepackage{microtype}
+\usepackage{parskip}
+\setlength{\parskip}{0.6em}
+\setlength{\parindent}{0pt}
+
+% --- Typography and links ---
+\usepackage[colorlinks=true, linkcolor=NavyBlue, urlcolor=NavyBlue, citecolor=NavyBlue]{hyperref}
+\usepackage{xcolor}
+\usepackage[dvipsnames]{xcolor}
+
+% --- Math and tables ---
+\usepackage{amsmath}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{tabularx}
+\usepackage{graphicx}
+\graphicspath{{figures/week09/}}
+\newcommand{\thead}[1]{\textbf{#1}}
+
+% --- Lists ---
+\usepackage{enumitem}
+\setlist[itemize]{leftmargin=1.5em, itemsep=0.2em, topsep=0.3em}
+\setlist[enumerate]{leftmargin=1.5em, itemsep=0.2em, topsep=0.3em}
+
+% --- Boxed callouts ---
+\usepackage[most]{tcolorbox}
+\tcbuselibrary{breakable, skins, theorems}
+
+\definecolor{defBg}{HTML}{EAF2FB}
+\definecolor{defBd}{HTML}{1F4E79}
+\definecolor{exBg}{HTML}{F4F4F4}
+\definecolor{exBd}{HTML}{555555}
+\definecolor{tipBg}{HTML}{E8F5E9}
+\definecolor{tipBd}{HTML}{2E7D32}
+\definecolor{trapBg}{HTML}{FCE4EC}
+\definecolor{trapBd}{HTML}{AD1457}
+\definecolor{pitBg}{HTML}{FFF8E1}
+\definecolor{pitBd}{HTML}{B27600}
+\definecolor{noteBg}{HTML}{F3E5F5}
+\definecolor{noteBd}{HTML}{6A1B9A}
+\definecolor{tldrBg}{HTML}{E1F5FE}
+\definecolor{tldrBd}{HTML}{0277BD}
+
+\newtcolorbox{defbox}[1][]{enhanced, breakable, colback=defBg, colframe=defBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={Definition: #1}}
+\newtcolorbox{exbox}[1][]{enhanced, breakable, colback=exBg, colframe=exBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={Worked example: #1}}
+\newtcolorbox{exambox}[1][]{enhanced, breakable, colback=tipBg, colframe=tipBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={Exam-mode answer #1}}
+\newtcolorbox{trapbox}[1][]{enhanced, breakable, colback=trapBg, colframe=trapBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={MCQ trap #1}}
+\newtcolorbox{pitfallbox}[1][]{enhanced, breakable, colback=pitBg, colframe=pitBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={Pitfall #1}}
+\newtcolorbox{notebox}[1][]{enhanced, breakable, colback=noteBg, colframe=noteBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={Lecturer aside #1}}
+\newtcolorbox{tldrbox}[1][]{enhanced, breakable, colback=tldrBg, colframe=tldrBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={TL;DR #1}}
+
+\usepackage{titlesec}
+\titleformat{\section}[block]{\Large\bfseries\color{defBd}}{\thesection.}{0.6em}{}
+\titleformat{\subsection}[block]{\large\bfseries\color{defBd!80!black}}{\thesubsection}{0.5em}{}
+\titleformat{\subsubsection}[block]{\normalsize\bfseries}{}{0pt}{}
+\titlespacing*{\section}{0pt}{1.6em}{0.6em}
+\titlespacing*{\subsection}{0pt}{1.2em}{0.4em}
+
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small CM52054 — Week 9}
+\fancyhead[R]{\small Optimisation Basics 3 — Newton's method}
+\fancyfoot[C]{\small\thepage}
+\renewcommand{\headrulewidth}{0.3pt}
+
+\newcommand{\examflag}{\textcolor{tipBd}{\textbf{[EXAM]}}\,}
+\newcommand{\trapflag}{\textcolor{trapBd}{\textbf{[TRAP]}}\,}
+\newcommand{\doflag}{\textcolor{defBd}{\textbf{[DO]}}\,}
+
+\title{\vspace{-1cm}{\Huge\bfseries Week 9 — Optimisation Basics 3} \\[0.4em]{\large Newton's method: curvature, second-order Taylor expansion, the $\mathbf{H}^{-1}\nabla f$ update, when it works and when it doesn't}}
+\author{\large CM52054 Foundational Machine Learning \\[0.2em]\normalsize University of Bath \,$\cdot$\, Dr Wenbin Li}
+\date{Revision notes}
+
+\begin{document}
+
+\maketitle
+\thispagestyle{empty}
+
+\vspace{1em}
+
+\begin{tldrbox}
+\begin{itemize}[leftmargin=*]
+  \item Wk9 closes the optimisation arc with a \emph{second-order} method. Where gradient descent (Wk8) uses only $\nabla f$, Newton's method also uses the curvature $\mathbf{H} = \nabla^2 f$ to set the step size automatically.
+  \item \textbf{Curvature} — informally, how sharply the graph of $f$ turns. Encoded by the Hessian $\mathbf{H}(\mathbf{x}) = \nabla^2 f(\mathbf{x})$ (recall Wk7 §6). Big curvature $\Rightarrow$ short step; small curvature $\Rightarrow$ long step. Newton's update bakes this in.
+  \item \textbf{Update rule}: $\;\mathbf{w}_{t+1} = \mathbf{w}_t - [\mathbf{H}(\mathbf{w}_t)]^{-1}\nabla f(\mathbf{w}_t)$. Compare to GD: $\mathbf{w}_{t+1} = \mathbf{w}_t - \alpha\,\nabla f(\mathbf{w}_t)$ — the scalar $\alpha$ is replaced by the matrix $\mathbf{H}^{-1}$, which is the ``optimal step in every direction at once.''
+  \item \textbf{Derivation via 2nd-order Taylor} \doflag{}: approximate $g(\mathbf{w}) \approx g(\mathbf{w}_t) + \nabla g(\mathbf{w}_t)^\top(\mathbf{w}-\mathbf{w}_t) + \tfrac{1}{2}(\mathbf{w}-\mathbf{w}_t)^\top\nabla^2 g(\mathbf{w}_t)(\mathbf{w}-\mathbf{w}_t)$, take gradient, set to zero, solve.
+  \item \textbf{Quadratic loss = one step.} For least-squares $g(\mathbf{w}) = \|\mathbf{X}\mathbf{w}-\mathbf{y}\|^2$, the Hessian $\nabla^2 g = 2\mathbf{X}^\top\mathbf{X}$ is constant. Newton's first iteration lands on $\mathbf{w}_* = (\mathbf{X}^\top\mathbf{X})^{-1}\mathbf{X}^\top\mathbf{y}$ — the closed-form solution from Wk8.
+  \item \textbf{Three failure modes}: (1) $\mathbf{H}$ not invertible (singular or saddle), (2) $f$ not twice differentiable, (3) initial point far from optimum (Newton converges \emph{locally} — can shoot off into nonsense at distance).
+  \item \textbf{Damped Newton}: $\mathbf{w}_{t+1} = \mathbf{w}_t - \alpha_t [\mathbf{H}(\mathbf{w}_t)]^{-1}\nabla f(\mathbf{w}_t)$ with $\alpha_t \in (0,1]$ — keeps Newton's curvature direction but tames the step in case the Taylor approximation is poor far from the optimum.
+  \item \textbf{Why GD wins in practice} despite Newton's faster convergence rate: each Newton step costs $O(M^3)$ for the Hessian inverse; GD costs $O(M)$. For modern $M$ in the millions, the ``one elegant step'' costs more than thousands of GD steps would.
+  \item \examflag{}Past paper Q3c: ``Can we use Newton's method to solve this problem? Why?'' Yes — the regularised quadratic in Q3 is twice-differentiable and has an invertible Hessian. The marker is checking that you justify it on the conditions, not just answer ``yes.''
+\end{itemize}
+\end{tldrbox}
+
+% =====================================================================
+\section{Where this fits in the optimisation arc}
+
+Three weeks, three layers of detail on the same skeleton:
+\begin{itemize}
+  \item \textbf{Wk7} — generic loop $\mathbf{x}_{t+1} = \mathbf{x}_t + \alpha_t\mathbf{p}_t$, partial derivatives, gradient, Hessian (defined but not yet used).
+  \item \textbf{Wk8} — instantiate the loop on linear regression. Two solutions: Normal Equations (closed form) and steepest descent. Steepest descent struggles on anisotropic surfaces.
+  \item \textbf{Wk9} — \emph{this week} — second-order method. Use $\mathbf{H}$ to fix the anisotropy problem; understand why for a quadratic loss this recovers the closed form in one step. Last new optimisation content for the unit.
+\end{itemize}
+
+The first half of Wenbin's lecture is a recap of Wk8 (linear regression problem, closed-form, steepest descent, anisotropic zig-zag). We will not revisit any of that — those are Wk8 §3--§5 — and pick up Wk9 at the moment Newton's method is motivated.
+
+\begin{center}
+
+\footnotesize\textit{Gradient descent converging on the 2D linear-regression loss surface. The background is a heat-map of the loss $g(\mathbf{w}) = \|\mathbf{X}\mathbf{w} - \mathbf{y}\|^2$: dark blue = low loss (minimum at centre), yellow/green = high loss. The yellow dots trace the iterates $\mathbf{w}_0, \mathbf{w}_1, \ldots$ as gradient descent homes in on the optimum $\mathbf{w}_*$ (the labelled yellow dot at centre-left). Notice how the contours are elongated --- the loss surface is \emph{anisotropic} --- so the gradient direction is not aligned with the shortest path to the minimum, and GD must take many small corrective steps rather than heading straight there. This is the limitation that Newton's method is designed to fix.}
+\end{center}
+
+% =====================================================================
+\section{Curvature and why we want it}
+
+\subsection{What curvature \emph{is}}
+
+The motivating idea is geometric. For a smooth curve, the \textbf{curvature} at a point measures how sharply the curve is turning there. Equivalently, the radius of the inscribed (osculating) circle that best fits the curve at that point: tight turn $\Rightarrow$ small radius $\Rightarrow$ \emph{big} curvature; gentle turn $\Rightarrow$ big radius $\Rightarrow$ small curvature; straight line $\Rightarrow$ infinite radius $\Rightarrow$ zero curvature.
+
+\begin{verbatim}
+   /\           ____           __________
+  /  \         /    \         /          \
+ /    \       /      \
+
+ big curv.    small curv.    zero curv.
+\end{verbatim}
+
+\textbf{Why the optimiser cares.} Near a sharp turn (big curvature) you should take a \emph{small} step, otherwise you overshoot. On a flat stretch (small curvature) you can take a \emph{big} step, otherwise you crawl. Steepest descent has no way to know which it's on — it uses the same $\alpha$ for both. Newton's method reads the curvature off the Hessian and adjusts.
+
+\begin{center}
+
+\footnotesize\textit{Curvature illustrated via the osculating (inscribed) circle. The curve passes through three characteristic regions: a sharp peak on the left labelled \textbf{Big curvature} --- the inscribed circle is tiny, so the function is turning tightly; a gentle S-bend on the right labelled \textbf{Small curvature} --- the circle is large, indicating a gradual turn; and the nearly-flat tail labelled \textbf{Zero curvature} --- no circle needed, the function is almost a straight line. The key idea: curvature $= 1 / r$ where $r$ is the inscribed-circle radius. This geometric picture is exactly what $f''$ (and its multivariate generalisation $\mathbf{H}$) encodes --- Newton's method uses this information to choose a step size that is automatically small where the surface curves sharply and large where it is flat.}
+\end{center}
+
+\subsection{Curvature \emph{is} the second derivative}
+
+For a 1D function $f:\mathbb{R}\to\mathbb{R}$, the curvature is captured by $f''$. To see this, compare the gradient at $x_0 - \delta$ and $x_0 + \delta$: if these two gradients differ a lot, the function is turning sharply between them; if they're nearly equal, it's almost straight. The rate at which the gradient changes is $f''$. So $f''$ is exactly ``how fast the slope is changing,'' which is exactly curvature (up to a factor depending on $|f'|$ in the formal definition).
+
+For a multivariate $f:\mathbb{R}^n\to\mathbb{R}$, the analogue is the \textbf{Hessian matrix} (recall Wk7 §6):
+\[
+\mathbf{H}(f(\mathbf{x})) \;=\; \nabla^2 f(\mathbf{x}) \;=\;
+\begin{pmatrix}
+\partial^2 f/\partial x_1^2 & \cdots & \partial^2 f/\partial x_1 \partial x_n \\
+\vdots & \ddots & \vdots \\
+\partial^2 f/\partial x_n \partial x_1 & \cdots & \partial^2 f/\partial x_n^2
+\end{pmatrix}.
+\]
+Symmetric (Schwarz). Encodes curvature in every pair of input directions.
+
+\begin{notebox}[: don't memorise the Hessian formula]
+Wenbin states explicitly: ``You don't need to memorise the Hessian formula — if I need it, I'll give it to you in the paper.'' What you need to memorise is \emph{what it represents} (matrix of second partials, symmetric for $C^2$ functions, encodes curvature) and \emph{how it appears in Newton's update}.
+\end{notebox}
+
+\begin{center}
+
+\footnotesize\textit{Gradient descent on an \textbf{isotropic} loss surface (circular contours). The orange arrow goes almost straight to the minimum because the negative gradient at any point on a circular contour already points toward the centre. When the Hessian is a scalar multiple of the identity ($\mathbf{H} = c\mathbf{I}$), gradient descent and Newton's method behave identically --- curvature is the same in every direction, so no direction-dependent rescaling is needed.}
+\end{center}
+
+\begin{center}
+
+\footnotesize\textit{Gradient descent on a \textbf{moderately anisotropic} loss surface (elongated elliptical contours). The orange zig-zag path shows the characteristic oscillation: at each step the gradient is perpendicular to the local contour, but on an elongated ellipse that direction is \emph{not} toward the minimum --- it overshoots across the valley and must correct back, over and over. This inefficiency grows with the condition number (the ratio of the largest to smallest eigenvalue of $\mathbf{H}$). Newton's method corrects for this by pre-multiplying the gradient by $\mathbf{H}^{-1}$, which stretches coordinates to make the contours circular, and the descent direction then points directly at the minimum.}
+\end{center}
+
+\begin{center}
+
+\footnotesize\textit{\textbf{Extreme anisotropy}: the contours are squashed almost flat (very large condition number). Gradient descent now oscillates almost perpendicular to the true descent direction --- each step crosses the entire narrow valley and then has to come back. The tiny orange zig-zag at the left is effectively stuck: progress toward the minimum is negligible per step. This is the worst-case motivating scenario for second-order methods. Newton's $\mathbf{H}^{-1}$ pre-multiplication transforms these pancake contours into circles, after which the descent is direct regardless of how extreme the anisotropy is.}
+\end{center}
+
+% =====================================================================
+\section{Newton's method --- the update rule}
+
+\subsection{The headline formula}
+
+\begin{defbox}[Newton's method update]
+For an objective $f$ that is twice differentiable with invertible Hessian, Newton's method updates
+\[
+\boxed{\;\mathbf{w}_{t+1} \;=\; \mathbf{w}_t - \big[\mathbf{H}(f(\mathbf{w}_t))\big]^{-1}\,\nabla f(\mathbf{w}_t).\;}
+\]
+The step is in the same general direction as $-\nabla f$ (gradient descent), but \emph{premultiplied by the inverse Hessian}, which automatically rescales each direction by its local curvature.
+\end{defbox}
+
+\textbf{Compare with GD.} Gradient descent: $\mathbf{w}_{t+1} = \mathbf{w}_t - \alpha\,\nabla f(\mathbf{w}_t)$ — a scalar $\alpha$ scales \emph{all} directions equally. Newton's: $\mathbf{w}_{t+1} = \mathbf{w}_t - \mathbf{H}^{-1}\,\nabla f(\mathbf{w}_t)$ — a matrix $\mathbf{H}^{-1}$ scales \emph{each direction by its own curvature}. On an isotropic bowl the two are identical (Hessian is a scalar multiple of identity); on an anisotropic bowl Newton's premultiplication ``rounds out'' the contours, so the descent direction now points at the minimum.
+
+\subsection{Why ``no step size?''}
+
+In the basic form there is no separate $\alpha$. The Hessian inverse already \emph{is} the step size, generalised to a matrix. The intuition: on a quadratic, $\mathbf{H}^{-1}$ is the \emph{ideal} second-order step, picking exactly the move that the local curvature recommends.
+
+In practice you usually keep a damping factor $\alpha_t \in (0,1]$:
+\[
+\mathbf{w}_{t+1} \;=\; \mathbf{w}_t - \alpha_t\,\mathbf{H}^{-1}\,\nabla f(\mathbf{w}_t).
+\]
+This is \textbf{damped Newton} — the curvature direction is preserved, but the step is shrunk in case the Taylor approximation is bad far from the optimum. We come back to this in §6.
+
+% =====================================================================
+\section{Deriving Newton's method via Taylor expansion}
+
+The headline formula doesn't fall from the sky. It comes from approximating $f$ near the current iterate by a quadratic, then minimising the quadratic exactly.
+
+\subsection{Taylor's series in one slide}
+
+\begin{defbox}[Taylor series]
+A function $f$ that is $n$ times differentiable at a point $x_0$ can be approximated near $x_0$ by a polynomial summing its derivatives evaluated at $x_0$:
+\[
+f(x) \;\approx\; f(x_0) + \frac{f'(x_0)}{1!}(x-x_0) + \frac{f''(x_0)}{2!}(x-x_0)^2 + \cdots + \frac{f^{(n)}(x_0)}{n!}(x-x_0)^n.
+\]
+Higher-order terms give a better local fit. The full series ($n\to\infty$) is exact for analytic functions.
+\end{defbox}
+
+\textbf{For optimisation we keep through second order} — that is enough to capture curvature and gives a quadratic local model that can be minimised in closed form.
+
+\begin{pitfallbox}[: why not just add more Taylor terms?]
+In theory, adding higher-order Taylor terms gives a more accurate local model and would point even more exactly at the optimum. In practice the unit deliberately stops at second order (Newton). Computing high-order derivatives and the products of higher-order terms is numerically \emph{ill-conditioned}: the computer keeps only finitely many digits, truncates the rest, and those rounding errors accumulate so the resulting direction drifts away from the true optimum. The second-order model already captures the bulk of the local information (Wenbin's rough figure: ``more than 90\%''), so the extra terms cost stability without buying reliable accuracy.
+\end{pitfallbox}
+
+\subsection{Setup}
+
+Following the lecture, we rename the unknown to $\mathbf{w}$ and define $g : \mathbb{R}^M \to \mathbb{R}$ as our objective:
+\[
+g(\mathbf{w}) \;=\; f_\mathbf{w}(\mathbf{x}) \quad\text{(an objective written in terms of $\mathbf{w}$)}.
+\]
+We are at the current iterate $\mathbf{w}_t$ and want the next iterate $\mathbf{w}_{t+1}$.
+
+\subsection{Derivation}
+
+\textbf{Step 1 — second-order Taylor expansion of $g$ around $\mathbf{w}_t$:}
+\[
+g(\mathbf{w}) \;\approx\; g(\mathbf{w}_t) + \nabla g(\mathbf{w}_t)^\top(\mathbf{w}-\mathbf{w}_t) + \tfrac{1}{2}(\mathbf{w}-\mathbf{w}_t)^\top\,\nabla^2 g(\mathbf{w}_t)\,(\mathbf{w}-\mathbf{w}_t).
+\]
+
+\textbf{Step 2 — gradient with respect to $\mathbf{w}$.} The first term is constant; the second term is linear in $\mathbf{w}$ with gradient $\nabla g(\mathbf{w}_t)$; the third term is quadratic in $\mathbf{w}$ with gradient $\nabla^2 g(\mathbf{w}_t)(\mathbf{w}-\mathbf{w}_t)$ (using $\partial(\mathbf{u}^\top\mathbf{A}\mathbf{u})/\partial\mathbf{u} = 2\mathbf{A}\mathbf{u}$ for symmetric $\mathbf{A}$, with the $\tfrac{1}{2}$ cancelling the $2$). So
+\[
+\nabla g(\mathbf{w}) \;\approx\; \nabla g(\mathbf{w}_t) + \nabla^2 g(\mathbf{w}_t)\,(\mathbf{w}-\mathbf{w}_t).
+\]
+
+\textbf{Step 3 — first-order condition.} Set $\nabla g(\mathbf{w}) = \mathbf{0}$ to find the minimum of the quadratic:
+\[
+\nabla g(\mathbf{w}_t) + \nabla^2 g(\mathbf{w}_t)(\mathbf{w}_*-\mathbf{w}_t) = \mathbf{0}.
+\]
+
+\textbf{Step 4 — solve for $\mathbf{w}_*$:}
+\[
+\mathbf{w}_* \;=\; \mathbf{w}_t - \big[\nabla^2 g(\mathbf{w}_t)\big]^{-1}\,\nabla g(\mathbf{w}_t) \;=\; \mathbf{w}_t - \mathbf{H}(\mathbf{w}_t)^{-1}\,\nabla g(\mathbf{w}_t).
+\]
+\textbf{Step 5 — call this $\mathbf{w}_{t+1}$, iterate.} Newton's method is exactly: at each $\mathbf{w}_t$, build the quadratic Taylor model, jump to its minimum, repeat.
+
+\doflag{}Be able to reproduce these five steps from scratch. Past paper Q3c justification leans on Step 1 (the Taylor expansion exists \emph{because} $f$ is twice differentiable) and Step 4 (the inverse exists \emph{because} the Hessian is invertible).
+
+% =====================================================================
+\section{Newton's method on linear regression}
+
+\subsection{One step recovers the closed form}
+
+Consider the same least-squares objective from Wk8: $g(\mathbf{w}) = \|\mathbf{X}\mathbf{w}-\mathbf{y}\|^2$. From Wk8 §4.1:
+\[
+\nabla g(\mathbf{w}) \;=\; 2\mathbf{X}^\top\mathbf{X}\mathbf{w} - 2\mathbf{X}^\top\mathbf{y}, \qquad
+\nabla^2 g(\mathbf{w}) \;=\; 2\mathbf{X}^\top\mathbf{X}.
+\]
+Plug into the Newton update:
+\[
+\mathbf{w}_{t+1} \;=\; \mathbf{w}_t - (2\mathbf{X}^\top\mathbf{X})^{-1}\big(2\mathbf{X}^\top\mathbf{X}\mathbf{w}_t - 2\mathbf{X}^\top\mathbf{y}\big).
+\]
+\textbf{Watch the factors of 2 cancel.} Scalars pull straight out of an inverse: $(2\mathbf{X}^\top\mathbf{X})^{-1} = \tfrac{1}{2}(\mathbf{X}^\top\mathbf{X})^{-1}$. Substituting,
+\[
+\mathbf{w}_{t+1} \;=\; \mathbf{w}_t - \tfrac{1}{2}(\mathbf{X}^\top\mathbf{X})^{-1}\cdot 2\big(\mathbf{X}^\top\mathbf{X}\mathbf{w}_t - \mathbf{X}^\top\mathbf{y}\big)
+\;=\; \mathbf{w}_t - (\mathbf{X}^\top\mathbf{X})^{-1}\big(\mathbf{X}^\top\mathbf{X}\mathbf{w}_t - \mathbf{X}^\top\mathbf{y}\big),
+\]
+where the $\tfrac{1}{2}$ from the inverted Hessian and the $2$ from the gradient have multiplied to $1$. Now distribute the inverse over the bracket. The first piece is $(\mathbf{X}^\top\mathbf{X})^{-1}(\mathbf{X}^\top\mathbf{X})\mathbf{w}_t = \mathbf{I}\,\mathbf{w}_t = \mathbf{w}_t$, so it cancels the leading $\mathbf{w}_t$:
+\[
+\mathbf{w}_{t+1} \;=\; \mathbf{w}_t - \underbrace{(\mathbf{X}^\top\mathbf{X})^{-1}(\mathbf{X}^\top\mathbf{X})}_{=\;\mathbf{I}}\mathbf{w}_t + (\mathbf{X}^\top\mathbf{X})^{-1}\mathbf{X}^\top\mathbf{y}
+\;=\; \mathbf{w}_t - \mathbf{w}_t + (\mathbf{X}^\top\mathbf{X})^{-1}\mathbf{X}^\top\mathbf{y}
+\;=\; (\mathbf{X}^\top\mathbf{X})^{-1}\mathbf{X}^\top\mathbf{y}.
+\]
+\textbf{The right-hand side is the closed-form solution.} Both the starting point $\mathbf{w}_t$ \emph{and} the iteration index have vanished — Newton's first iteration jumps directly onto $\mathbf{w}_*$, regardless of where you started.
+
+\begin{pitfallbox}[: you cannot split $(\mathbf{X}^\top\mathbf{X})^{-1}$ into $\mathbf{X}^{-1}(\mathbf{X}^\top)^{-1}$]
+A tempting shortcut is to ``simplify'' $(\mathbf{X}^\top\mathbf{X})^{-1}$ using $(\mathbf{A}\mathbf{B})^{-1} = \mathbf{B}^{-1}\mathbf{A}^{-1}$ to get $\mathbf{X}^{-1}(\mathbf{X}^\top)^{-1}$ — which would collapse the whole solution to $\mathbf{X}^{-1}\mathbf{y}$. \textbf{This is wrong.} The identity $(\mathbf{A}\mathbf{B})^{-1} = \mathbf{B}^{-1}\mathbf{A}^{-1}$ requires $\mathbf{A}$ and $\mathbf{B}$ to be \textbf{square and individually invertible}. The design matrix $\mathbf{X}$ is $N\times M$ with $N\gg M$ — it is \emph{rectangular}, so $\mathbf{X}^{-1}$ simply \textbf{does not exist}. Only the square product $\mathbf{X}^\top\mathbf{X}$ (which is $M\times M$) can be inverted; the inverse of the product is \emph{not} the product of inverses here, because the inner factors have no inverses to begin with. Always treat $(\mathbf{X}^\top\mathbf{X})^{-1}$ as a single, indivisible $M\times M$ object.
+\end{pitfallbox}
+
+\examflag{}This is the headline result of the lecture. Why does it happen? Because the Taylor expansion was \emph{exact} at second order — the loss is itself a quadratic. There were no higher-order terms to truncate. One Taylor model captures the entire surface, so one step lands at its minimum.
+
+\subsection{What about higher-order losses?}
+
+Replace the squared error with a fourth-order loss like $\sum (f(\mathbf{x}_i) - y_i)^4$. Differentiate twice: each term $(\mathbf{w}^\top\mathbf{x}_i-y_i)^4$ drops to a multiple of $(\mathbf{w}^\top\mathbf{x}_i-y_i)^2\,\mathbf{x}_i\mathbf{x}_i^\top$ — the power drops from 4 to 2, but it does \emph{not} drop to 0. So the Hessian still contains $(\mathbf{w}^\top\mathbf{x}_i-y_i)^2$ factors and is therefore \textbf{$\mathbf{w}$-dependent}: the curvature is different at every point on the surface. Contrast the quadratic case, where two differentiations of $(\mathbf{w}^\top\mathbf{x}_i-y_i)^2$ kill the $\mathbf{w}$ entirely and leave the constant $2\mathbf{x}_i\mathbf{x}_i^\top$.
+
+Because the curvature varies with position, Newton's local quadratic model matches the true loss only \emph{near} the current iterate — so Newton's method must \textbf{iterate} rather than land in one shot. Convergence is still fast, though: \emph{quadratic} near the optimum (the number of correct digits roughly \emph{doubles} every step) versus gradient descent's merely \emph{linear} rate (a fixed fraction of the error removed per step).
+
+\begin{notebox}[: why stop at second order, if a degree-$N$ loss has a Taylor expansion that is exact?]
+There is a clean symmetry worth seeing. A degree-$N$ polynomial loss, expanded as a Taylor series to order $N$, has \textbf{zero remainder} — the truncated polynomial \emph{equals} the true loss everywhere, not just locally. So if we were willing to build the order-$N$ Taylor model and minimise \emph{that}, we would recover one-shot convergence for any polynomial loss, exactly as the quadratic case does at order 2.
+
+We stop at order 2 anyway. Two reasons. (1) Order-$N$ terms need derivative \emph{tensors} — the third derivative is an $M\times M\times M$ object, the fourth is $M\times M\times M\times M$, with $M^3, M^4,\ldots$ entries — prohibitively expensive to form and store. (2) Minimising a cubic or quartic local model is itself a hard nonlinear optimisation, not the fast linear solve $\mathbf{H}\mathbf{p}=-\nabla f$ that the quadratic (order-2) model affords. The second-order model is the sweet spot: rich enough to carry curvature, cheap enough to minimise exactly.
+\end{notebox}
+
+\begin{notebox}[: ``the loss must not collapse to a constant under second differentiation'' (Wk30b)]
+Ben emphasised this point in the past-paper walkthrough. If $g(\mathbf{w})$ is at most first-order in $\mathbf{w}$ (linear), the Hessian is the zero matrix and $\mathbf{H}^{-1}$ does not exist — Newton's method cannot run. If $g$ is purely quadratic, $\mathbf{H}$ is a constant matrix (no $\mathbf{w}$ left), Newton converges in one step. If $g$ has higher-order terms, $\mathbf{H}$ depends on $\mathbf{w}$ and Newton iterates. The marker for past paper Q3c is checking that you can read off which case you're in from the loss expression.
+\end{notebox}
+
+\begin{notebox}[: a wording correction — it is \emph{first} differentiation, not second]
+The phrasing above (``must not collapse to a constant under \emph{second} differentiation'') is, taken literally, misleading — and worth getting straight, because a \emph{non-zero constant} Hessian is exactly the \textbf{ideal} case: a constant $\mathbf{H}$ is precisely what gives Newton's one-step convergence on a quadratic. So ``constant under second differentiation'' describes the best case, not a failure.
+
+The accurate statement: the loss must not collapse to a \textbf{constant under \emph{first} differentiation} — equivalently, must not collapse to \textbf{zero under second differentiation}. A \emph{linear} loss has a \emph{constant gradient} and hence a \emph{zero} Hessian; then $\mathbf{H}^{-1}$ does not exist and Newton cannot run. The thing to forbid is a \emph{vanishing} Hessian (zero matrix), not a \emph{constant} one. Read the test as: ``the gradient must still depend on $\mathbf{w}$,'' i.e.\ the loss is at least genuinely quadratic.
+\end{notebox}
+
+% =====================================================================
+\section{When Newton's method fails (and how to fix it)}
+
+\subsection{Applicability checklist \doflag}
+
+Past-paper Q3c phrases the question as ``Can we use Newton's method to solve this problem? Why?'' The marker wants you to walk down two conditions before answering. Memorise this:
+
+\begin{exbox}[The two-line Newton applicability test]
+\begin{enumerate}[itemsep=0pt, topsep=0pt]
+  \item Is $f$ \textbf{twice continuously differentiable} ($f \in C^2$) on the domain you care about? If yes, the Hessian $\mathbf{H}$ exists everywhere and the second-order Taylor expansion that Newton minimises is well-defined.
+  \item Is the Hessian $\mathbf{H}(\mathbf{w}_t)$ \textbf{invertible (non-singular) at every iterate} you visit? If yes, $\mathbf{H}^{-1}$ exists and the Newton update $\mathbf{w}_{t+1} = \mathbf{w}_t - \mathbf{H}^{-1}\nabla f$ is computable.
+\end{enumerate}
+Both conditions hold for a regularised quadratic loss like $L(\mathbf{w}) = \|\mathbf{X}\mathbf{w}-\mathbf{y}\|^2 + \lambda\|\mathbf{w}\|^2$: it's polynomial of degree 2 (so $C^\infty$), and its Hessian $2(\mathbf{X}^\top\mathbf{X} + \lambda\mathbf{I})$ is constant and positive definite (the $\lambda\mathbf{I}$ shifts every eigenvalue strictly positive, even if $\mathbf{X}$ isn't full-rank). \emph{Newton applies and converges in one step.}\\[0.3em]
+A loss with a kink (hinge loss in SVM, $\ell_1$-norm in Lasso, ReLU activations) fails the first condition: the second derivative doesn't exist at the kink. A loss whose Hessian goes singular at some point (e.g.\ flat regions, saddles, rank-deficient design matrices without regularisation) fails the second.
+\end{exbox}
+
+\subsection{Three failure modes}
+
+\textbf{1. The Hessian is not invertible.} If $\mathbf{H}(\mathbf{w}_t)$ is singular — for instance at a saddle point, or when the loss is rank-deficient — the inverse does not exist and Newton's update is \textbf{undefined}. Note the careful wording: undefined, \emph{not} ``infinite''. \textbf{Zero curvature in some direction means a zero eigenvalue} of $\mathbf{H}$, which makes $\mathbf{H}$ singular. Geometrically, a flat region has no parabola — there is no quadratic-bowl minimum for Newton to jump to, so the question ``where is the minimum of the local model?'' has no answer at all. \textbf{Fix:} pseudo-inverse (Moore-Penrose), or a \emph{damped} Hessian $(\mathbf{H} + \lambda\mathbf{I})^{-1}$ — see the Levenberg-Marquardt note in §6.3.
+
+\textbf{2. $f$ is not twice differentiable.} Newton's needs $\nabla^2 f$ to exist. Loss functions with kinks (hinge loss in SVM, ReLU activations) violate this. \textbf{Fix:} use sub-gradient methods or smooth the kink locally.
+
+\textbf{3. The initial point is too far from the optimum.} The 2nd-order Taylor expansion is only \emph{locally} accurate. Far from the optimum, the quadratic Taylor model can be wildly wrong, and one Newton step can shoot you into a worse region. More precisely — Wenbin's framing of the failure mode — from a poor starting point Newton heads toward whatever \emph{local} optimum is nearest and stays stuck there: it has \textbf{no way to distinguish a local minimum from the global one}, so on a non-convex surface it can converge to a local minimum and never reach the global optimum. The method has \textbf{local convergence guarantees only}.
+
+\textbf{Fix for case 3:} \emph{damped Newton}.
+
+\begin{notebox}[: ``invertible'' does not mean ``convex'' — the PD proof is loss-specific]
+A point students conflate. The proof that the Hessian is \emph{positive definite} applies \textbf{only to the specific regularised quadratic loss} $\|\mathbf{X}\mathbf{w}-\mathbf{y}\|^2 + \lambda\|\mathbf{w}\|^2$, whose Hessian $2(\mathbf{X}^\top\mathbf{X}+\lambda\mathbf{I})$ is PD because $\lambda\mathbf{I}$ pushes every eigenvalue strictly above zero. That PD-ness is a property of \emph{that} loss, not of Newton's method.
+
+Newton's method itself applies to \emph{any} twice-differentiable $f$. On a \textbf{non-convex} surface the Hessian can be \textbf{indefinite} — eigenvalues of mixed sign (positive in some directions, negative in others, as at a saddle). Such an $\mathbf{H}$ is \emph{still invertible} provided no eigenvalue is exactly zero, so the Newton update is still computable — but $\mathbf{H}$ is \emph{not} positive definite, and the surface is not convex. Consequently Newton can perfectly well converge to a \emph{local} minimum (or even toward a saddle) rather than the global optimum. The takeaway: \textbf{``$\mathbf{H}$ invertible'' is a much weaker statement than ``$\mathbf{H}$ positive definite / loss convex''}. Invertibility is all Newton's update \emph{mechanically} needs; it buys you a computable step, not a global guarantee.
+\end{notebox}
+
+\subsection{Damped Newton}
+
+\begin{defbox}[Damped Newton's method]
+\[
+\mathbf{w}_{t+1} \;=\; \mathbf{w}_t - \alpha_t\,\big[\mathbf{H}(\mathbf{w}_t)\big]^{-1}\,\nabla g(\mathbf{w}_t), \qquad \alpha_t \in (0,1].
+\]
+The damping factor $\alpha_t$ shrinks the Newton step. The direction (curvature-aware) is preserved; the magnitude is tamed.
+\end{defbox}
+
+\textbf{Why it helps.} Far from the optimum, full Newton ($\alpha_t = 1$) trusts the local quadratic Taylor approximation to a degree that may be unjustified. Damping says ``go in the direction Newton recommends, but only go a bit, then re-Taylor.'' Standard line-search or Wolfe-condition variants pick $\alpha_t$ adaptively.
+
+\textbf{Staircase behaviour.} Wenbin demonstrated this in the workshop: with a small damping factor (e.g.\ $\alpha < 0.5$) the single clean Newton jump to the optimum is replaced by a sequence of small half-steps — the iterate keeps the correct Newton direction but covers only a fraction of the distance each time, producing a ``staircase'' of short steps that walk toward the optimum rather than landing on it in one move.
+
+\begin{notebox}[: the other kind of damping — $(\mathbf{H}+\lambda\mathbf{I})^{-1}$, and how $\lambda$ is chosen]
+Shrinking the step with a scalar $\alpha_t$ tames \emph{magnitude}, but it does nothing when the Hessian is \emph{singular} (failure mode 1) — $\mathbf{H}^{-1}$ still does not exist. The fix there is to damp \emph{inside} the inverse: replace $\mathbf{H}^{-1}$ with $(\mathbf{H}+\lambda\mathbf{I})^{-1}$, the \textbf{Levenberg-Marquardt} step.
+
+Why this works is an eigenvalue argument. Adding $\lambda\mathbf{I}$ shifts \emph{every} eigenvalue of $\mathbf{H}$ by the same amount: if $\mathbf{H}$ has eigenvalues $e_1,\ldots,e_M$, then $\mathbf{H}+\lambda\mathbf{I}$ has eigenvalues $e_i + \lambda$. A zero eigenvalue (zero curvature) becomes $\lambda\ne 0$, restoring invertibility; more strongly, for the damped matrix to be \emph{positive definite} (every eigenvalue strictly positive) you need $e_i + \lambda > 0$ for all $i$, i.e.\ $\lambda > -e_{\min}$ where $e_{\min}$ is the smallest eigenvalue.
+
+\textbf{How to choose $\lambda$:}
+\begin{itemize}[leftmargin=1.4em, itemsep=0.15em]
+  \item \textbf{Levenberg-Marquardt} adjusts $\lambda$ \emph{dynamically} each step: if the step succeeds (loss went down) it \emph{shrinks} $\lambda$, so $(\mathbf{H}+\lambda\mathbf{I})^{-1}\to\mathbf{H}^{-1}$ and the method behaves like full Newton; if the step fails (loss went up) it \emph{grows} $\lambda$, so $(\mathbf{H}+\lambda\mathbf{I})^{-1}\to\tfrac{1}{\lambda}\mathbf{I}$ and the step degrades gracefully to a small-step gradient-descent move. It interpolates between the two methods automatically.
+  \item \textbf{Trust-region} methods obtain $\lambda$ as a \emph{Lagrange multiplier} — it falls out of constraining the step to lie within a trusted radius.
+  \item \textbf{Static ridge} simply fixes $\lambda$ once, typically by \emph{cross-validation} (this is the Wk21 regularisation connection).
+\end{itemize}
+\end{notebox}
+
+\examflag{}Practice question 9: ``Why might $\alpha_t = 1$ fail even if the Hessian is invertible?'' Answer: \emph{the second-order Taylor approximation that Newton's method minimises is only accurate locally; far from the optimum a full step can overshoot or land in a worse region. Damping ($\alpha_t < 1$) keeps the curvature-aware direction but shortens the step until the Taylor approximation is reliable.}
+
+\subsection{Why GD wins in practice}
+
+If Newton's method has a faster convergence rate, why is GD (and its variants) the default in deep learning?
+
+\begin{tabularx}{\linewidth}{@{}lXX@{}}
+\toprule
+\thead{Per-iteration cost}     & \thead{Steepest descent (GD)} & \thead{Newton's method} \\
+\midrule
+Compute gradient               & $O(NM)$       & $O(NM)$ \\
+Compute Hessian                & not needed    & $O(NM^2)$ \\
+Invert Hessian                 & not needed    & $O(M^3)$ \\
+Per-iteration total            & $O(NM)$       & $O(NM^2 + M^3)$ \\
+Memory                         & $O(M)$        & $O(M^2)$ for Hessian storage \\
+\bottomrule
+\end{tabularx}
+
+For modern $M$ in the millions (a single transformer layer has $M \sim 10^8$), the Hessian alone has $10^{16}$ entries — physically uncomputable. Newton-style methods rely on \emph{approximations} of $\mathbf{H}^{-1}$ rather than the explicit inverse. For unit-scale linear regression with $M\le 1000$, full Newton is feasible and elegant; beyond that, you trade exactness for scalability.
+
+\textbf{Storage is the other bottleneck.} Gradient descent stores only the first-order gradient; Newton must store \emph{and recompute} the full Hessian at every iteration. Wenbin's rough figure from the workshop: Newton needs ``almost 100 times more'' memory than first-order gradient descent. This matters most for embedded deployment — running an algorithm on a robot or on-chip, where running memory is tightly constrained — so the storage cost, not just the compute cost, can rule Newton out.
+
+\subsection{Summary of Newton's properties}
+
+\begin{itemize}
+  \item \textbf{Quick convergence.} Quadratic convergence rate near the optimum (each step roughly squares the distance to the minimum).
+  \item \textbf{High per-iteration complexity.} $O(M^3)$ for the Hessian inverse.
+  \item \textbf{Local convergence.} Initial point must be close to the optimum; otherwise damping or a global-stage method (GD warm-up, then Newton refinement) is needed.
+  \item \textbf{Requirements.} $f$ twice continuously differentiable; $\mathbf{H}$ invertible at every iterate.
+\end{itemize}
+
+% =====================================================================
+\section{Exam-mode answers}
+
+Wk9 owns past-paper Q3c, parts of Q1 (T/F on Newton's applicability), and parts of Q2 (MCQ on GD-vs-Newton trade-offs). Mark-style answers:
+
+\begin{exambox}[{(True/False): Newton's method can be applied to any type of optimisation problem.}]
+\textit{\textbf{False}. Newton's method requires (a) the objective to be twice continuously differentiable so that the Hessian exists, and (b) the Hessian to be invertible at every iterate so the update $\mathbf{H}^{-1}\nabla f$ is well-defined. Loss functions with kinks (hinge loss, $L_1$) fail (a); rank-deficient or saddle-point Hessians fail (b). Even when both hold, Newton converges only locally — far from the optimum the second-order Taylor approximation is unreliable.}
+\end{exambox}
+
+\begin{exambox}[{(MCQ): Which one(s) are correct? (a) GD has lower per-iteration complexity than Newton's. (b) Both reach the optimum given a good step size. (c) Newton may not reduce the loss in each iteration. (d) Newton converges faster than GD but the convergence depends on initialisation.}]
+\textit{Correct: \textbf{(a), (b), (c), (d)} — all four are accurate statements.}\\[0.3em]
+\textit{(a) GD costs $O(NM)$ per iteration; Newton's costs $O(NM^2 + M^3)$. (b) Both methods can find the optimum on a convex differentiable problem with appropriately chosen step / damping. (c) Far from the optimum, a full Newton step can overshoot — the Taylor model is only locally accurate. (d) Quadratic convergence is local; from a poor initialisation Newton can diverge.}
+\end{exambox}
+
+\begin{exambox}[{\doflag{}Can Newton's method be used to solve $\min_w L(w) = \tfrac{1}{N}\sum_n \tfrac{1}{2}(y_n - wx_n)^2 + \tfrac{\lambda}{2}w^2 + \lambda w$? Justify.}]
+\textit{\textbf{Yes.} Both conditions hold:}\\[0.3em]
+\textit{\textbf{(a) Twice differentiable.} Each term is a polynomial in $w$, smooth everywhere. The first derivative is $L'(w) = \tfrac{1}{N}\sum_n (-x_n)(y_n - wx_n) + \lambda w + \lambda$; the second derivative is $L''(w) = \tfrac{1}{N}\sum_n x_n^2 + \lambda$. Both exist and are continuous in $w$. (1 mark)}\\[0.3em]
+\textit{\textbf{(b) Hessian invertible.} $L''(w) = \tfrac{1}{N}\sum x_n^2 + \lambda > 0$ as long as $\lambda > 0$ or any $x_n \ne 0$, so the second-derivative is positive — invertible (it is a positive scalar in 1D, equivalently a positive-definite $1\times 1$ matrix). (2 marks)}\\[0.3em]
+\textit{\textbf{(c) Note for full marks.} The loss is quadratic in $w$, so the second-order Taylor expansion is exact. Newton's method converges in \emph{one step} from any starting point. (1 mark)}
+\end{exambox}
+
+\begin{exambox}[{\doflag{}Derive the Newton update rule using a second-order Taylor expansion.}]
+\textit{Approximate $g(\mathbf{w})$ around the current iterate $\mathbf{w}_t$ to second order:}
+\[
+g(\mathbf{w}) \approx g(\mathbf{w}_t) + \nabla g(\mathbf{w}_t)^\top(\mathbf{w}-\mathbf{w}_t) + \tfrac{1}{2}(\mathbf{w}-\mathbf{w}_t)^\top\nabla^2 g(\mathbf{w}_t)(\mathbf{w}-\mathbf{w}_t).
+\]
+\textit{Differentiate with respect to $\mathbf{w}$: $\nabla g(\mathbf{w}) \approx \nabla g(\mathbf{w}_t) + \nabla^2 g(\mathbf{w}_t)(\mathbf{w}-\mathbf{w}_t)$. Set this to $\mathbf{0}$ and solve:}
+\[
+\mathbf{w}_{t+1} \;=\; \mathbf{w}_t - [\nabla^2 g(\mathbf{w}_t)]^{-1}\,\nabla g(\mathbf{w}_t).
+\]
+\textit{This is Newton's update. (4 marks: 1 for the Taylor form, 1 for differentiation, 1 for setting to zero, 1 for the final solved form.)}
+\end{exambox}
+
+\begin{exambox}[Concept: Why does Newton's method converge in one step on linear regression?]
+\textit{The least-squares loss $g(\mathbf{w}) = \|\mathbf{X}\mathbf{w}-\mathbf{y}\|^2$ is exactly quadratic in $\mathbf{w}$. Its second-order Taylor expansion at any $\mathbf{w}_t$ has zero remainder — the local quadratic model \emph{is} the global loss. Newton's method exactly minimises the quadratic model in one step, so the first iteration lands on $\mathbf{w}_* = (\mathbf{X}^\top\mathbf{X})^{-1}\mathbf{X}^\top\mathbf{y}$, the closed-form solution.}
+\end{exambox}
+
+\begin{exambox}[Concept: Why is Newton's method rarely used for large-scale ML despite faster convergence?]
+\textit{Three reasons. (1) \textbf{Per-iteration cost.} Newton's needs the Hessian ($O(NM^2)$ to compute) and its inverse ($O(M^3)$). For $M$ in the millions this is infeasible per iteration. (2) \textbf{Memory.} The Hessian alone is $O(M^2)$ to store. (3) \textbf{Local convergence.} Newton's quadratic-convergence property holds only near the optimum; from a random initialisation it can diverge unless damped. In practice, true Newton's is replaced either by methods that approximate the inverse Hessian $\mathbf{H}^{-1}$ cheaply or by first-order methods.}
+\end{exambox}
+
+\begin{exambox}[Concept: Compare GD and Newton's on anisotropic loss surfaces.]
+\textit{On an elongated quadratic, GD's negative-gradient direction is perpendicular to the local contour but does \emph{not} point at the minimum — leading to the canonical zig-zag. Newton's update is $-\mathbf{H}^{-1}\nabla f$; pre-multiplying by $\mathbf{H}^{-1}$ rescales each direction by the inverse of its curvature, effectively transforming the elongated contours into circles in the rescaled coordinates. The Newton direction therefore points exactly at the minimum on a quadratic, and the iteration converges in one step.}
+\end{exambox}
+
+% =====================================================================
+\section*{Key equations cheat sheet}
+\addcontentsline{toc}{section}{Key equations cheat sheet}
+
+\begin{tabularx}{\linewidth}{@{}lX@{}}
+\toprule
+\thead{Object} & \thead{Formula} \\
+\midrule
+Hessian (symbol)            & $\mathbf{H}(\mathbf{w}) = \nabla^2 f(\mathbf{w})$, symmetric for $f\in C^2$ \\
+2nd-order Taylor expansion  & $g(\mathbf{w}) \approx g(\mathbf{w}_t) + \nabla g(\mathbf{w}_t)^\top(\mathbf{w}-\mathbf{w}_t) + \tfrac{1}{2}(\mathbf{w}-\mathbf{w}_t)^\top\mathbf{H}(\mathbf{w}-\mathbf{w}_t)$ \\
+Gradient of Taylor model    & $\nabla g(\mathbf{w}) \approx \nabla g(\mathbf{w}_t) + \mathbf{H}(\mathbf{w}_t)(\mathbf{w}-\mathbf{w}_t)$ \\
+Newton's update (basic)     & $\mathbf{w}_{t+1} = \mathbf{w}_t - \mathbf{H}(\mathbf{w}_t)^{-1}\nabla f(\mathbf{w}_t)$ \\
+Newton's update (damped)    & $\mathbf{w}_{t+1} = \mathbf{w}_t - \alpha_t\,\mathbf{H}(\mathbf{w}_t)^{-1}\nabla f(\mathbf{w}_t)$ \\
+On least squares (1 step)   & $\mathbf{w}_1 = (\mathbf{X}^\top\mathbf{X})^{-1}\mathbf{X}^\top\mathbf{y}$ — exact closed form \\
+Per-iteration cost          & GD: $O(NM)$ \quad Newton: $O(NM^2 + M^3)$ \\
+Convergence rate            & GD: linear \quad Newton (near optimum): quadratic \\
+\bottomrule
+\end{tabularx}
+
+% =====================================================================
+\section*{Pitfalls and traps consolidated}
+\addcontentsline{toc}{section}{Pitfalls and traps consolidated}
+
+\begin{itemize}
+  \item \trapflag{}\textbf{``Newton's method can be applied to any optimisation problem.''} \textbf{False} (past paper Q1.3). Needs twice differentiability AND invertible Hessian. Even then, only \emph{locally} convergent.
+  \item \textbf{Newton's update has no scalar $\alpha$ in its basic form.} The Hessian inverse \emph{is} the step size. Adding $\alpha_t \in (0,1]$ gives damped Newton.
+  \item \textbf{One-step convergence is a \emph{quadratic-loss} thing.} For higher-order losses Newton iterates; convergence is quadratic in iteration count, still much faster than GD's linear, but not one-shot.
+  \item \textbf{$\mathbf{H}^{-1}\nabla f$ is rarely computed by literal inversion.} Solve the linear system $\mathbf{H}\mathbf{p} = -\nabla f$ for the descent step $\mathbf{p}$ instead — same answer, more numerically stable, fewer operations.
+  \item \textbf{Hessian rank deficiency.} At a saddle, $\mathbf{H}$ has zero eigenvalues — Newton's update blows up. Regularised forms $(\mathbf{H} + \lambda\mathbf{I})^{-1}$ (trust region) or eigenvalue clipping handle this.
+  \item \textbf{``Newton converges faster than GD.''} \textbf{True near the optimum} (quadratic vs linear rate), but per-iteration cost is much higher. Whether Newton beats GD on wall-clock time depends on $M$ and the proximity of the start to the optimum.
+  \item \textbf{Don't confuse Hessian with covariance.} Both are $M\times M$ symmetric matrices but encode different information. Hessian = curvature of the loss; covariance = spread of the data.
+\end{itemize}
+
+% =====================================================================
+\section*{Self-check questions}
+\addcontentsline{toc}{section}{Self-check questions}
+
+\begin{enumerate}
+  \item Define curvature informally and explain how it is encoded by the Hessian.
+  \item State Newton's method update rule and compare it directly to gradient descent — what role does the Hessian inverse play?
+  \item Derive Newton's method by writing the second-order Taylor expansion of $g(\mathbf{w})$ around $\mathbf{w}_t$, taking the gradient, and solving for the minimum of the quadratic model.
+  \item Apply Newton's method to the least-squares loss $g(\mathbf{w}) = \|\mathbf{X}\mathbf{w}-\mathbf{y}\|^2$ and show that one step lands on the closed-form solution.
+  \item Why does Newton's method achieve one-step convergence on a quadratic loss but not on a higher-order loss?
+  \item State three conditions Newton's method needs to apply. Give a concrete example of a loss function that violates each.
+  \item Define damped Newton's method. Explain why $\alpha_t = 1$ may fail even if the Hessian is invertible.
+  \item Compare gradient descent and Newton's method on (a) computational cost per iteration, (b) number of iterations to convergence on a quadratic, (c) memory.
+  \item Explain why gradient descent zig-zags on anisotropic surfaces but Newton's method does not. Tie your answer to the geometry of the contours and to $\mathbf{H}^{-1}$.
+  \item True or false: Newton's method is guaranteed to converge from any starting point. Justify.
+  \item Explain why, despite faster convergence, Newton's method is not the default in deep learning. Mention at least two practical bottlenecks.
+\end{enumerate}
+
+\end{document}

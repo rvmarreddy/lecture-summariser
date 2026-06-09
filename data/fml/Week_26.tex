@@ -1,0 +1,555 @@
+\documentclass[11pt, a4paper]{article}
+\usepackage{fontspec}\setmainfont{Helvetica Neue}\setmonofont{Menlo}
+\usepackage{unicode-math}\setmathfont{STIX Two Math}
+\usepackage[margin=2cm, top=2cm, bottom=2.5cm]{geometry}
+\usepackage{microtype}\usepackage{parskip}
+\setlength{\parskip}{0.6em}\setlength{\parindent}{0pt}
+\usepackage[colorlinks=true, linkcolor=NavyBlue, urlcolor=NavyBlue, citecolor=NavyBlue]{hyperref}
+\usepackage{xcolor}\usepackage[dvipsnames]{xcolor}
+\usepackage{amsmath}\usepackage{booktabs}\usepackage{array}\usepackage{tabularx}
+\usepackage{graphicx}
+\graphicspath{{figures/week26/}}
+\newcommand{\thead}[1]{\textbf{#1}}
+\usepackage{enumitem}
+\setlist[itemize]{leftmargin=1.5em, itemsep=0.2em, topsep=0.3em}
+\setlist[enumerate]{leftmargin=1.5em, itemsep=0.2em, topsep=0.3em}
+\usepackage[most]{tcolorbox}\tcbuselibrary{breakable, skins, theorems}
+\definecolor{defBg}{HTML}{EAF2FB}\definecolor{defBd}{HTML}{1F4E79}
+\definecolor{exBg}{HTML}{F4F4F4}\definecolor{exBd}{HTML}{555555}
+\definecolor{tipBg}{HTML}{E8F5E9}\definecolor{tipBd}{HTML}{2E7D32}
+\definecolor{trapBg}{HTML}{FCE4EC}\definecolor{trapBd}{HTML}{AD1457}
+\definecolor{pitBg}{HTML}{FFF8E1}\definecolor{pitBd}{HTML}{B27600}
+\definecolor{noteBg}{HTML}{F3E5F5}\definecolor{noteBd}{HTML}{6A1B9A}
+\definecolor{tldrBg}{HTML}{E1F5FE}\definecolor{tldrBd}{HTML}{0277BD}
+\newtcolorbox{defbox}[1][]{enhanced, breakable, colback=defBg, colframe=defBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={Definition: #1}}
+\newtcolorbox{exbox}[1][]{enhanced, breakable, colback=exBg, colframe=exBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={Worked example: #1}}
+\newtcolorbox{exambox}[1][]{enhanced, breakable, colback=tipBg, colframe=tipBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={Exam-mode answer #1}}
+\newtcolorbox{trapbox}[1][]{enhanced, breakable, colback=trapBg, colframe=trapBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={MCQ trap #1}}
+\newtcolorbox{pitfallbox}[1][]{enhanced, breakable, colback=pitBg, colframe=pitBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={Pitfall #1}}
+\newtcolorbox{notebox}[1][]{enhanced, breakable, colback=noteBg, colframe=noteBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={Lecturer aside #1}}
+\newtcolorbox{tldrbox}[1][]{enhanced, breakable, colback=tldrBg, colframe=tldrBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={TL;DR #1}}
+\usepackage{titlesec}
+\titleformat{\section}[block]{\Large\bfseries\color{defBd}}{\thesection.}{0.6em}{}
+\titleformat{\subsection}[block]{\large\bfseries\color{defBd!80!black}}{\thesubsection}{0.5em}{}
+\titleformat{\subsubsection}[block]{\normalsize\bfseries}{}{0pt}{}
+\titlespacing*{\section}{0pt}{1.6em}{0.6em}\titlespacing*{\subsection}{0pt}{1.2em}{0.4em}
+\usepackage{fancyhdr}\pagestyle{fancy}\fancyhf{}
+\fancyhead[L]{\small CM52054 — Week 26}\fancyhead[R]{\small Non-linear SVM}
+\fancyfoot[C]{\small\thepage}\renewcommand{\headrulewidth}{0.3pt}
+\newcommand{\examflag}{\textcolor{tipBd}{\textbf{[EXAM]}}\,}
+\newcommand{\trapflag}{\textcolor{trapBd}{\textbf{[TRAP]}}\,}
+\newcommand{\doflag}{\textcolor{defBd}{\textbf{[DO]}}\,}
+\title{\vspace{-1cm}{\Huge\bfseries Week 26 — Non-linear Support Vector Machines} \\[0.4em]{\large Soft-margin SVM, hinge loss, the dual formulation, and the kernel trick (preview)}}
+\author{\large CM52054 Foundational Machine Learning \\[0.2em]\normalsize University of Bath \,$\cdot$\, Dr Rohit Babbar}
+\date{Revision notes}
+\begin{document}\maketitle\thispagestyle{empty}\vspace{1em}
+
+\begin{tldrbox}
+\begin{itemize}[leftmargin=*]
+  \item Wk26 takes the hard-margin SVM (Wk25) and (a) handles non-separable data via \textbf{soft-margin} slack variables, (b) introduces the \textbf{hinge loss}, and (c) sets up the \textbf{dual} formulation that primes the \textbf{kernel trick} for non-linear classification (Wk29).
+  \item \textbf{Soft-margin SVM} \doflag{}: introduce slack $\xi_i \ge 0$ allowing constraint violation.
+  \[
+  \min_{\mathbf{w}, b, \boldsymbol\xi}\;\tfrac{1}{2}\mathbf{w}^\top\mathbf{w} + C\sum_i \xi_i \quad\text{s.t.}\quad y_i(\mathbf{w}^\top\mathbf{x}_i + b) \ge 1 - \xi_i, \;\xi_i \ge 0.
+  \]
+  $C$ is a regularisation hyperparameter: large $C$ penalises misclassification aggressively (small margin), small $C$ tolerates errors (wider margin).
+  \item \textbf{Hinge loss} \examflag{}: substituting the optimal $\xi_i = \max(0, 1 - y_i(\mathbf{w}^\top\mathbf{x}_i + b))$ converts the SVM problem into
+  \[
+  \min_{\mathbf{w}, b} \tfrac{1}{2}\mathbf{w}^\top\mathbf{w} + C\sum_i \max(0, 1 - y_i(\mathbf{w}^\top\mathbf{x}_i + b)).
+  \]
+  The hinge loss is $L_{\text{hinge}}(y\hat y) = \max(0, 1 - y\hat y)$. Linear penalty for $y\hat y < 1$, no penalty for $y\hat y \ge 1$.
+  \item \textbf{Hinge vs 0--1 loss} \examflag{}: the 0--1 loss $L_{0/1}(y\hat y) = \mathbf{1}[y\hat y < 0]$ is the natural classification metric but is non-convex, non-differentiable, and impossible to optimise. Hinge loss is a \emph{convex upper bound} on 0--1 — solvable by convex optimisation, with decision boundaries close to the 0--1 optimum. Past paper Q6(e).
+  \item \textbf{Soft-margin KKT introduces a box constraint} \doflag{}: $0 \le \mu_i \le C$. The slack-variable derivative gives $C - \mu_i - \lambda_i = 0$ with $\lambda_i \ge 0$ implying $\mu_i \le C$.
+  \item \textbf{Non-linear SVM} (the conceptual move) \doflag{}: replace each $\mathbf{x}_i$ by a non-linear feature map $\phi(\mathbf{x}_i)$ in a higher-dimensional space. The SVM is still linear \emph{in the feature space} but produces non-linear decision boundaries in input space.
+  \item \textbf{Dual formulation} \doflag{}: derived by minimising the Lagrangian over primal variables.
+  \[
+  \max_{\boldsymbol\mu \ge 0}\;\sum_i \mu_i - \tfrac{1}{2}\sum_{i,j} \mu_i \mu_j y_i y_j \phi(\mathbf{x}_i)^\top\phi(\mathbf{x}_j) \quad\text{s.t.}\quad \sum_i \mu_i y_i = 0.
+  \]
+  Strong duality holds (primal = dual).
+  \item \textbf{Kernel trick (preview, Wk29 owns)}: the dual depends on $\phi(\mathbf{x}_i)^\top\phi(\mathbf{x}_j)$ only — replace this inner product by a kernel function $K(\mathbf{x}_i, \mathbf{x}_j)$ that computes the same quantity without ever forming $\phi$ explicitly. RBF kernel is canonical.
+\end{itemize}
+\end{tldrbox}
+
+% =====================================================================
+\section{Where Wk26 fits}
+
+Wk25 derived the hard-margin SVM under the assumption that the training data was linearly separable. Wk26 lifts both restrictions:
+\begin{itemize}
+  \item \textbf{Linearly non-separable data}: introduce slack variables; this gives the soft-margin SVM and the hinge loss.
+  \item \textbf{Non-linear decision boundaries}: introduce a feature map $\phi$; this gives the non-linear SVM, which when combined with kernels (Wk29) becomes the canonical kernel SVM.
+\end{itemize}
+
+\textbf{Cross-references to Wk25} (recall, do not re-derive):
+\begin{itemize}
+  \item Hard-margin formulation, $\min \tfrac{1}{2}\mathbf{w}^\top\mathbf{w}$ s.t.\ $y_i(\mathbf{w}^\top\mathbf{x}_i + b) \ge 1$ — Wk25 §4.
+  \item KKT conditions (Lagrangian, stationarity, primal/dual feasibility, complementary slackness) — Wk25 §6.
+  \item Margin $= 2/\|\mathbf{w}\|$ and the perpendicularity proof — Wk25 §3.
+  \item Support vectors $\mathbf{w}^* = \sum_{i\in\mathcal{S}}\mu_i^* y_i\mathbf{x}_i$ — Wk25 §7.
+\end{itemize}
+
+% =====================================================================
+\section{Soft-margin SVM --- the slack variable trick}
+
+\subsection{The problem}
+
+Real data often is not linearly separable. The hard-margin constraint $y_i(\mathbf{w}^\top\mathbf{x}_i + b) \ge 1$ is then infeasible — \emph{no} hyperplane can satisfy it for all $i$.
+
+\textbf{The fix:} relax the constraint by introducing a non-negative \textbf{slack variable} $\xi_i \ge 0$ for each training point:
+\[
+y_i(\mathbf{w}^\top\mathbf{x}_i + b) \ge 1 - \xi_i.
+\]
+\begin{itemize}
+  \item $\xi_i = 0$: the point is correctly classified with at least unit margin (hard-margin behaviour).
+  \item $0 < \xi_i \le 1$: the point is correctly classified but inside the margin.
+  \item $\xi_i > 1$: the point is misclassified.
+\end{itemize}
+
+\textbf{Without further constraints}, $\xi_i$ could be made arbitrarily large to make the constraint vacuous. We need to penalise large $\xi_i$.
+
+\subsection{The soft-margin formulation}
+
+\begin{defbox}[Soft-margin SVM (primal)]
+\[
+\min_{\mathbf{w}, b, \boldsymbol\xi}\;\frac{1}{2}\mathbf{w}^\top\mathbf{w} + C\sum_{i=1}^n \xi_i
+\]
+\[
+\text{subject to}\quad y_i(\mathbf{w}^\top\mathbf{x}_i + b) \ge 1 - \xi_i, \qquad \xi_i \ge 0, \quad i = 1, \ldots, n.
+\]
+\end{defbox}
+
+\begin{center}
+
+\footnotesize\textit{Geometry of the soft-margin SVM. The three parallel lines are $\mathbf{w}^\top\mathbf{x}+b = 1$ (upper margin), $\mathbf{w}^\top\mathbf{x}+b = 0$ (decision boundary), and $\mathbf{w}^\top\mathbf{x}+b = -1$ (lower margin). Squares (Class 1) and circles (Class 2) that sit \emph{inside} the margin band incur non-zero slack: the labelled distances $\xi_i$ and $\xi_j$ measure how far each offending point has penetrated the margin. Points outside the band satisfy the constraint with $\xi = 0$ and are invisible to the objective. The vector $\mathbf{w}$ is shown perpendicular to the decision boundary, confirming that the margin width is $2/\|\mathbf{w}\|$.}
+\end{center}
+
+\textbf{The hyperparameter $C$} controls the trade-off between the two terms:
+\begin{itemize}
+  \item Large $C$: penalises misclassification aggressively. The optimum has small total slack but possibly small margin. Tends towards hard-margin behaviour.
+  \item Small $C$: tolerates errors. Optimum has wider margin and more slack — more regularisation, smoother decision boundary.
+\end{itemize}
+
+\textbf{Connection to regularisation (Wk21).} The soft-margin SVM is exactly $C$-rescaled regularised hinge regression: $C$ plays the inverse role of $\lambda$ in $L_2$-regularised loss. Large $C \Leftrightarrow$ small $\lambda$ (less regularisation).
+
+\begin{notebox}[: why $C$ and $\lambda$ are inverses --- a structural flip]
+A standard regularised model is written $\text{Loss} + \lambda\cdot\text{Regularisation}$ — the
+penalty hyperparameter sits on the \emph{regularisation} term, so larger $\lambda$ = more
+regularisation. The soft-margin SVM is written the other way round,
+$\underbrace{\tfrac12\mathbf{w}^\top\mathbf{w}}_{\text{regularisation}} + C\underbrace{\sum_i\xi_i}_{\text{loss}}$
+— the hyperparameter $C$ sits on the \emph{loss} term instead. Because of this flip:
+\textbf{large $C$} weights the loss heavily $\Rightarrow$ misclassifications punished hard
+$\Rightarrow$ small margin, near-hard-margin (\emph{less} regularisation = small $\lambda$);
+\textbf{small $C$} lets the $\tfrac12\|\mathbf{w}\|^2$ term dominate $\Rightarrow$ wider margin, more
+slack tolerated (\emph{more} regularisation = large $\lambda$). Same trade-off, opposite-facing knob.
+\end{notebox}
+
+% =====================================================================
+\section{Hinge loss}
+
+\subsection{Substituting away the slack}
+
+Given $\mathbf{w}, b$, the optimal slack at each $i$ is
+\[
+\xi_i^* = \max\big(0,\;1 - y_i(\mathbf{w}^\top\mathbf{x}_i + b)\big).
+\]
+\textbf{Why?} The constraint forces $\xi_i \ge 1 - y_i(\mathbf{w}^\top\mathbf{x}_i + b)$ when this RHS is positive (point inside margin or misclassified); otherwise $\xi_i = 0$ is feasible. The objective is increasing in $\xi_i$, so we pick the smallest feasible value.
+
+Substituting back:
+\[
+\boxed{\;\min_{\mathbf{w}, b}\;\frac{1}{2}\mathbf{w}^\top\mathbf{w} + C\sum_{i=1}^n \max\big(0,\;1 - y_i(\mathbf{w}^\top\mathbf{x}_i + b)\big).\;}
+\]
+The summand is the \textbf{hinge loss} — a constraint-free, unconstrained version of soft-margin SVM.
+
+\subsection{Definition and shape}
+
+\begin{defbox}[Hinge loss]
+For prediction $\hat y = \mathbf{w}^\top\mathbf{x} + b$ and true label $y \in \{-1, +1\}$:
+\[
+L_{\text{hinge}}(y\hat y) \;=\; \max(0,\;1 - y\hat y).
+\]
+\begin{itemize}
+  \item $y\hat y \ge 1$: zero loss (correctly classified \emph{outside} margin). The model is ``done'' with this point.
+  \item $0 \le y\hat y < 1$: positive loss (correctly classified but \emph{inside} margin). Linear penalty.
+  \item $y\hat y < 0$: large positive loss (misclassified). Linear penalty grows.
+\end{itemize}
+\end{defbox}
+
+\textbf{Two intuitions:}
+\begin{itemize}
+  \item \emph{``Hinge''}: the loss is flat at zero until $y\hat y = 1$, then bends linearly — like a hinge.
+  \item \emph{Margin-based}: the loss penalises predictions that are correct \emph{but not confident enough}, i.e.\ whose margin from the decision boundary is less than 1.
+\end{itemize}
+
+\subsection{Hinge loss vs 0--1 loss}
+
+\examflag{}\textbf{Past paper Q6(e).} Compare hinge to 0--1 loss.
+
+\begin{defbox}[0--1 loss]
+\[
+L_{0/1}(y\hat y) \;=\; \begin{cases} 0 & \text{if } y\hat y \ge 0, \\ 1 & \text{if } y\hat y < 0. \end{cases}
+\]
+The natural classification metric: 0 if correctly classified, 1 if not.
+\end{defbox}
+
+\textbf{Why we don't optimise 0--1 directly.} 0--1 loss is \textbf{non-convex} and \textbf{non-differentiable}. Optimising it is NP-hard in general — no polynomial-time algorithm.
+
+\textbf{Why hinge loss instead.} Hinge loss is:
+\begin{itemize}
+  \item \textbf{Convex} — convex optimisation tools apply.
+  \item \textbf{An upper bound on 0--1 loss} — minimising hinge implies minimising an upper bound on the misclassification rate.
+  \item \textbf{Tight at the right places} — the hinge is exactly 0 when the 0--1 loss is 0 with margin $\ge 1$; the hinge is exactly 1 when 0--1 jumps from 0 to 1.
+\end{itemize}
+
+\textbf{The picture.}
+
+\begin{verbatim}
+3  │\.
+   │ \.
+2  │  \.        hinge: max(0, 1 - y*y_hat)
+   │   \.
+1  │....\___    0--1: 0 for y*y_hat >= 0, 1 otherwise
+   │     \. \ . . . . . . .
+0  ──────────●─────────────
+  -2 -1  0  1  2     y * y_hat
+\end{verbatim}
+
+The green step (0--1) and blue line (hinge) coincide at $y\hat y = 0$ (loss $= 1$) and at $y\hat y = 1$ (loss $= 0$). Between these points and below them, hinge is the convex upper bound — exactly tracking the 0--1 loss except for the convex relaxation in the ``inside margin'' region.
+
+\begin{center}
+
+\footnotesize\textit{The \textbf{green} step function is the 0--1 loss and the \textbf{blue} diagonal is the hinge loss, both plotted against $y\hat{y}$ on the horizontal axis. The 0--1 loss is exactly 1 for all $y\hat{y} < 0$ (misclassified) and drops abruptly to 0 at $y\hat{y} = 0$ --- a non-convex, non-differentiable step. The hinge loss follows the line $1 - y\hat{y}$ for $y\hat{y} < 1$ and is flat at 0 for $y\hat{y} \ge 1$, forming a ``hinge'' at $y\hat{y} = 1$. Notice that the blue line lies \emph{above or equal to} the green step everywhere --- hinge is a convex upper bound on 0--1 --- and the two coincide at $y\hat{y} = 0$ (both equal 1) and for $y\hat{y} \ge 1$ (both equal 0). The hinge's convexity is what makes the SVM tractable.}
+\end{center}
+
+\textbf{Other convex upper bounds on 0--1 exist} (e.g.\ logistic loss, squared hinge), but hinge is the canonical SVM choice.
+
+% =====================================================================
+\section{KKT for soft-margin SVM}
+
+The Lagrangian now has two sets of multipliers — $\mu_i$ for the margin constraints and $\lambda_i$ for the slack non-negativity.
+
+\subsection{The Lagrangian}
+
+\[
+L(\mathbf{w}, b, \boldsymbol\xi, \boldsymbol\mu, \boldsymbol\lambda) \;=\; \tfrac{1}{2}\mathbf{w}^\top\mathbf{w} + C\sum_i \xi_i + \sum_i \mu_i\big(1 - \xi_i - y_i(\mathbf{w}^\top\mathbf{x}_i + b)\big) - \sum_i \lambda_i \xi_i,
+\]
+with $\mu_i \ge 0$ and $\lambda_i \ge 0$.
+
+\subsection{The nine KKT conditions}
+
+\begin{tabularx}{\linewidth}{@{}lX@{}}
+\toprule
+\thead{Condition} & \thead{Equation / interpretation} \\
+\midrule
+C1 (stationarity in $\mathbf{w}$) & $\nabla_\mathbf{w} L = 0 \Rightarrow \mathbf{w}^* = \sum_i \mu_i^* y_i \mathbf{x}_i$ \\
+C2 (stationarity in $b$)        & $\partial L/\partial b = 0 \Rightarrow \sum_i \mu_i^* y_i = 0$ \\
+C3 (stationarity in $\xi_i$)    & $\partial L/\partial \xi_i = 0 \Rightarrow C - \mu_i - \lambda_i = 0$ \\
+C4 (primal feasibility, margin) & $y_i(\mathbf{w}^{*\top}\mathbf{x}_i + b^*) \ge 1 - \xi_i^*$ \\
+C5 (primal feasibility, slack)  & $\xi_i^* \ge 0$ \\
+C6 (dual feasibility, $\mu$)     & $\mu_i^* \ge 0$ \\
+C7 (dual feasibility, $\lambda$) & $\lambda_i^* \ge 0$ \\
+C8 (complementary slackness, margin) & $\mu_i^*\big(1 - \xi_i^* - y_i(\mathbf{w}^{*\top}\mathbf{x}_i + b^*)\big) = 0$ \\
+C9 (complementary slackness, slack)  & $\lambda_i^* \xi_i^* = 0$ \\
+\bottomrule
+\end{tabularx}
+
+\subsection{\texorpdfstring{The box constraint on $\mu_i$}{The box constraint on mu\_i}}
+
+From C3: $\lambda_i = C - \mu_i$. Combined with C7 ($\lambda_i \ge 0$): $\mu_i \le C$. Combined with C6 ($\mu_i \ge 0$): we get the \textbf{box constraint}
+\[
+\boxed{\;0 \;\le\; \mu_i^* \;\le\; C.\;}
+\]
+This is the only structural change compared to hard-margin SVM. The lecturer notes: ``it bounds how much each training point can influence the optimum.''
+
+\subsection{Three regimes of training points}
+
+By C8 and C9, each training point falls into one of three regimes:
+\begin{enumerate}
+  \item \textbf{$\mu_i^* = 0$}: outside the margin, well-classified. Doesn't contribute to $\mathbf{w}^*$. Most points are here.
+  \item \textbf{$0 < \mu_i^* < C$ and $\xi_i^* = 0$}: \emph{on the margin} ($y_i(\mathbf{w}^{*\top}\mathbf{x}_i + b^*) = 1$). Standard support vectors. Define $b^*$.
+  \item \textbf{$\mu_i^* = C$ and $\xi_i^* > 0$}: inside the margin or misclassified. ``Hard'' support vectors. Their slack absorbs the margin violation.
+\end{enumerate}
+
+In all cases, support vectors are ``challenging'' examples — the optimal hyperplane is determined by the points right at the decision boundary or beyond it.
+
+% =====================================================================
+\section{From linear to non-linear --- feature maps}
+
+\subsection{Why non-linear}
+
+Many real datasets are not separable by any linear hyperplane — for instance, two interleaved clusters or a circular boundary. Linear SVM cannot solve these directly. This is the \emph{third} of three scenarios: (i) linearly separable; (ii) non-separable but still fitted with a linear boundary (the soft-margin case); (iii) genuinely non-linear boundaries. A modern deep-learning classifier (e.g.\ MNIST or CIFAR) lives in this third scenario — it learns a non-linear decision boundary directly in input space.
+
+\textbf{The trick}: map the input $\mathbf{x}$ to a higher-dimensional feature space via a non-linear function $\phi$, then run a \emph{linear} SVM in the feature space. A linear hyperplane in feature space corresponds to a non-linear surface in input space.
+
+\textbf{Feature engineering, then and now.} Before deep learning, ML relied on domain experts hand-crafting feature pipelines — e.g.\ curve-shape features for digit classification, or bigrams like ``not great'' for sentiment analysis — chosen so that the transformed data became (near) linearly separable. Deep learning \emph{automates} this step: its layers before the classifier learn a representation in which the final layer faces a (near) linearly-separable problem. This is why deep learning is also called \textbf{representation learning}, and it is precisely the job that the feature map $\phi$ does by hand here.
+
+\begin{center}
+
+\footnotesize\textit{A two-class dataset (\textbf{red} crosses vs \textbf{blue/purple} crosses) in 2D that is \emph{not} linearly separable --- no straight line can cleanly divide the two classes. The black contour curves are the kernel SVM's decision boundary and margin contours, which wind around the irregular cluster shapes. \textbf{Green circles} mark the support vectors: the training points that lie exactly on or inside the margin and determine the boundary's position. A linear SVM would fail here; a non-linear feature map $\phi$ (or equivalently a kernel) bends the decision surface to fit the data geometry.}
+\end{center}
+
+\subsection{A small example}
+
+\textbf{Setup.} 2D input space; data has four clusters (a XOR pattern) — not linearly separable.
+
+\textbf{Feature map.} $\phi(\mathbf{x}) = (1, x_1, x_2, x_1 x_2)$. The new feature $x_1 x_2$ is positive in two opposite quadrants and negative in the other two — exactly capturing the XOR structure.
+
+\textbf{Decision rule.} A linear classifier in the augmented 4D space, $w_0 + w_1 x_1 + w_2 x_2 + w_3 (x_1 x_2)$, can separate the XOR pattern by setting $w_3 \ne 0$ and $w_1 = w_2 = 0$.
+
+\textbf{In input space, this is a non-linear boundary} — specifically, a hyperbola. The same SVM training algorithm finds it once features are extended.
+
+\begin{center}
+
+\footnotesize\textit{\textbf{Left}: the original 2D input space $(x^{(1)}, x^{(2)})$. \textbf{Red} and \textbf{blue} points form four clusters arranged in a checkerboard (XOR) pattern --- not linearly separable, because any straight line in this plane cuts through both colours. \textbf{Right}: the same data lifted into 3D by adding the product feature $x^{(1)} x^{(2)}$ as the vertical axis. In this lifted space the two classes separate cleanly along the vertical direction, and the grey plane shows a linear hyperplane that achieves perfect separation. Projecting that plane back to the 2D input space gives a non-linear (hyperbolic) decision boundary. This is the core idea of the feature map $\phi$: make the problem linear by changing the representation, not the algorithm.}
+\end{center}
+
+\subsection{The general feature map}
+
+\begin{defbox}[Feature map]
+A non-linear function $\phi : \mathbb{R}^d \to \mathbb{R}^D$ (with $D \ge d$, typically $D \gg d$) mapping each input $\mathbf{x}$ to a higher-dimensional feature representation $\phi(\mathbf{x})$.
+\end{defbox}
+
+\textbf{Examples.}
+\begin{itemize}
+  \item Polynomial of degree 2: $\phi(\mathbf{x}) = (1, x_1, x_2, \ldots, x_d, x_1^2, x_1 x_2, \ldots, x_d^2)$. Dimension $D = O(d^2)$.
+  \item Polynomial of degree $p$: $D = O(d^p)$.
+  \item Trigonometric, splines, basis functions, etc.
+\end{itemize}
+
+\textbf{The cost.} Working in feature space directly costs $O(D)$ per inner product. For high-degree polynomials, $D$ explodes and computation is infeasible. The kernel trick (Wk29) avoids ever forming $\phi$ explicitly.
+
+% =====================================================================
+\section{The dual formulation --- prelude to the kernel trick}
+
+\subsection{Why a dual formulation}
+
+Solving the SVM problem directly (the \emph{primal}) means optimising over $(\mathbf{w}, b, \boldsymbol\xi)$ — $d + 1 + n$ variables. The \textbf{dual} formulation eliminates the primal variables and optimises only over the multipliers $\boldsymbol\mu$ — $n$ variables.
+
+\textbf{Why this matters.} The dual formulation expresses everything in terms of inner products $\phi(\mathbf{x}_i)^\top\phi(\mathbf{x}_j)$. These are the only places $\phi$ appears. Replace inner products by kernel function values, and you have non-linear classification without ever computing $\phi$ explicitly.
+
+\subsection{Deriving the dual}
+
+Start from the primal Lagrangian (hard-margin for clarity; soft-margin is similar with the box constraint):
+\[
+L(\mathbf{w}, b, \boldsymbol\mu) = \tfrac{1}{2}\mathbf{w}^\top\mathbf{w} + \sum_i \mu_i\big(1 - y_i(\mathbf{w}^\top\phi(\mathbf{x}_i) + b)\big), \quad \mu_i \ge 0.
+\]
+\textbf{Step 1 — bound the primal from below.} For any feasible $(\mathbf{w}, b)$, the constraints are satisfied so $1 - y_i(\mathbf{w}^\top\phi(\mathbf{x}_i) + b) \le 0$. Combined with $\mu_i \ge 0$, each $\mu_i(\cdots) \le 0$. Hence
+\[
+L(\mathbf{w}, b, \boldsymbol\mu) \le \tfrac{1}{2}\mathbf{w}^\top\mathbf{w}.
+\]
+\textbf{Step 2 — define the dual function} $g(\boldsymbol\mu) = \min_{\mathbf{w}, b} L(\mathbf{w}, b, \boldsymbol\mu)$.
+
+\textbf{Step 3 — minimise $L$ over the primal variables.} Using stationarity:
+\[
+\nabla_\mathbf{w} L = 0 \Rightarrow \mathbf{w} = \sum_i \mu_i y_i \phi(\mathbf{x}_i), \qquad
+\partial L / \partial b = 0 \Rightarrow \sum_i \mu_i y_i = 0.
+\]
+\textbf{Step 4 — substitute back (the collapse, in full).} First distribute $\mu_i$ through the Lagrangian:
+\[
+L = \tfrac12\mathbf{w}^\top\mathbf{w} + \sum_i\mu_i - \sum_i\mu_i y_i\mathbf{w}^\top\phi(\mathbf{x}_i) - b\sum_i\mu_i y_i.
+\]
+Now apply the two stationarity results:
+\begin{itemize}
+  \item \textbf{Bias term vanishes.} $-b\sum_i\mu_i y_i = -b\cdot 0 = 0$, by $\partial L/\partial b = 0$.
+  \item \textbf{Third term becomes $-\mathbf{w}^\top\mathbf{w}$.} Pull the constant $\mathbf{w}^\top$ out of the sum: $-\mathbf{w}^\top\big(\sum_i\mu_i y_i\phi(\mathbf{x}_i)\big)$. The bracket \emph{is} $\mathbf{w}$ (by $\nabla_\mathbf{w}L=0$), so this is $-\mathbf{w}^\top\mathbf{w}$.
+\end{itemize}
+So $L = \tfrac12\mathbf{w}^\top\mathbf{w} + \sum_i\mu_i - \mathbf{w}^\top\mathbf{w} = \sum_i\mu_i - \tfrac12\mathbf{w}^\top\mathbf{w}$ (the $\tfrac12 - 1 = -\tfrac12$). Finally expand the surviving $\mathbf{w}^\top\mathbf{w}$ using $\mathbf{w} = \sum_i\mu_i y_i\phi(\mathbf{x}_i)$:
+\[
+\mathbf{w}^\top\mathbf{w} = \Big(\sum_i\mu_i y_i\phi(\mathbf{x}_i)\Big)^\top\Big(\sum_j\mu_j y_j\phi(\mathbf{x}_j)\Big) = \sum_{i,j}\mu_i\mu_j y_i y_j\,\phi(\mathbf{x}_i)^\top\phi(\mathbf{x}_j).
+\]
+The Lagrangian has fully collapsed — every primal variable ($\mathbf{w}$, $b$) is gone:
+\[
+g(\boldsymbol\mu) = \sum_i \mu_i - \tfrac{1}{2}\sum_{i, j} \mu_i \mu_j y_i y_j \phi(\mathbf{x}_i)^\top\phi(\mathbf{x}_j).
+\]
+\textbf{Step 5 — the dual problem.} Maximise the lower bound over feasible $\boldsymbol\mu$:
+\[
+\boxed{\;\max_{\boldsymbol\mu \ge 0}\;\sum_i \mu_i - \tfrac{1}{2}\sum_{i,j}\mu_i\mu_j y_i y_j\phi(\mathbf{x}_i)^\top\phi(\mathbf{x}_j) \quad\text{s.t.}\quad \sum_i \mu_i y_i = 0.\;}
+\]
+For soft-margin: add $\mu_i \le C$ to the constraint set.
+
+\begin{notebox}
+\textbf{Why maximise the dual — a numeric picture.} Imagine the (hard-to-find) primal optimum is $p^* = 10$. Every $g(\boldsymbol\mu)$ is a valid \emph{lower bound}, so $g(\boldsymbol\mu) \le 10$ always. You try different $\boldsymbol\mu$ and keep the largest value seen: offered a bound of $9.5$ versus $-1000$, you pick $9.5$ — it pins $p^*$ down more tightly. Maximising over $\boldsymbol\mu$ is just chasing the best (highest) lower bound. The lecturer's analogy: it is like ``guess the exam mark'' where the only feedback is ``higher'' or ``lower'' — you converge on the true value from below.
+\end{notebox}
+
+\subsection{Strong duality}
+
+For convex optimisation problems satisfying constraint qualifications (Slater's condition), the primal and dual have the same optimal value: $p^* = d^*$. \textbf{This holds for the SVM problem.} So:
+\begin{itemize}
+  \item Solving the dual gives the same solution as the primal.
+  \item Solvers can choose whichever is easier — for SVM, the dual is usually preferred because it has fewer variables ($n$ vs $d + 1 + n$) and naturally accommodates kernels.
+\end{itemize}
+
+% =====================================================================
+\section{The kernel trick --- preview}
+
+\subsection{The observation}
+
+The dual problem only ever uses $\phi(\mathbf{x}_i)^\top\phi(\mathbf{x}_j)$ — pairwise inner products in feature space. We never need $\phi(\mathbf{x}_i)$ on its own.
+
+\textbf{Prediction is kernelised too.} Substituting $\mathbf{w}^* = \sum_{i\in\mathcal{S}}\mu_i^* y_i\phi(\mathbf{x}_i)$ into the prediction $\mathbf{w}^{*\top}\phi(\mathbf{x})$ makes the test point $\mathbf{x}$ interact with the support vectors only through inner products $\phi(\mathbf{x}_i)^\top\phi(\mathbf{x})$. So $\phi$ appears \emph{always as dot products} — in training and at test time alike — which is exactly what lets every $\phi(\mathbf{x}_i)^\top\phi(\mathbf{x}_j)$ be swapped for a kernel.
+
+\textbf{This means we don't need to compute $\phi(\mathbf{x})$ explicitly} as long as we have a function $K$ that gives us $\phi(\mathbf{x}_i)^\top\phi(\mathbf{x}_j)$ for any pair of inputs.
+
+\begin{defbox}[Kernel function]
+A function $K : \mathbb{R}^d \times \mathbb{R}^d \to \mathbb{R}$ such that there exists a feature map $\phi$ with
+\[
+K(\mathbf{x}_i, \mathbf{x}_j) = \phi(\mathbf{x}_i)^\top\phi(\mathbf{x}_j).
+\]
+The kernel evaluates the feature-space inner product without explicit computation of $\phi$.
+\end{defbox}
+
+\subsection{Two canonical kernels}
+
+\textbf{Polynomial / quadratic kernel.}
+\[
+K(\mathbf{x}, \mathbf{z}) = (1 + \mathbf{x}^\top\mathbf{z})^2.
+\]
+Corresponds to a polynomial feature map of degree 2.
+
+\textbf{Radial Basis Function (RBF) / Gaussian kernel.}
+\[
+K(\mathbf{x}, \mathbf{z}) = \exp\!\left(-\frac{\|\mathbf{x} - \mathbf{z}\|^2}{2\tau^2}\right).
+\]
+Corresponds to an \textbf{infinite-dimensional} feature map. You could never form $\phi$ explicitly — but you can evaluate $K$ directly. \textbf{This is the magic of the kernel trick.}
+
+\subsection{Kernel SVM}
+
+Substitute $K$ for the inner product:
+\[
+\boxed{\;\max_{\boldsymbol\mu}\;\sum_i \mu_i - \tfrac{1}{2}\sum_{i,j}\mu_i\mu_j y_i y_j K(\mathbf{x}_i, \mathbf{x}_j) \quad\text{s.t.}\quad 0 \le \mu_i \le C, \;\sum_i \mu_i y_i = 0.\;}
+\]
+\textbf{Recovering the bias $b^*$.} Stationarity gives $\mathbf{w}^* = \sum_{i\in\mathcal{S}}\mu_i^* y_i\phi(\mathbf{x}_i)$, but $b^*$ must be recovered separately. Pick \emph{any} support vector $i_0 \in \mathcal{S}$ (an on-margin point, so $y_{i_0}(\mathbf{w}^{*\top}\phi(\mathbf{x}_{i_0}) + b^*) = 1$) and solve for $b^*$:
+\[
+b^* \;=\; y_{i_0} - \mathbf{w}^{*\top}\phi(\mathbf{x}_{i_0}) \;=\; y_{i_0} - \sum_{j\in\mathcal{S}}\mu_j^* y_j K(\mathbf{x}_j, \mathbf{x}_{i_0}).
+\]
+So $b^*$ too is pure kernel evaluations — no $\phi$ needed.
+
+\textbf{Prediction at a new point} (using support vectors $\mathcal{S}$):
+\[
+\hat y(\mathbf{x}) \;=\; \mathrm{sign}\!\left(\sum_{i \in \mathcal{S}} \mu_i^* y_i K(\mathbf{x}_i, \mathbf{x}) + b^*\right).
+\]
+Expanding $b^*$ gives the fully-kernelised prediction in closed form — every term is a kernel evaluation:
+\[
+\hat y(\mathbf{x}) \;=\; \mathrm{sign}\!\left(\sum_{i\in\mathcal{S}}\mu_i^* y_i K(\mathbf{x}_i, \mathbf{x}) + y_{i_0} - \sum_{i\in\mathcal{S}}\mu_i^* y_i K(\mathbf{x}_i, \mathbf{x}_{i_0})\right).
+\]
+\textbf{No $\phi$ ever computed.} Both training (the dual problem) and prediction depend only on kernel evaluations.
+
+Wk29 covers kernel theory in detail (when is a function a valid kernel? combining kernels? properties?). For Wk26 the headline is that the dual formulation \emph{enables} non-linear classification through the kernel trick — without this dual restructuring, SVMs would still be linear-only.
+
+\subsection{The advantages summarised}
+
+\begin{itemize}
+  \item \textbf{Statistical advantage.} Non-linear feature maps enable non-linear decision boundaries, significantly improving classification accuracy on data with non-linear structure.
+  \item \textbf{Computational advantage.} Kernels avoid the cost of explicitly forming high-dimensional features. RBF's infinite feature space is computable in $O(d)$ per kernel evaluation.
+  \item \textbf{Sparsity preserved.} The optimum still depends only on support vectors — usually a small fraction of the training set. The model is sparse \emph{in training points}.
+\end{itemize}
+
+\textbf{The historical role.} ``Kernels were the backbone of ML from early 90's to about a decade ago.'' Deep learning has since shifted attention to learning representations rather than fixed kernels, but kernel methods remain the gold standard on small-to-medium datasets where deep nets overfit.
+
+% =====================================================================
+\section{Exam-mode answers}
+
+\begin{exambox}[{Concept: Define the soft-margin SVM and explain the role of the hyperparameter $C$.}]
+\textit{The soft-margin SVM relaxes the hard-margin constraint by introducing slack variables $\xi_i \ge 0$:}
+\[
+\min_{\mathbf{w}, b, \boldsymbol\xi}\;\tfrac{1}{2}\mathbf{w}^\top\mathbf{w} + C\sum_i \xi_i \quad\text{s.t.}\quad y_i(\mathbf{w}^\top\mathbf{x}_i + b) \ge 1 - \xi_i, \;\xi_i \ge 0.
+\]
+\textit{$C \ge 0$ is the trade-off hyperparameter: large $C$ heavily penalises misclassification, producing a small-margin classifier near the hard-margin solution; small $C$ tolerates errors and produces a wider-margin, more regularised classifier.}
+\end{exambox}
+
+\begin{exambox}[{\examflag{}\doflag{}(Past paper Q6(e)): Write the hinge loss formulation and compare it to the 0--1 loss.}]
+\textit{\textbf{Hinge loss}: for prediction $\hat y$ and true label $y \in \{-1, +1\}$,}
+\[
+L_{\text{hinge}}(y\hat y) = \max(0, 1 - y\hat y).
+\]
+\textit{\textbf{0--1 loss}: $L_{0/1}(y\hat y) = 0$ if $y\hat y \ge 0$, else $1$.}\\[0.3em]
+\textit{\textbf{Comparison.} The 0--1 loss is the natural classification metric (correct = 0, wrong = 1) but is non-convex and non-differentiable, so optimising it is intractable. The hinge loss is a \textbf{convex upper bound} on the 0--1 loss — minimising hinge implies minimising an upper bound on misclassification. Hinge is solvable by convex optimisation tools and produces decision boundaries close to the (inaccessible) 0--1 optimum.}\\[0.3em]
+\textit{\textbf{Pictorial description.} Plot $L$ vs $y\hat y$. The 0--1 loss is a step at $y\hat y = 0$ (height 1 below, height 0 above). The hinge loss is a piecewise-linear function: equal to $1 - y\hat y$ for $y\hat y < 1$ and zero for $y\hat y \ge 1$. Hinge dominates 0--1 everywhere; both are zero for $y\hat y \ge 1$. (4 marks)}
+\end{exambox}
+
+\begin{exambox}[{Concept: How do the KKT conditions of soft-margin SVM differ from hard-margin?}]
+\textit{Three additions: (i) a new stationarity condition for the slack variable, $\partial L/\partial \xi_i = 0 \Rightarrow C - \mu_i - \lambda_i = 0$, where $\lambda_i$ is the multiplier for the slack non-negativity; (ii) primal feasibility for slack, $\xi_i \ge 0$; (iii) dual feasibility for $\lambda$, $\lambda_i \ge 0$, and complementary slackness $\lambda_i\xi_i = 0$. Combining: $\mu_i = C - \lambda_i$ with $\lambda_i \ge 0$ gives the \textbf{box constraint} $0 \le \mu_i \le C$. The hard-margin constraint $\mu_i \ge 0$ is replaced by this two-sided bound.}
+\end{exambox}
+
+\begin{exambox}[{\doflag{}Concept: Define a feature map $\phi$. Give an example of a feature map and show how it enables non-linear classification.}]
+\textit{A \textbf{feature map} $\phi : \mathbb{R}^d \to \mathbb{R}^D$ ($D \ge d$) maps each input to a higher-dimensional representation. Example: $\phi(\mathbf{x}) = (1, x_1, x_2, x_1^2, x_2^2, x_1 x_2)$ for 2D inputs (degree-2 polynomial features).}\\[0.3em]
+\textit{For XOR-like data (4 clusters in 2D, not linearly separable), the feature $x_1 x_2$ is positive in two opposite quadrants and negative in the other two. A linear classifier $w_0 + w_3 (x_1 x_2)$ in the 6D feature space corresponds to a hyperbolic decision boundary in the original 2D input space — non-linearly separating the data. The same SVM training algorithm runs unchanged in the feature space.}
+\end{exambox}
+
+\begin{exambox}[{Concept: State the dual formulation of the linear SVM. Why is it useful for kernels?}]
+\textit{Dual:}
+\[
+\max_{\boldsymbol\mu \ge 0}\;\sum_i \mu_i - \tfrac{1}{2}\sum_{i,j}\mu_i\mu_j y_i y_j \phi(\mathbf{x}_i)^\top\phi(\mathbf{x}_j) \quad\text{s.t.}\quad \sum_i \mu_i y_i = 0.
+\]
+\textit{For soft-margin: add $\mu_i \le C$.}\\[0.3em]
+\textit{\textbf{Useful for kernels} because the dual depends on the feature-space inner product $\phi(\mathbf{x}_i)^\top\phi(\mathbf{x}_j)$ only — never on $\phi(\mathbf{x}_i)$ itself. Replacing this inner product by a kernel function $K(\mathbf{x}_i, \mathbf{x}_j)$ that computes the same value (without explicitly forming $\phi$) yields the kernel SVM. Strong duality holds for the SVM problem (primal $=$ dual optimal value), so the dual gives the same answer as the primal.}
+\end{exambox}
+
+\begin{exambox}[{Concept: What is the kernel trick? Give two example kernels.}]
+\textit{The \textbf{kernel trick} replaces inner products $\phi(\mathbf{x}_i)^\top\phi(\mathbf{x}_j)$ in the SVM dual by a kernel function $K(\mathbf{x}_i, \mathbf{x}_j)$ that computes the same value without ever explicitly forming the feature map $\phi$. This enables non-linear classification with infinite-dimensional feature spaces.}\\[0.3em]
+\textit{\textbf{Polynomial / quadratic kernel}: $K(\mathbf{x}, \mathbf{z}) = (1 + \mathbf{x}^\top\mathbf{z})^2$.}\\[0.3em]
+\textit{\textbf{RBF (Gaussian) kernel}: $K(\mathbf{x}, \mathbf{z}) = \exp(-\|\mathbf{x}-\mathbf{z}\|^2 / 2\tau^2)$. Corresponds to an infinite-dimensional feature map; computing the dot product would be impossible directly.}\\[0.3em]
+\textit{\textbf{Two advantages.} Statistical: non-linear decision boundaries improve accuracy on non-linearly-separable data. Computational: kernels avoid the cost of explicit feature mapping, even for infinite-dimensional spaces.}
+\end{exambox}
+
+% =====================================================================
+\section*{Key equations cheat sheet}
+\addcontentsline{toc}{section}{Key equations cheat sheet}
+
+\begin{tabularx}{\linewidth}{@{}lX@{}}
+\toprule
+\thead{Object} & \thead{Formula} \\
+\midrule
+Soft-margin SVM (primal)         & $\min \tfrac{1}{2}\mathbf{w}^\top\mathbf{w} + C\sum\xi_i$ s.t.\ $y_i(\mathbf{w}^\top\mathbf{x}_i + b) \ge 1 - \xi_i$, $\xi_i \ge 0$ \\
+Hinge loss form                  & $\min \tfrac{1}{2}\|\mathbf{w}\|^2 + C\sum\max(0, 1 - y_i(\mathbf{w}^\top\mathbf{x}_i + b))$ \\
+Hinge loss                       & $L_{\text{hinge}}(y\hat y) = \max(0, 1 - y\hat y)$ \\
+0--1 loss                        & $L_{0/1}(y\hat y) = \mathbf{1}[y\hat y < 0]$ \\
+Box constraint on $\mu_i$        & $0 \le \mu_i^* \le C$ \\
+Stationarity in $\xi_i$          & $C - \mu_i - \lambda_i = 0$ \\
+Optimal $\mathbf{w}^*$           & $\mathbf{w}^* = \sum_{i\in\mathcal{S}}\mu_i^* y_i \phi(\mathbf{x}_i)$ (sum over support vectors) \\
+Dual problem                     & $\max_{\boldsymbol\mu}\sum\mu_i - \tfrac{1}{2}\sum\mu_i\mu_j y_i y_j K(\mathbf{x}_i, \mathbf{x}_j)$ s.t.\ $\sum \mu_i y_i = 0$, $0 \le \mu_i \le C$ \\
+Kernel function                  & $K(\mathbf{x}_i, \mathbf{x}_j) = \phi(\mathbf{x}_i)^\top\phi(\mathbf{x}_j)$ \\
+Polynomial kernel                & $K(\mathbf{x}, \mathbf{z}) = (1 + \mathbf{x}^\top\mathbf{z})^p$ \\
+RBF kernel                       & $K(\mathbf{x}, \mathbf{z}) = \exp(-\|\mathbf{x}-\mathbf{z}\|^2 / 2\tau^2)$ \\
+Kernel SVM prediction            & $\hat y(\mathbf{x}) = \mathrm{sign}\big(\sum_{i\in\mathcal{S}}\mu_i^* y_i K(\mathbf{x}_i, \mathbf{x}) + b^*\big)$ \\
+\bottomrule
+\end{tabularx}
+
+% =====================================================================
+\section*{Pitfalls and traps consolidated}
+\addcontentsline{toc}{section}{Pitfalls and traps consolidated}
+
+\begin{itemize}
+  \item \trapflag{}\textbf{Hinge loss is non-zero even for correct classifications.} If $0 \le y\hat y < 1$ (correctly classified but inside margin), hinge $> 0$. Distinguish from 0--1 loss.
+  \item \textbf{$C$ is the inverse of $\lambda$.} Large $C$ in soft-margin SVM corresponds to small $\lambda$ in $L_2$-regularised loss. Don't confuse the two scales.
+  \item \textbf{Box constraint on $\mu_i$ is two-sided.} $0 \le \mu_i \le C$. Hard-margin SVM has only $\mu_i \ge 0$.
+  \item \textbf{Dual problem is a maximisation, not a minimisation.} The primal minimises; the dual maximises a lower bound (which equals the primal optimum by strong duality).
+  \item \textbf{Strong duality holds because SVM is convex with feasible interior.} Slater's condition is satisfied. Don't assume strong duality elsewhere without verifying.
+  \item \textbf{Hinge loss is a convex upper bound on 0--1.} Don't say ``equals 0--1.'' They coincide at $y\hat y = 0$ and $y\hat y = 1$ but differ in between.
+  \item \textbf{Feature map $\phi$ is fixed, not learned.} Choose $\phi$ in advance (or implicitly via the kernel). SVMs don't learn the feature representation — modern deep nets do.
+  \item \textbf{RBF kernel's feature space is infinite-dimensional.} You cannot form $\phi(\mathbf{x})$ directly; the kernel function is the only way to compute inner products.
+  \item \textbf{The optimal hyperplane is not unique in feature space if the data is separable in many ways}, but the SVM picks the maximum-margin one — same as in input space.
+  \item \textbf{Don't forget the sign in prediction.} The decision function returns $\mathrm{sign}(\cdots)$, not the raw value.
+\end{itemize}
+
+% =====================================================================
+\section*{Self-check questions}
+\addcontentsline{toc}{section}{Self-check questions}
+
+\begin{enumerate}
+  \item Define the soft-margin SVM. What is the role of the slack variable $\xi_i$?
+  \item Explain the role of the hyperparameter $C$. What does large $C$ vs small $C$ buy you?
+  \item Show that, for given $(\mathbf{w}, b)$, the optimal slack is $\xi_i^* = \max(0, 1 - y_i(\mathbf{w}^\top\mathbf{x}_i + b))$.
+  \item Substitute $\xi_i^*$ back into the soft-margin objective to obtain the hinge-loss formulation.
+  \item Define the hinge loss and the 0--1 loss. Compare them on (a) shape, (b) convexity, (c) why we optimise hinge instead of 0--1. (Past paper Q6(e).)
+  \item Sketch the hinge loss and 0--1 loss against $y\hat y$ on the same axes. Identify regions where they coincide and where hinge is larger.
+  \item State the Lagrangian for the soft-margin SVM (with both $\boldsymbol\mu$ and $\boldsymbol\lambda$).
+  \item Derive the box constraint $0 \le \mu_i \le C$ from the KKT stationarity condition for $\xi_i$.
+  \item Identify the three regimes of training points by their values of $\mu_i^*$ and $\xi_i^*$. Which regime contains support vectors?
+  \item Define a feature map $\phi$. Give an example showing how $\phi$ enables a non-linear decision boundary.
+  \item State the dual formulation of the linear SVM with feature map $\phi$. Note where $\phi$ appears.
+  \item What is strong duality and why does it hold for SVM?
+  \item Define a kernel function $K$. Give two examples of kernels.
+  \item Why does the RBF kernel's infinite-dimensional feature space not cause problems?
+  \item Write the kernel SVM prediction rule. Why does it depend only on support vectors?
+  \item Forward link: Wk29 covers kernel theory in detail. What conditions must a function $K$ satisfy to be a valid kernel?
+\end{enumerate}
+
+\end{document}

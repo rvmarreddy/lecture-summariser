@@ -1,0 +1,427 @@
+\documentclass[11pt, a4paper]{article}
+\usepackage{fontspec}
+\setmainfont{Helvetica Neue}
+\setmonofont{Menlo}
+\usepackage{unicode-math}
+\setmathfont{STIX Two Math}
+\usepackage[margin=2cm, top=2cm, bottom=2.5cm]{geometry}
+\usepackage{microtype}
+\usepackage{parskip}
+\setlength{\parskip}{0.6em}\setlength{\parindent}{0pt}
+\usepackage[colorlinks=true, linkcolor=NavyBlue, urlcolor=NavyBlue, citecolor=NavyBlue]{hyperref}
+\usepackage{xcolor}
+\usepackage[dvipsnames]{xcolor}
+\usepackage{amsmath}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{tabularx}
+\newcommand{\thead}[1]{\textbf{#1}}
+\usepackage{enumitem}
+\setlist[itemize]{leftmargin=1.5em, itemsep=0.2em, topsep=0.3em}
+\setlist[enumerate]{leftmargin=1.5em, itemsep=0.2em, topsep=0.3em}
+\usepackage[most]{tcolorbox}
+\tcbuselibrary{breakable, skins, theorems}
+\definecolor{defBg}{HTML}{EAF2FB}\definecolor{defBd}{HTML}{1F4E79}
+\definecolor{exBg}{HTML}{F4F4F4}\definecolor{exBd}{HTML}{555555}
+\definecolor{tipBg}{HTML}{E8F5E9}\definecolor{tipBd}{HTML}{2E7D32}
+\definecolor{trapBg}{HTML}{FCE4EC}\definecolor{trapBd}{HTML}{AD1457}
+\definecolor{pitBg}{HTML}{FFF8E1}\definecolor{pitBd}{HTML}{B27600}
+\definecolor{noteBg}{HTML}{F3E5F5}\definecolor{noteBd}{HTML}{6A1B9A}
+\definecolor{tldrBg}{HTML}{E1F5FE}\definecolor{tldrBd}{HTML}{0277BD}
+\newtcolorbox{defbox}[1][]{enhanced, breakable, colback=defBg, colframe=defBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={Definition: #1}}
+\newtcolorbox{exbox}[1][]{enhanced, breakable, colback=exBg, colframe=exBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={Worked example: #1}}
+\newtcolorbox{exambox}[1][]{enhanced, breakable, colback=tipBg, colframe=tipBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={Exam-mode answer #1}}
+\newtcolorbox{trapbox}[1][]{enhanced, breakable, colback=trapBg, colframe=trapBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={MCQ trap #1}}
+\newtcolorbox{pitfallbox}[1][]{enhanced, breakable, colback=pitBg, colframe=pitBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={Pitfall #1}}
+\newtcolorbox{notebox}[1][]{enhanced, breakable, colback=noteBg, colframe=noteBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={Lecturer aside #1}}
+\newtcolorbox{tldrbox}[1][]{enhanced, breakable, colback=tldrBg, colframe=tldrBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={TL;DR #1}}
+\usepackage{titlesec}
+\titleformat{\section}[block]{\Large\bfseries\color{defBd}}{\thesection.}{0.6em}{}
+\titleformat{\subsection}[block]{\large\bfseries\color{defBd!80!black}}{\thesubsection}{0.5em}{}
+\titleformat{\subsubsection}[block]{\normalsize\bfseries}{}{0pt}{}
+\titlespacing*{\section}{0pt}{1.6em}{0.6em}
+\titlespacing*{\subsection}{0pt}{1.2em}{0.4em}
+\usepackage{fancyhdr}\pagestyle{fancy}\fancyhf{}
+\fancyhead[L]{\small CM52054 — Week 10}\fancyhead[R]{\small Bayesian Linear Regression}
+\fancyfoot[C]{\small\thepage}\renewcommand{\headrulewidth}{0.3pt}
+\newcommand{\examflag}{\textcolor{tipBd}{\textbf{[EXAM]}}\,}
+\newcommand{\trapflag}{\textcolor{trapBd}{\textbf{[TRAP]}}\,}
+\newcommand{\doflag}{\textcolor{defBd}{\textbf{[DO]}}\,}
+\title{\vspace{-1cm}{\Huge\bfseries Week 10 — Bayesian Linear Regression} \\[0.4em]{\large Probabilistic modelling, ML estimation, MAP estimation; how Gaussian noise recovers least-squares and Gaussian priors recover regularised least-squares}}
+\author{\large CM52054 Foundational Machine Learning \\[0.2em]\normalsize University of Bath \,$\cdot$\, Dr Wenbin Li}
+\date{Revision notes}
+\begin{document}
+\maketitle
+\thispagestyle{empty}\vspace{1em}
+
+\begin{tldrbox}
+\begin{itemize}[leftmargin=*]
+  \item Wk10 \emph{re-derives} linear regression from a probabilistic standpoint. Same problem (Wk8 §3.1), same data matrix $\mathbf{X}$ and label vector $\mathbf{y}$ — but with a noise model attached and Bayes' rule on top.
+  \item \textbf{Probabilistic model}: $y_i = \mathbf{w}^\top\mathbf{x}_i + \epsilon_i$ with i.i.d.\ Gaussian noise $\epsilon_i\sim\mathcal{N}(0,\sigma^2)$. Equivalently, $y_i\,|\,\mathbf{x}_i,\mathbf{w}\sim\mathcal{N}(\mathbf{w}^\top\mathbf{x}_i,\sigma^2)$ — every observation is the line plus Gaussian noise.
+  \item \textbf{Likelihood} of the whole dataset (i.i.d.):
+  \[
+  p(\mathbf{y}\,|\,\mathbf{X},\mathbf{w}) \;=\; \prod_{i=1}^N p(y_i\,|\,\mathbf{x}_i,\mathbf{w})
+  \;=\; \frac{1}{(2\pi\sigma^2)^{N/2}}\exp\!\left(-\frac{\|\mathbf{X}\mathbf{w}-\mathbf{y}\|^2}{2\sigma^2}\right).
+  \]
+  \item \textbf{Result 1 — Maximum Likelihood} \doflag{}: $\arg\max_\mathbf{w} p(\mathbf{y}|\mathbf{X},\mathbf{w}) = \arg\min_\mathbf{w}\|\mathbf{X}\mathbf{w}-\mathbf{y}\|^2$. Maximising Gaussian likelihood \emph{is} ordinary least-squares. Wk8's closed form is the ML estimator.
+  \item \textbf{Bayes' rule}: $p(\mathbf{w}\,|\,\mathbf{X},\mathbf{y}) \propto p(\mathbf{y}\,|\,\mathbf{X},\mathbf{w})\,p(\mathbf{w})$. Posterior = Likelihood $\times$ Prior (up to a normaliser). To turn ML into MAP, you add a prior $p(\mathbf{w})$ on the parameters.
+  \item \textbf{Result 2 — MAP with Gaussian prior} \doflag{}: with $p(\mathbf{w})=\mathcal{N}(\mathbf{0},\mathbf{I})$,
+  \[
+  \mathbf{w}_* \;=\; \arg\min_\mathbf{w}\big(\|\mathbf{X}\mathbf{w}-\mathbf{y}\|^2 + \sigma^2\|\mathbf{w}\|^2\big) \;=\; (\mathbf{X}^\top\mathbf{X}+\sigma^2\mathbf{I})^{-1}\mathbf{X}^\top\mathbf{y}.
+  \]
+  Adding a Gaussian prior to ML \emph{is} ridge / $L_2$-regularised least-squares, with regularisation strength $\sigma^2$. Forward link to Wk21.
+  \item \textbf{Optional content} (slide 2 explicitly excludes from exam): full Bayesian linear regression, marginalisation, predictive distribution. \emph{Skipped in these notes.}
+  \item \examflag{}The exam-relevant skill is the two derivations — log-likelihood collapses to least-squares; log-posterior with Gaussian prior collapses to ridge — and the conceptual move ``ML + noise model + prior = MAP.''
+\end{itemize}
+\end{tldrbox}
+
+% =====================================================================
+\section{Why probabilistic modelling}
+
+Wk8 introduced linear regression as a deterministic optimisation: pick $\mathbf{w}$ to minimise $\|\mathbf{X}\mathbf{w}-\mathbf{y}\|^2$. Wk10 reframes the same problem with a \emph{probabilistic} story: assume the labels are produced by a noisy process and ask which parameters are most likely.
+
+The pay-off of the reframing is twofold:
+
+\begin{enumerate}
+  \item \textbf{Ordinary least-squares falls out for free} — under Gaussian noise, maximising the likelihood is exactly minimising squared error. So Wk8's closed-form solution is not a heuristic; it is the maximum-likelihood estimator.
+  \item \textbf{Regularisation falls out for free} — adding a Gaussian prior to the parameters and doing MAP is exactly ridge regression. This is the bridge to Wk21.
+\end{enumerate}
+
+The reframing also opens the door to fully Bayesian regression (predictive distributions, uncertainty quantification), but slide 2 of the lecture explicitly tags that material as ``Optional / not required for the exam.'' These notes follow that lead and treat the optional material as a reading-list pointer only.
+
+% =====================================================================
+\section{The probabilistic model}
+
+\subsection{Noise as a random variable}
+
+Suppose there is a true underlying function $f^*(\mathbf{x})$ producing the labels. Real measurements deviate from $f^*$ for many small reasons (sensor jitter, rounding, random environmental factors). Bundle all those reasons into one random variable $\epsilon$ called the \textbf{noise}:
+\[
+y_i \;=\; f^*(\mathbf{x}_i) + \epsilon_i.
+\]
+We then \emph{model} $f^*$ as a linear function $\mathbf{w}^\top\mathbf{x}$:
+\[
+y_i \;=\; \mathbf{w}^\top\mathbf{x}_i + \epsilon_i.
+\]
+
+\subsection{i.i.d.\ Gaussian noise}
+
+\begin{defbox}[i.i.d. noise]
+A sequence of random variables $\epsilon_1,\ldots,\epsilon_N$ is \textbf{independent and identically distributed} if (i) each $\epsilon_i$ is drawn independently of the others and (ii) all share the same distribution. The classic ML default.
+\end{defbox}
+
+The standard noise distribution is the \textbf{Gaussian} (normal) distribution:
+\[
+\epsilon_i \sim \mathcal{N}(0,\sigma^2),
+\qquad
+\mathcal{N}(\mu,\sigma^2)(x) = \frac{1}{\sqrt{2\pi\sigma^2}}\exp\!\left(-\frac{(x-\mu)^2}{2\sigma^2}\right).
+\]
+Zero mean (the noise is unbiased — it doesn't systematically push observations up or down) and variance $\sigma^2$ (the spread). Geometrically $\sigma$ sets the \emph{width} of the bell curve, with two limiting cases: as $\sigma\to0$ the distribution collapses to a single point (every sample equals the mean $\mu$), and as $\sigma$ becomes very large it flattens out towards a uniform, effectively random distribution.
+
+\subsection{Conditional distribution of an observation}
+
+Given $\mathbf{w}$ and $\mathbf{x}_i$, the only randomness in $y_i$ is the noise $\epsilon_i$. Subtracting:
+\[
+y_i - \mathbf{w}^\top\mathbf{x}_i \;=\; \epsilon_i \;\sim\; \mathcal{N}(0,\sigma^2),
+\]
+so
+\[
+y_i \,|\,\mathbf{x}_i,\mathbf{w} \;\sim\; \mathcal{N}(\mathbf{w}^\top\mathbf{x}_i,\sigma^2),
+\qquad
+p(y_i\,|\,\mathbf{x}_i,\mathbf{w}) \;=\; \frac{1}{\sqrt{2\pi\sigma^2}}\exp\!\left(-\frac{(y_i-\mathbf{w}^\top\mathbf{x}_i)^2}{2\sigma^2}\right).
+\]
+\textbf{Read this carefully.} For fixed $\mathbf{x}_i$ and $\mathbf{w}$, the label $y_i$ is a Gaussian random variable centred on the model prediction $\mathbf{w}^\top\mathbf{x}_i$ with the same variance $\sigma^2$ as the noise.
+
+\begin{trapbox}[: ``likelihood'' is not the probability that $\mathbf{w}$ is correct]
+The single most common misreading: \emph{``the likelihood tells me how probable my parameters $\mathbf{w}$ are.''} It is the \textbf{exact reverse}. The likelihood $p(\mathbf{y}\,|\,\mathbf{X},\mathbf{w})$ is the probability of observing the \emph{exact data you actually collected}, \emph{assuming} a specific $\mathbf{w}$ is the truth. The data is the fixed thing; $\mathbf{w}$ is the variable you slide around.
+
+\textbf{Coin example.} You flip a coin 10 times and see 9 heads. That ``9 heads in 10 flips'' is the \emph{fixed observed data}. Now ask two questions:
+\begin{itemize}
+  \item Likelihood of ``fair coin'' ($w = 0.5$): how probable is 9-out-of-10-heads if the coin were fair? \emph{Low} --- a fair coin rarely produces such a lopsided run.
+  \item Likelihood of ``weighted coin'' ($w = 0.9$): how probable is 9-out-of-10-heads if the coin landed heads 90\% of the time? \emph{High} --- this is exactly what such a coin tends to do.
+\end{itemize}
+At no point are you computing ``the probability the coin is fair.'' You are scoring each candidate $w$ by how unsurprising it renders the data you already have. \textbf{Maximum likelihood} simply picks the $w$ under which the observed data is \emph{least surprising} --- here, $w$ near $0.9$. The likelihood is a function \emph{of $\mathbf{w}$}, with $\mathbf{y}$ held fixed; it is \emph{not} a probability distribution over $\mathbf{w}$ and need not integrate to 1 over $\mathbf{w}$.
+\end{trapbox}
+
+% =====================================================================
+\section{Maximum likelihood estimation}
+
+\subsection{The likelihood of a dataset}
+
+Given $N$ i.i.d.\ samples, the joint probability of the labels factorises:
+\[
+p(\mathbf{y}\,|\,\mathbf{X},\mathbf{w}) \;=\; \prod_{i=1}^N p(y_i\,|\,\mathbf{x}_i,\mathbf{w}).
+\]
+Substituting the per-sample Gaussian:
+\[
+p(\mathbf{y}\,|\,\mathbf{X},\mathbf{w}) \;=\; \prod_{i=1}^N \frac{1}{\sqrt{2\pi\sigma^2}}\exp\!\left(-\frac{(y_i-\mathbf{w}^\top\mathbf{x}_i)^2}{2\sigma^2}\right)
+\;=\; \frac{1}{(2\pi\sigma^2)^{N/2}}\exp\!\left(-\frac{\sum_i(y_i-\mathbf{w}^\top\mathbf{x}_i)^2}{2\sigma^2}\right).
+\]
+The exponent's numerator is exactly the sum of squared errors. Recognising the matrix form $\sum_i(y_i-\mathbf{w}^\top\mathbf{x}_i)^2 = \|\mathbf{X}\mathbf{w}-\mathbf{y}\|^2$ from Wk8 §3.3:
+\[
+\boxed{\;p(\mathbf{y}\,|\,\mathbf{X},\mathbf{w}) \;=\; \frac{1}{(2\pi\sigma^2)^{N/2}}\exp\!\left(-\frac{\|\mathbf{X}\mathbf{w}-\mathbf{y}\|^2}{2\sigma^2}\right).\;}
+\]
+
+\subsection{Maximum likelihood = least squares}
+
+\begin{defbox}[Maximum Likelihood (ML) estimation]
+Pick the parameter that makes the observed data most probable:
+\[
+\mathbf{w}_* \;=\; \arg\max_\mathbf{w}\, p(\mathbf{y}\,|\,\mathbf{X},\mathbf{w}).
+\]
+\end{defbox}
+
+Substituting the Gaussian likelihood:
+\[
+\mathbf{w}_* \;=\; \arg\max_\mathbf{w} \frac{1}{(2\pi\sigma^2)^{N/2}}\exp\!\left(-\frac{\|\mathbf{X}\mathbf{w}-\mathbf{y}\|^2}{2\sigma^2}\right).
+\]
+The prefactor $1/(2\pi\sigma^2)^{N/2}$ doesn't depend on $\mathbf{w}$, so it drops out of the $\arg\max$. The exponential is monotone-decreasing in its (positive) argument, so $\arg\max\exp(-A) = \arg\min A$. Therefore
+\[
+\mathbf{w}_* \;=\; \arg\min_\mathbf{w}\,\|\mathbf{X}\mathbf{w}-\mathbf{y}\|^2.
+\]
+\textbf{This is the least-squares problem from Wk8.} The closed-form solution $\mathbf{w}_* = (\mathbf{X}^\top\mathbf{X})^{-1}\mathbf{X}^\top\mathbf{y}$ is the maximum-likelihood estimator under i.i.d.\ Gaussian noise.
+
+\examflag{}The phrase to memorise: \emph{``Under i.i.d.\ Gaussian noise, ML estimation is equivalent to least squares.''} This is the headline result of the lecture's first half and a likely Q4-style scenario question.
+
+\begin{notebox}[: log-likelihood is the natural object]
+Most ML practitioners maximise the \textbf{log-likelihood} $\log p(\mathbf{y}|\mathbf{X},\mathbf{w})$ rather than $p$ itself. Logarithm is monotone, so the $\arg\max$ is unchanged, and (a) the product over samples becomes a sum (much friendlier numerically), and (b) the exponential goes away. For the Gaussian likelihood:
+\[
+\log p(\mathbf{y}\,|\,\mathbf{X},\mathbf{w}) = -\tfrac{N}{2}\log(2\pi\sigma^2) - \tfrac{1}{2\sigma^2}\|\mathbf{X}\mathbf{w}-\mathbf{y}\|^2.
+\]
+The first term is constant in $\mathbf{w}$; maximising the second is equivalent to minimising $\|\mathbf{X}\mathbf{w}-\mathbf{y}\|^2$. Same conclusion, cleaner derivation.
+\end{notebox}
+
+% =====================================================================
+\section{Bayes' rule and MAP estimation}
+
+ML has a weakness: it needs a lot of data, and on a small or unrepresentative dataset it overfits. The lecturer's concrete motivation: flip a coin three times and get three heads — maximum likelihood concludes the coin \emph{always} lands heads, because that is literally the parameter that makes the observed data most probable. The fix is to bring in prior knowledge about the parameters, which is exactly what \textbf{MAP} estimation does via Bayes' rule.
+
+\subsection{Bayes' rule}
+
+\begin{defbox}[Bayes' rule]
+For two events $A, B$ with non-zero probabilities,
+\[
+P(A\,|\,B) \;=\; \frac{P(B\,|\,A)\,P(A)}{P(B)}.
+\]
+Applied to ML inference with $A = \mathbf{w}$ (the hypothesis) and $B = (\mathbf{X},\mathbf{y})$ (the data):
+\[
+\underbrace{p(\mathbf{w}\,|\,\mathbf{X},\mathbf{y})}_{\text{posterior}} \;=\; \frac{\overbrace{p(\mathbf{y}\,|\,\mathbf{X},\mathbf{w})}^{\text{likelihood}}\,\overbrace{p(\mathbf{w})}^{\text{prior}}}{\underbrace{p(\mathbf{y}\,|\,\mathbf{X})}_{\text{evidence}}}.
+\]
+``Posterior = Likelihood $\times$ Prior, normalised by Evidence.'' Since evidence is a constant in $\mathbf{w}$, it can be dropped for $\arg\max$:
+\[
+p(\mathbf{w}\,|\,\mathbf{X},\mathbf{y}) \;\propto\; p(\mathbf{y}\,|\,\mathbf{X},\mathbf{w})\,p(\mathbf{w}).
+\]
+\end{defbox}
+
+\subsection{MAP estimation}
+
+\begin{defbox}[Maximum A Posteriori (MAP) estimation]
+Pick the parameter most probable \emph{after} seeing the data:
+\[
+\mathbf{w}_* \;=\; \arg\max_\mathbf{w}\, p(\mathbf{w}\,|\,\mathbf{X},\mathbf{y}) \;=\; \arg\max_\mathbf{w}\, p(\mathbf{y}\,|\,\mathbf{X},\mathbf{w})\,p(\mathbf{w}).
+\]
+\end{defbox}
+
+\textbf{Compare with ML:}
+
+\begin{tabularx}{\linewidth}{@{}lXX@{}}
+\toprule
+& \thead{ML} & \thead{MAP} \\
+\midrule
+Maximises    & likelihood $p(\mathbf{y}|\mathbf{X},\mathbf{w})$       & posterior $p(\mathbf{w}|\mathbf{X},\mathbf{y})$ \\
+Uses prior?  & no                                                    & yes (multiplied in) \\
+Reduces to ML? & —                                                    & yes, when $p(\mathbf{w})$ is uniform (uninformative) \\
+Equivalent unregularised problem & least squares                     & regularised least squares (with Gaussian prior) \\
+\bottomrule
+\end{tabularx}
+
+MAP is ML with extra information about $\mathbf{w}$ baked in via $p(\mathbf{w})$. If you have no information, $p(\mathbf{w})$ is constant, the prior factor drops out of the $\arg\max$, and MAP collapses to ML.
+
+\subsection{The Gaussian prior}
+
+The simplest non-trivial prior on $\mathbf{w}$ is a zero-mean isotropic Gaussian:
+\[
+p(\mathbf{w}) \;=\; \mathcal{N}(\mathbf{0},\mathbf{I}) \;=\; \frac{1}{(2\pi)^{M/2}}\exp\!\left(-\frac{\|\mathbf{w}\|^2}{2}\right).
+\]
+\textbf{Translation in plain English.} ``Without seeing the data, I expect the weights to be small (around zero). I'm equally suspicious of any weight component being big in any direction.'' This is a natural default when you have no domain knowledge about $\mathbf{w}$.
+
+\begin{notebox}[: prior vs posterior --- belief before vs after the data]
+Two beliefs about $\mathbf{w}$, separated by the act of seeing data:
+\begin{itemize}
+  \item \textbf{Prior} $p(\mathbf{w})$ --- your belief about $\mathbf{w}$ \emph{before} you have looked at $(\mathbf{X},\mathbf{y})$. It encodes assumptions you bring to the problem (here: ``weights are probably small'').
+  \item \textbf{Posterior} $p(\mathbf{w}\,|\,\mathbf{X},\mathbf{y})$ --- your \emph{updated} belief about $\mathbf{w}$ \emph{after} the data has spoken.
+\end{itemize}
+Bayes' rule is the update mechanism: \emph{posterior $\propto$ likelihood $\times$ prior}. The likelihood pulls the belief toward parameters that explain the data; the prior anchors it toward what you assumed beforehand; the posterior is their reconciliation. \textbf{MAP} estimation picks the single peak of the posterior --- the most probable $\mathbf{w}$ \emph{after} updating.
+
+\textbf{Coin analogy.} Prior: ``most coins I have ever met are fair,'' so $p(w)$ is concentrated near $w=0.5$. You then flip and see 9 heads in 10. The likelihood favours $w\approx0.9$. The posterior is the compromise: it shifts \emph{away} from $0.5$ \emph{toward} ``weighted,'' but --- because the prior resisted --- not all the way to $0.9$. More data would overwhelm the prior and drag the posterior further toward the likelihood's verdict.
+\end{notebox}
+
+\subsection{MAP with Gaussian prior — the derivation}
+
+Plug the Gaussian likelihood and the Gaussian prior into the MAP objective:
+\[
+p(\mathbf{w}\,|\,\mathbf{X},\mathbf{y}) \;\propto\; \frac{1}{(2\pi\sigma^2)^{N/2}}\exp\!\left(-\frac{\|\mathbf{X}\mathbf{w}-\mathbf{y}\|^2}{2\sigma^2}\right) \cdot \frac{1}{(2\pi)^{M/2}}\exp\!\left(-\frac{\|\mathbf{w}\|^2}{2}\right).
+\]
+Take the log; drop terms constant in $\mathbf{w}$:
+\[
+\log p(\mathbf{w}\,|\,\mathbf{X},\mathbf{y}) \;=\; -\frac{1}{2\sigma^2}\|\mathbf{X}\mathbf{w}-\mathbf{y}\|^2 \;-\; \frac{1}{2}\|\mathbf{w}\|^2 \;+\; \text{const}.
+\]
+Multiply through by $-2\sigma^2$ (flips $\arg\max$ to $\arg\min$, scales constants):
+\[
+\mathbf{w}_* \;=\; \arg\min_\mathbf{w}\big(\|\mathbf{X}\mathbf{w}-\mathbf{y}\|^2 + \sigma^2\|\mathbf{w}\|^2\big).
+\]
+\textbf{This is regularised least-squares.} The prior contributes a $\sigma^2\|\mathbf{w}\|^2$ penalty pushing $\mathbf{w}$ towards zero; the noise variance $\sigma^2$ plays the role of the regularisation coefficient.
+
+\begin{notebox}[: why $\sigma^2$ vanishes in plain ML but survives in MAP]
+A natural puzzle: in the ML derivation the $1/(2\sigma^2)$ factor sat right in front of $\|\mathbf{X}\mathbf{w}-\mathbf{y}\|^2$, yet it \emph{cancelled} and never reached the answer; here in MAP the same $\sigma^2$ \emph{is} the answer. Why the difference?
+
+\textbf{In ML there is only one term.} The whole objective is $\tfrac{1}{2\sigma^2}\|\mathbf{X}\mathbf{w}-\mathbf{y}\|^2$. With nothing to balance it against, $\sigma^2$ is merely the \emph{unit} the error is measured in --- it scales the entire objective \emph{uniformly}. Scaling a function by a positive constant never moves its minimiser ($\arg\min cf = \arg\min f$ for $c>0$), so $\sigma^2$ drops out of the $\arg\min$.
+
+\textbf{In MAP there are two competing terms.} The objective is a \emph{tug-of-war}:
+\[
+\underbrace{\tfrac{1}{2\sigma^2}\|\mathbf{X}\mathbf{w}-\mathbf{y}\|^2}_{\text{likelihood: fit the data}}
+\;\;+\;\;
+\underbrace{\tfrac{1}{2}\|\mathbf{w}\|^2}_{\text{prior: shrink }\mathbf{w}\text{ to }\mathbf{0}}.
+\]
+Now $\sigma^2$ no longer scales the \emph{whole} objective --- it sits in front of only \emph{one} of the two terms, so it sets the \emph{relative} weight of the two pulls. It cannot cancel. Multiplying through by $\sigma^2$ just relocates it onto the prior term, where it becomes the regularisation coefficient $\sigma^2\|\mathbf{w}\|^2$. Think of $\sigma^2$ as a \textbf{trust factor}: large $\sigma^2$ (the data is noisy, not to be trusted) $\Rightarrow$ stronger pull to the prior, more shrinkage; small $\sigma^2$ (clean, reliable data) $\Rightarrow$ the prior is almost ignored and MAP behaves like ordinary least-squares.
+\end{notebox}
+
+\textbf{Closed-form solution.} Expand and differentiate (Wk8's method):
+\[
+\nabla_\mathbf{w}\big(\|\mathbf{X}\mathbf{w}-\mathbf{y}\|^2 + \sigma^2\|\mathbf{w}\|^2\big) \;=\; 2\mathbf{X}^\top\mathbf{X}\mathbf{w} - 2\mathbf{X}^\top\mathbf{y} + 2\sigma^2\mathbf{w}.
+\]
+Set to $\mathbf{0}$:
+\[
+(\mathbf{X}^\top\mathbf{X} + \sigma^2\mathbf{I})\mathbf{w}_* \;=\; \mathbf{X}^\top\mathbf{y}
+\quad\Longrightarrow\quad
+\boxed{\;\mathbf{w}_*^{\text{MAP}} \;=\; (\mathbf{X}^\top\mathbf{X} + \sigma^2\mathbf{I})^{-1}\mathbf{X}^\top\mathbf{y}.\;}
+\]
+\doflag{}This is exactly the closed-form ridge / $L_2$-regularised least-squares solution. The Wk21 lecture introduces it on regularisation grounds; here you see it falls out of MAP with a Gaussian prior. Same formula, different motivation.
+
+\examflag{}The phrase to memorise: \emph{``MAP with a Gaussian prior is equivalent to ridge / $L_2$-regularised least-squares, with regularisation strength $\sigma^2$ (the noise variance).''}
+
+\subsection{What the prior buys you}
+
+\textbf{Numerical stability.} Even if $\mathbf{X}^\top\mathbf{X}$ is singular (ill-conditioned, rank-deficient), $\mathbf{X}^\top\mathbf{X} + \sigma^2\mathbf{I}$ is always invertible: adding a positive multiple of identity bumps every eigenvalue up by $\sigma^2$. The MAP solution exists and is unique even when the ML solution doesn't.
+
+\textbf{Bias towards zero.} Without the prior, large weights are equally plausible to the optimiser as small weights, as long as they fit the data. The Gaussian prior \emph{biases} the optimum towards small weights — a form of inductive bias, useful when you suspect the true $\mathbf{w}$ is sparse-ish or small.
+
+\textbf{Reduces overfitting.} A model with smaller weights typically has smoother predictions and generalises better. The bias-variance trade-off (Wk3) is implicitly tuned by $\sigma^2$.
+
+\begin{pitfallbox}[: ML and MAP are point estimates, not full Bayesian inference]
+Both ML and MAP return a single $\mathbf{w}_*$ --- one ``best'' point. A single $\mathbf{w}_*$ produces a single-number prediction $\mathbf{w}_*^\top\mathbf{x}_{\text{new}}$ with \textbf{no attached uncertainty}: the model says ``5'' and gives you no idea whether it means ``5, and I'd bet my house on it'' or ``5, but honestly could be anything.''
+
+\textbf{Full Bayesian inference} (the optional/non-examinable extension) does not collapse to a point. It keeps the \emph{whole} posterior $p(\mathbf{w}\,|\,\mathbf{X},\mathbf{y})$ and \emph{integrates it out} --- letting every plausible $\mathbf{w}$ vote, weighted by its posterior probability --- to produce a predictive \emph{distribution} rather than a number: ``most likely 5, plausibly anywhere between 3 and 7.'' That error bar is the practical pay-off. For this unit you only need to know the distinction exists; do not derive it.
+\end{pitfallbox}
+
+% =====================================================================
+\section{The summary algorithm}
+
+\textbf{Training:}
+\begin{enumerate}
+  \item Build $\mathbf{X}\in\mathbb{R}^{N\times M}$ stacking inputs, $\mathbf{y}\in\mathbb{R}^N$ stacking labels.
+  \item Pick noise variance $\sigma^2$ (a hyperparameter; in this unit it is given).
+  \item Compute $\mathbf{w}_* = (\mathbf{X}^\top\mathbf{X} + \sigma^2\mathbf{I})^{-1}\mathbf{X}^\top\mathbf{y}$.
+\end{enumerate}
+
+\textbf{Testing:} given a new input $\mathbf{x}_{\text{new}}$, predict
+\[
+f(\mathbf{x}_{\text{new}}) \;=\; \mathbf{w}_*^\top\mathbf{x}_{\text{new}}.
+\]
+Same prediction rule as ordinary linear regression — only the $\mathbf{w}_*$ is different.
+
+% =====================================================================
+\section{What's optional (and skipped)}
+
+Slide 2 of the lecture: ``Any 'Optional' slides/content will not be required in the final exam.'' The optional block (slides 15--21) covers \emph{full} Bayesian linear regression — marginalising over $\mathbf{w}$ to produce a predictive \emph{distribution} rather than a point estimate. The headline results (not for exam) are:
+\[
+p(\mathbf{w}\,|\,\mathbf{X},\mathbf{y}) \;=\; \mathcal{N}\big((\mathbf{X}^\top\mathbf{X}+\sigma^2\mathbf{I})^{-1}\mathbf{X}^\top\mathbf{y},\,\sigma^2(\mathbf{X}^\top\mathbf{X}+\sigma^2\mathbf{I})^{-1}\big),
+\]
+\[
+p(y_{\text{new}}\,|\,\mathbf{x}_{\text{new}},\mathbf{X},\mathbf{y}) \;=\; \mathcal{N}\big(\mathbf{x}_{\text{new}}^\top\mathbf{w}_*,\,\sigma^2\mathbf{x}_{\text{new}}^\top(\mathbf{X}^\top\mathbf{X}+\sigma^2\mathbf{I})^{-1}\mathbf{x}_{\text{new}}\big).
+\]
+Useful for predictive uncertainty, but the exam only requires you to know that ML/MAP give point estimates and that the next step in the chain (which you would learn in a Bayesian ML course like CM50268) is the predictive distribution. Don't burn revision time on this.
+
+% =====================================================================
+\section{Exam-mode answers}
+
+\begin{exambox}[{\doflag{}Show that under i.i.d.\ Gaussian noise, maximum-likelihood estimation reduces to least-squares regression.}]
+\textit{\textbf{Step 1 — model.} $y_i = \mathbf{w}^\top\mathbf{x}_i + \epsilon_i$ with $\epsilon_i\sim\mathcal{N}(0,\sigma^2)$ i.i.d., so $y_i|\mathbf{x}_i,\mathbf{w}\sim\mathcal{N}(\mathbf{w}^\top\mathbf{x}_i,\sigma^2)$.}\\[0.3em]
+\textit{\textbf{Step 2 — likelihood.} $p(\mathbf{y}|\mathbf{X},\mathbf{w}) = \prod_i p(y_i|\mathbf{x}_i,\mathbf{w}) = \frac{1}{(2\pi\sigma^2)^{N/2}}\exp(-\|\mathbf{X}\mathbf{w}-\mathbf{y}\|^2/(2\sigma^2))$.}\\[0.3em]
+\textit{\textbf{Step 3 — log-likelihood.} $\log p = -\frac{N}{2}\log(2\pi\sigma^2) - \frac{1}{2\sigma^2}\|\mathbf{X}\mathbf{w}-\mathbf{y}\|^2$.}\\[0.3em]
+\textit{\textbf{Step 4 — drop constants and flip sign.} $\arg\max_\mathbf{w}\log p = \arg\min_\mathbf{w}\|\mathbf{X}\mathbf{w}-\mathbf{y}\|^2$, the least-squares problem. (4 marks)}
+\end{exambox}
+
+\begin{exambox}[{\doflag{}Show that MAP estimation with a zero-mean isotropic Gaussian prior on $\mathbf{w}$ reduces to $L_2$-regularised least-squares.}]
+\textit{\textbf{Step 1.} Posterior $p(\mathbf{w}|\mathbf{X},\mathbf{y}) \propto p(\mathbf{y}|\mathbf{X},\mathbf{w})\,p(\mathbf{w})$.}\\[0.3em]
+\textit{\textbf{Step 2.} Substitute Gaussian likelihood and Gaussian prior $p(\mathbf{w}) = \mathcal{N}(\mathbf{0},\mathbf{I})$.}\\[0.3em]
+\textit{\textbf{Step 3 — log-posterior.} $\log p(\mathbf{w}|\mathbf{X},\mathbf{y}) = -\frac{1}{2\sigma^2}\|\mathbf{X}\mathbf{w}-\mathbf{y}\|^2 - \frac{1}{2}\|\mathbf{w}\|^2 + \mathrm{const}$.}\\[0.3em]
+\textit{\textbf{Step 4 — multiply by $-2\sigma^2$:} $\mathbf{w}_*^{\text{MAP}} = \arg\min_\mathbf{w}(\|\mathbf{X}\mathbf{w}-\mathbf{y}\|^2 + \sigma^2\|\mathbf{w}\|^2)$.}\\[0.3em]
+\textit{\textbf{Step 5 — closed form.} Differentiate, set to zero: $\mathbf{w}_*^{\text{MAP}} = (\mathbf{X}^\top\mathbf{X}+\sigma^2\mathbf{I})^{-1}\mathbf{X}^\top\mathbf{y}$. The regularisation strength is the noise variance $\sigma^2$. (5 marks)}
+\end{exambox}
+
+\begin{exambox}[Concept: state Bayes' rule and identify each term in the context of regression.]
+\textit{$p(\mathbf{w}|\mathbf{X},\mathbf{y}) = p(\mathbf{y}|\mathbf{X},\mathbf{w})\,p(\mathbf{w})\,/\,p(\mathbf{y}|\mathbf{X})$, or equivalently \emph{posterior $\propto$ likelihood $\times$ prior}. Likelihood: how probable the observed labels are given the model and inputs. Prior: belief about the parameters before seeing the data. Posterior: belief about the parameters after seeing the data. Evidence (denominator): a normalising constant in $\mathbf{w}$, dropped for $\arg\max$.}
+\end{exambox}
+
+\begin{exambox}[Concept: contrast ML and MAP estimation.]
+\textit{Both are point estimators of $\mathbf{w}$. ML maximises $p(\mathbf{y}|\mathbf{X},\mathbf{w})$ — uses only the data. MAP maximises $p(\mathbf{w}|\mathbf{X},\mathbf{y}) \propto p(\mathbf{y}|\mathbf{X},\mathbf{w})\,p(\mathbf{w})$ — uses data and a prior. With a uniform prior, MAP $=$ ML. With an informative prior, MAP biases the estimate towards the prior. Under Gaussian noise, ML $=$ least-squares; under additionally Gaussian prior, MAP $=$ ridge regression with regularisation $\sigma^2$.}
+\end{exambox}
+
+\begin{exambox}[Concept: why is the regularisation strength $\sigma^2$ and not some unrelated $\lambda$?]
+\textit{In the MAP derivation, the prior contributes a $\frac{1}{2}\|\mathbf{w}\|^2$ term to the negative log-posterior, while the likelihood contributes $\frac{1}{2\sigma^2}\|\mathbf{X}\mathbf{w}-\mathbf{y}\|^2$. To express the $\arg\max$ as a single $\arg\min$ with a clean penalty, we multiply through by $\sigma^2$, and the prior's coefficient becomes $\sigma^2$. So the noise variance plays the role of the regularisation strength: noisier data $\Rightarrow$ larger $\sigma^2$ $\Rightarrow$ stronger pull to small $\mathbf{w}$, which makes sense (when data is unreliable, trust the prior more).}
+\end{exambox}
+
+% =====================================================================
+\section*{Key equations cheat sheet}
+\addcontentsline{toc}{section}{Key equations cheat sheet}
+
+\begin{tabularx}{\linewidth}{@{}lX@{}}
+\toprule
+\thead{Object} & \thead{Formula} \\
+\midrule
+Probabilistic model       & $y_i = \mathbf{w}^\top\mathbf{x}_i + \epsilon_i$, $\epsilon_i\sim\mathcal{N}(0,\sigma^2)$ i.i.d. \\
+Per-sample likelihood     & $p(y_i|\mathbf{x}_i,\mathbf{w}) = \frac{1}{\sqrt{2\pi\sigma^2}}\exp(-(y_i-\mathbf{w}^\top\mathbf{x}_i)^2/(2\sigma^2))$ \\
+Dataset likelihood        & $p(\mathbf{y}|\mathbf{X},\mathbf{w}) = \frac{1}{(2\pi\sigma^2)^{N/2}}\exp(-\|\mathbf{X}\mathbf{w}-\mathbf{y}\|^2/(2\sigma^2))$ \\
+Bayes' rule (proportional)& $p(\mathbf{w}|\mathbf{X},\mathbf{y}) \propto p(\mathbf{y}|\mathbf{X},\mathbf{w})\,p(\mathbf{w})$ \\
+Gaussian prior            & $p(\mathbf{w}) = \mathcal{N}(\mathbf{0},\mathbf{I})$ \\
+ML estimator              & $\arg\max_\mathbf{w} p(\mathbf{y}|\mathbf{X},\mathbf{w}) = \arg\min_\mathbf{w}\|\mathbf{X}\mathbf{w}-\mathbf{y}\|^2 = (\mathbf{X}^\top\mathbf{X})^{-1}\mathbf{X}^\top\mathbf{y}$ \\
+MAP estimator (Gaussian prior) & $\arg\max_\mathbf{w} p(\mathbf{w}|\mathbf{X},\mathbf{y}) = \arg\min_\mathbf{w}(\|\mathbf{X}\mathbf{w}-\mathbf{y}\|^2 + \sigma^2\|\mathbf{w}\|^2) = (\mathbf{X}^\top\mathbf{X}+\sigma^2\mathbf{I})^{-1}\mathbf{X}^\top\mathbf{y}$ \\
+Equivalences              & ML + Gaussian noise $=$ least squares; MAP + Gaussian noise + Gaussian prior $=$ ridge with $\lambda=\sigma^2$ \\
+Prediction                & $f(\mathbf{x}_{\text{new}}) = \mathbf{w}_*^\top\mathbf{x}_{\text{new}}$ \\
+\bottomrule
+\end{tabularx}
+
+% =====================================================================
+\section*{Pitfalls and traps consolidated}
+\addcontentsline{toc}{section}{Pitfalls and traps consolidated}
+
+\begin{itemize}
+  \item \textbf{Likelihood is a function of $\mathbf{w}$, not of $\mathbf{y}$.} The likelihood $p(\mathbf{y}|\mathbf{X},\mathbf{w})$ has the labels $\mathbf{y}$ \emph{fixed} (the data you observed) and varies $\mathbf{w}$. ``Maximum likelihood'' means the $\mathbf{w}$ for which the observed $\mathbf{y}$ is most probable.
+  \item \textbf{ML doesn't need a prior; MAP does.} If your loss has a regulariser, you have implicitly chosen a prior. If your loss has no regulariser, you have implicitly chosen the uniform (uninformative) prior.
+  \item \textbf{Maximising likelihood vs maximising log-likelihood.} Same $\arg\max$ (log is monotone); log is much easier to handle algebraically. Always go to log first when deriving.
+  \item \textbf{$\mathbf{X}^\top\mathbf{X} + \sigma^2\mathbf{I}$ is always invertible} for $\sigma^2 > 0$ — adding a positive multiple of identity makes any PSD matrix PD. This is one of the key practical advantages of MAP over ML.
+  \item \textbf{The prior contributes the regularisation, not the likelihood.} Likelihood is data-fitting; prior is what biases you towards small weights, simple models, etc.
+  \item \textbf{Don't confuse Bayesian linear regression with MAP.} MAP returns a single $\mathbf{w}_*$. Full Bayesian regression returns a posterior distribution over $\mathbf{w}$ and a predictive distribution over outputs. The latter is the optional, non-examinable extension.
+  \item \textbf{i.i.d.\ doesn't mean independent of $\mathbf{w}$.} The samples are conditionally i.i.d.\ given $\mathbf{x}_i$ and $\mathbf{w}$ — the noise is independent across samples, but each sample's mean depends on $\mathbf{w}$.
+\end{itemize}
+
+% =====================================================================
+\section*{Self-check questions}
+\addcontentsline{toc}{section}{Self-check questions}
+
+\begin{enumerate}
+  \item Define i.i.d.\ noise. Write down the probabilistic model for linear regression with i.i.d.\ Gaussian noise.
+  \item Derive the likelihood $p(\mathbf{y}|\mathbf{X},\mathbf{w})$ from the per-sample distribution. Show that the exponent is the sum of squared errors.
+  \item Show that under i.i.d.\ Gaussian noise, ML estimation is equivalent to ordinary least-squares.
+  \item State Bayes' rule and label each term: posterior, likelihood, prior, evidence. Why can the evidence be dropped for $\arg\max$?
+  \item Define MAP estimation. Under what condition does MAP reduce to ML?
+  \item Derive the MAP estimator for linear regression with Gaussian likelihood and zero-mean isotropic Gaussian prior. Show that it is $L_2$-regularised least-squares with regularisation $\sigma^2$.
+  \item Write down the closed-form MAP solution. Why is $(\mathbf{X}^\top\mathbf{X} + \sigma^2\mathbf{I})$ always invertible for $\sigma^2 > 0$?
+  \item Compare ML and MAP qualitatively: what does each maximise, what does each use, when do they coincide?
+  \item Explain why the noise variance $\sigma^2$ ends up as the regularisation coefficient in the MAP-with-Gaussian-prior solution. Tie your answer to the role of the prior in Bayes' rule.
+  \item True or false: MAP estimation gives you a probability distribution over the predicted output. Justify.
+  \item Forward link: in Wk21 we will see that $L_2$-regularised regression and ridge regression are the same thing. State this fact and explain how Wk10 already justified it from a probabilistic perspective.
+  \item A practitioner increases $\sigma^2$. What happens to the MAP solution and why?
+\end{enumerate}
+
+\end{document}

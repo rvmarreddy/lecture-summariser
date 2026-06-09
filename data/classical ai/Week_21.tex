@@ -1,0 +1,794 @@
+\documentclass[11pt, a4paper]{article}
+
+\usepackage{fontspec}
+\setmainfont{Helvetica Neue}
+\setmonofont{Menlo}
+\usepackage{unicode-math}
+\setmathfont{STIX Two Math}
+
+\usepackage[margin=2cm, top=2cm, bottom=2.5cm]{geometry}
+\usepackage{microtype}
+\usepackage{parskip}
+\setlength{\parskip}{0.6em}
+\setlength{\parindent}{0pt}
+
+\usepackage[colorlinks=true, linkcolor=NavyBlue, urlcolor=NavyBlue, citecolor=NavyBlue]{hyperref}
+\usepackage{xcolor}
+\usepackage[dvipsnames]{xcolor}
+
+\usepackage{amsmath}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{tabularx}
+\newcommand{\thead}[1]{\textbf{#1}}
+
+% --- Graphics ---
+\usepackage{graphicx}
+\graphicspath{{figures/week21/}}
+
+\usepackage{enumitem}
+\setlist[itemize]{leftmargin=1.5em, itemsep=0.2em, topsep=0.3em}
+\setlist[enumerate]{leftmargin=1.5em, itemsep=0.2em, topsep=0.3em}
+
+\usepackage[most]{tcolorbox}
+\tcbuselibrary{breakable, skins, theorems}
+
+\definecolor{defBg}{HTML}{EAF2FB}
+\definecolor{defBd}{HTML}{1F4E79}
+\definecolor{exBg}{HTML}{F4F4F4}
+\definecolor{exBd}{HTML}{555555}
+\definecolor{tipBg}{HTML}{E8F5E9}
+\definecolor{tipBd}{HTML}{2E7D32}
+\definecolor{trapBg}{HTML}{FCE4EC}
+\definecolor{trapBd}{HTML}{AD1457}
+\definecolor{pitBg}{HTML}{FFF8E1}
+\definecolor{pitBd}{HTML}{B27600}
+\definecolor{noteBg}{HTML}{F3E5F5}
+\definecolor{noteBd}{HTML}{6A1B9A}
+\definecolor{tldrBg}{HTML}{E1F5FE}
+\definecolor{tldrBd}{HTML}{0277BD}
+
+\newtcolorbox{defbox}[1][]{enhanced, breakable, colback=defBg, colframe=defBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={Definition: #1}}
+\newtcolorbox{exbox}[1][]{enhanced, breakable, colback=exBg, colframe=exBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={Worked example: #1}}
+\newtcolorbox{exambox}[1][]{enhanced, breakable, colback=tipBg, colframe=tipBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={Exam-mode answer #1}}
+\newtcolorbox{trapbox}[1][]{enhanced, breakable, colback=trapBg, colframe=trapBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={MCQ trap #1}}
+\newtcolorbox{pitfallbox}[1][]{enhanced, breakable, colback=pitBg, colframe=pitBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={Pitfall #1}}
+\newtcolorbox{notebox}[1][]{enhanced, breakable, colback=noteBg, colframe=noteBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={Lecturer aside #1}}
+\newtcolorbox{tldrbox}[1][]{enhanced, breakable, colback=tldrBg, colframe=tldrBd, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={TL;DR #1}}
+
+\usepackage{titlesec}
+\titleformat{\section}[block]{\Large\bfseries\color{defBd}}{\thesection.}{0.6em}{}
+\titleformat{\subsection}[block]{\large\bfseries\color{defBd!80!black}}{\thesubsection}{0.5em}{}
+\titleformat{\subsubsection}[block]{\normalsize\bfseries}{}{0pt}{}
+\titlespacing*{\section}{0pt}{1.6em}{0.6em}
+\titlespacing*{\subsection}{0pt}{1.2em}{0.4em}
+
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small CM52078 — Week 3}
+\fancyhead[R]{\small Local Search Algorithms}
+\fancyfoot[C]{\small\thepage}
+\renewcommand{\headrulewidth}{0.3pt}
+
+\newcommand{\examflag}{\textcolor{tipBd}{\textbf{[EXAM]}}\,}
+\newcommand{\trapflag}{\textcolor{trapBd}{\textbf{[TRAP]}}\,}
+\newcommand{\doflag}{\textcolor{defBd}{\textbf{[DO]}}\,}
+
+\title{\vspace{-1cm}{\Huge\bfseries Week 3 — Local Search Algorithms} \\[0.4em]{\large Hill climbing, simulated annealing, evolutionary algorithms, continuous-space search}}
+\author{\large CM52078 Classical Artificial Intelligence \\[0.2em]\normalsize University of Bath \,$\cdot$\, Dr Nadejda Roubtsova}
+\date{Revision notes}
+
+\begin{document}
+
+\maketitle
+\thispagestyle{empty}
+
+\vspace{1em}
+
+\begin{tldrbox}
+\begin{itemize}[leftmargin=*]
+  \item \textbf{Local search} is a different paradigm from systematic search: the \emph{solution is the state itself}, not a path to it. No frontier, no explored list. Memory-efficient (constant in many implementations).
+  \item Suits problems with very large or infinite search spaces, ill-defined goals, or where you only need ``good enough.'' Trade-off: \textbf{not systematic, can miss the global optimum, highly initialisation-dependent}.
+  \item \textbf{Hill climbing}: from a random initial state, always move to the best-scoring neighbour. Simple, fast, prone to \textbf{local maxima, plateaus, shoulders}. Mitigated by \textbf{iterative (random-restart) hill climbing}.
+  \item Every local search needs an \textbf{objective function} $F(X) = \text{Data terms} + \beta \cdot \text{Regularisation terms}$. Data terms come from evidence; regularisation encodes prior expectations (e.g.\ smoothness). Differentiability is desirable for gradient-based variants.
+  \item \textbf{Simulated annealing}: hill climbing $+$ random walk. Accept downhill moves with probability $e^{\Delta E / T}$. Temperature $T$ decreases over time per a \emph{cooling schedule}, so bad moves become rarer as the search progresses. Inspired by metallurgy.
+  \item \textbf{Evolutionary algorithms}: maintain a population of gene-string candidates, use a fitness function, evolve via \textbf{mutation, crossover, elitism}. Best for \emph{latent} (hidden) targets where you can compare candidates but not directly evaluate against the goal.
+  \item \textbf{Continuous-space local search}: branching factor is infinite. Three approaches — (1) analytical solution by setting gradient to zero, (2) discretise and run any discrete local-search algorithm, (3) gradient descent.
+  \item \textbf{Local search has constant space complexity} per iteration: it generates a neighbourhood, picks one, throws away the rest. No frontier accumulation, no path tracking.
+\end{itemize}
+\end{tldrbox}
+
+% =====================================================================
+\section{Why local search? A different paradigm}
+
+The systematic search algorithms in week 2 (BFS, DFS, IDS, UCS, A*) all build a tree as they go, and even the best of them carries an exponential memory cost. They also all assume the same problem shape: \textbf{the solution is a sequence of actions} from a known start to a known goal in a finite, fully-observed environment.
+
+That assumption breaks for many real problems:
+
+\begin{itemize}
+  \item Solving the 8-queens puzzle: you don't care \emph{how} the queens got placed — you just want a placement with no attacks.
+  \item Placing an airport on a map: the answer is a coordinate, not a journey.
+  \item Optimising a neural network's weights: the answer is a parameter vector that minimises loss.
+  \item Modelling someone's mental representation of ``angry'': there's no explicit goal description at all; you can only compare candidates.
+  \item Scheduling: rearranging timetables to minimise conflicts. The schedule itself is the answer.
+\end{itemize}
+
+For all of these, you don't need the path — you just need a state that scores well. \textbf{Local search} is the paradigm built for that.
+
+\begin{defbox}[Local search]
+A search paradigm in which the \textbf{solution is the state itself}, not the path leading to it. Local search algorithms move through the state space by considering only the current state's neighbours, without maintaining a frontier or explored list.
+\end{defbox}
+
+\subsection{The four characteristics of local search}
+
+\begin{enumerate}
+  \item \textbf{Solution is a state, not a path.} No path-tracing required, so no explicit history.
+  \item \textbf{Memory-efficient.} The agent only needs to remember the current state (plus its neighbours under consideration). \emph{Space complexity is constant in many implementations.} The lecturer makes a point of this: every iteration generates the same number of successors, picks one, throws the rest away. No accumulation.
+  \item \textbf{Not systematic.} The algorithm only sees a tiny local neighbourhood, so vast regions of the state space go unexplored. It can miss the global optimum entirely.
+  \item \textbf{Highly initialisation-dependent.} Imagine the agent is parachuted into the state space at a random spot. Where it lands strongly influences where it ends up.
+\end{enumerate}
+
+\textbf{When to reach for local search:} large or infinite state spaces (where systematic search is intractable), problems where ``good enough'' is acceptable, problems with a latent or implicit goal, or any problem where the path is irrelevant.
+
+\examflag{}A common MCQ pattern: ``Which of the following problems is best solved with local search?'' — pick the one whose solution is a configuration (8-queens placement, airport coordinate, network weights), not a journey (route from A to B).
+
+\subsection{Comparison with systematic search}
+
+\begin{center}
+\renewcommand{\arraystretch}{1.2}
+\begin{tabular}{@{}p{4cm}p{5cm}p{5.5cm}@{}}
+\toprule
+\thead{Aspect} & \thead{Systematic search} & \thead{Local search} \\
+\midrule
+Solution form        & Path                          & State \\
+Frontier maintained? & Yes                           & No \\
+Explored list?       & Yes (graph search)            & No \\
+Space complexity     & Exponential (BFS, A*) or linear (DFS, IDS) & \textbf{Constant} \\
+Time complexity      & Exponential                   & Depends on landscape; can be polynomial \\
+Optimality guarantee & Yes (BFS, IDS, UCS, A* with admissible $h$) & No (heuristic) \\
+Initialisation       & Fixed start state             & Random; affects outcome strongly \\
+Best for             & Pathfinding, planning         & Configuration problems, very large spaces \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+% =====================================================================
+\section{Hill climbing}
+
+Hill climbing is the simplest possible local-search algorithm and the canonical mental picture.
+
+\subsection{The algorithm}
+
+\begin{defbox}[Hill climbing]
+\begin{enumerate}
+  \item Initialise the state randomly.
+  \item Compute the objective function for every neighbour of the current state.
+  \item If the best-scoring neighbour beats the current state, move there. Otherwise, stop.
+  \item Repeat from step 2.
+\end{enumerate}
+By convention, hill climbing is a \textbf{maximisation} problem (``higher is better''). It rephrases trivially as a minimisation problem; the algorithm is the same, you just flip the comparison.
+\end{defbox}
+
+\subsection{Pseudocode}
+
+\begin{exbox}[Hill climbing in pseudocode]
+\begin{verbatim}
+function HillClimb(problem):
+    current <- problem.random_initial_state()
+    while True:
+        neighbours <- generate_neighbours(current)
+        best_neighbour <- argmax_{n in neighbours} objective(n)
+        if objective(best_neighbour) <= objective(current):
+            return current  # local maximum
+        current <- best_neighbour
+\end{verbatim}
+\end{exbox}
+
+The line ``argmax over neighbours'' hides where most of the work is — generating and scoring the neighbours can be expensive. Variants exist: \emph{first-improvement} hill climbing accepts the first neighbour that beats current (cheaper per iteration but takes more iterations); \emph{steepest-ascent} (the standard) tries all neighbours and picks the best.
+
+\subsection{The three failure modes}
+
+Every textbook picture of hill climbing shows the three things that can go wrong, all of which leave the algorithm stuck:
+
+\begin{center}
+
+\footnotesize\textit{The objective-function landscape, the canonical mental model for hill climbing. The horizontal axis is the \emph{state space}, the vertical axis is the \emph{objective function} (``elevation'' --- how well a state solves the problem). Hill climbing always steps to the highest neighbour, so from the \emph{current state} (the dot) it climbs the small hill on the right and halts at the \emph{local maximum} --- never reaching the taller \emph{global maximum} (green box) on the left. The three red boxes mark the three traps: a \emph{shoulder} (a flat ledge attached to a slope), a \emph{local maximum} (a peak lower than another peak), and a \emph{``flat'' local maximum} / plateau (a flat region with no uphill signal). Image credit: Russell \& Norvig, AIMA 4e.}
+\end{center}
+
+\begin{itemize}
+  \item \textbf{Local maximum.} A peak that is higher than all neighbours but lower than some other peak elsewhere. The algorithm has no way to know there's something better over the next valley.
+  \item \textbf{Plateau / flat local maximum.} A region where all neighbours have the same objective value. The algorithm has no signal about which way to move.
+  \item \textbf{Shoulder.} A flat region that connects to a slope. Pure hill climbing won't cross it because no neighbour is strictly better; better-engineered variants (sideways moves) might.
+\end{itemize}
+
+\textbf{Sideways moves} are a common patch: allow a fixed number of moves to neighbours of equal value (rather than strictly better) before declaring a stop. Helps cross shoulders but can wander on plateaus indefinitely if not capped.
+
+\begin{pitfallbox}[: ``stuck'' is fundamental, not a bug]
+Getting stuck in a local maximum isn't a glitch — it's the inevitable consequence of only ever looking at neighbours. \emph{Every} pure local search algorithm has this risk; the only mitigations are randomness (restarts, accepting worse moves probabilistically) or smart objective-function design that flattens the landscape.
+\end{pitfallbox}
+
+\subsection{Iterative (random-restart) hill climbing}
+
+\begin{defbox}[Iterative / random-restart hill climbing]
+When pure hill climbing terminates (because no neighbour is better), reinitialise the state randomly and run hill climbing again. Repeat for a fixed number of restarts, or until the best result stabilises across several restarts. Return the best state found across all runs.
+\end{defbox}
+
+\textbf{Why it works.} Each restart drops the agent in a new spot; if any of those starting points sits in the basin of attraction of the global maximum, you find it. With enough restarts, the probability of finding the global optimum approaches 1 — it's a Monte Carlo coverage argument, not a guarantee on any single run.
+
+\textbf{Quantitative argument.} If a fraction $p$ of starting points lead to the global optimum, then after $n$ restarts the probability of finding it is $1 - (1-p)^n$, which approaches 1 exponentially fast in $n$. So even with $p = 0.01$, 200 restarts give $\approx 86\%$ probability.
+
+\textbf{Trade-off.} Each restart is a full hill-climbing run from scratch — there's no way to remember or learn from previous runs. So restart cost is multiplicative.
+
+\begin{trapbox}[: optimality of (random-restart) hill climbing]
+A favourite past-paper trap pattern: ``random-restart hill climbing is guaranteed to find the global maximum given enough time.'' This is \textbf{strictly true in finite state spaces with random initialisation that has nonzero probability of reaching every basin of attraction}, but \emph{plain} hill climbing has \textbf{no} such guarantee. Even with restarts, in infinite or very large spaces, the guarantee is only probabilistic. \emph{Read the wording carefully.}
+\end{trapbox}
+
+\subsection{Min-conflicts variant (preview of week 22)}
+
+A particularly useful hill-climbing variant for constraint satisfaction problems:
+
+\begin{itemize}
+  \item Pick a randomly-violated constraint.
+  \item Move one variable involved in the conflict to a value that minimises the total number of conflicts.
+  \item Repeat until no conflicts remain.
+\end{itemize}
+
+This is the algorithm that solves the 8-queens problem in seconds despite the huge state space. It's covered in week 22 because the problem-formulation work (variables, domains, constraints) belongs there.
+
+% =====================================================================
+\section{Objective function design}
+
+Hill climbing (and all local search) is only as good as the objective function it climbs. Designing one well is a fundamental skill in classical AI.
+
+\subsection{What the objective function is}
+
+\begin{defbox}[Objective function]
+A function $F : \text{state space} \to \mathbb{R}$ that gives a numeric score for every state, measuring \emph{how well that state solves the problem}. Maximisation: higher is better. Minimisation: lower is better. Choice is conventional — convert by negating.
+\end{defbox}
+
+The function is problem-specific — there are no rules like ``must be admissible'' (those were for A* heuristics). What you do want are mathematical properties that help the algorithm converge.
+
+\subsection{The data-plus-regularisation template}
+
+The general design pattern:
+\[
+F(X) = \underbrace{\text{Data terms}}_{\text{evidence}} \;+\; \beta \cdot \underbrace{\text{Regularisation terms}}_{\text{prior expectation}}
+\]
+
+\begin{center}
+
+\footnotesize\textit{The universal objective-function template. The boxed formula splits any objective into two roles: \emph{data terms} pull the state $X$ towards the evidence (e.g.\ a stereo-matching likelihood), while \emph{regularisation terms} pull it towards a domain prior such as smoothness or sparsity. The weight $\beta$ trades the two off --- and as the brace shows, regularisation is \emph{optional in theory} (omittable for well-behaved problems) though almost always needed in practice. The bottom row flags the property to remember: \emph{differentiability of $F(X)$ is desirable}, because it unlocks the gradient-based solvers covered later.}
+\end{center}
+
+\begin{center}
+\renewcommand{\arraystretch}{1.25}
+\begin{tabular}{@{}p{4cm}p{5cm}p{5.5cm}@{}}
+\toprule
+\thead{Component} & \thead{What it measures} & \thead{Examples} \\
+\midrule
+Data terms & State $X$ vs.\ evidence: how well the candidate matches observations & Stereo-matching likelihood, classification log-loss, distance to data points \\
+Regularisation & Deviation from a domain-specific prior expectation & Smoothness ($L_2$ norm of differences), sparsity ($L_1$ norm), small-magnitude solutions \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+The constant $\beta$ controls how strongly the prior is enforced relative to the data. Set it too high and the algorithm ignores the evidence (over-smooth, over-sparse, etc.); too low and noise in the data dominates.
+
+Regularisation is \emph{optional in theory} — if your data terms alone produce a smooth, well-behaved objective, you don't need it. In practice, almost everyone needs it.
+
+\subsection{Connection to machine learning}
+
+The data-plus-regularisation template is everywhere in ML:
+
+\begin{itemize}
+  \item \textbf{Ridge regression}: data = squared-error loss; regularisation = $L_2$ norm of weights ($\sum w_i^2$). Pulls weights toward zero, prevents overfitting.
+  \item \textbf{Lasso regression}: data = squared-error loss; regularisation = $L_1$ norm of weights ($\sum |w_i|$). Encourages sparsity (many weights exactly zero).
+  \item \textbf{Tikhonov regularisation}: generalised version of ridge for ill-posed inverse problems.
+  \item \textbf{Elastic net}: combination of $L_1$ and $L_2$.
+  \item \textbf{Bayesian inference}: data = likelihood; regularisation = log-prior. The maximum a posteriori (MAP) estimate maximises (log-likelihood + log-prior), which is the data-plus-regularisation pattern.
+\end{itemize}
+
+\textbf{Recognise the pattern.} It's not a special technique — it's the universal way you encode ``what's true in the data'' alongside ``what should be true if the world is well-behaved.''
+
+\subsection{Worked example: 3D depth reconstruction}
+
+The lecturer's case study. Two neighbouring points on a surface, $X_1$ and $X_2$, are each assigned a depth from a discrete set of options. Stereo image matching gives a likelihood for each depth — the data term $D_{X_1}, D_{X_2}$.
+
+\begin{center}
+
+\footnotesize\textit{The 3D-reconstruction problem set up as a discrete state space. The two columns are the depth variables $X_1$ and $X_2$ (two surface points seen in a stereo image pair); each blue dot is one \emph{candidate depth value} that variable could take. The reconstruction algorithm attaches a \emph{data term} to every dot --- the likelihood of that depth given the stereo evidence. The curved arrow is the true surface the points lie on. The catch the next box addresses: stereo evidence is noisy, so the highest-likelihood dot for a point need not be the dot the true surface passes through.}
+\end{center}
+
+\begin{exbox}[Why data alone is not enough]
+With only data terms, image noise can give an unlikely depth a high plausibility score. You might end up with $X_1 = 4$ (correct) and $X_2 = 1$ (a sharp spike, off the surface). The reconstructed surface looks like a needle.
+\end{exbox}
+
+The fix: add a regularisation term that says ``neighbouring points on a surface tend to have similar depths.'' One choice is the $L_2$ depth prior:
+\[
+R_{L_2} = (X_1 - X_2)^2.
+\]
+
+Combined objective for minimisation:
+\[
+F(X_1, X_2) \;=\; D_{X_1} + D_{X_2} + \beta \cdot (X_1 - X_2)^2.
+\]
+
+\begin{center}
+
+\footnotesize\textit{The same depth grid, now with the candidate depths labelled $1$--$5$ and the regularisation term in play. Data terms alone pick the red-boxed dots ($X_1=4$, $X_2=1$) --- a large depth jump that puts $X_2$ far off the surface (the dark curve), the ``needle'' artefact. The $L_2$ depth prior $R_{L_2}=(X_1-X_2)^2$ penalises exactly that jump, so minimising the full objective $F=D_{X_1}+D_{X_2}+\beta R_{L_2}$ shifts the choice towards the green-boxed neighbouring dots, which sit on the smooth surface. This is the data-vs-prior tug-of-war made visual: evidence wants the red dots, smoothness wants the green ones, and $\beta$ sets who wins.}
+\end{center}
+
+\textbf{What different $\beta$ values do:}
+\begin{itemize}
+  \item $\beta = 0$: regularisation absent. Reconstructed surface follows noise.
+  \item $\beta$ small: data dominates; some smoothing.
+  \item $\beta$ large: regularisation dominates; surface flattened (wrong if the true surface has features).
+  \item $\beta \to \infty$: regularisation forces $X_1 = X_2$ everywhere, regardless of data. Surface becomes flat.
+\end{itemize}
+
+\textbf{Tuning $\beta$.} Standard practice: cross-validation on held-out data. Set $\beta$ to whatever value gives the best generalisation performance, not the lowest training loss.
+
+\begin{pitfallbox}[: regularisation as a knob, not a switch]
+Strong $\beta$ is dangerous in itself. The $L_2$ prior wants depth jumps to be zero — i.e.\ flat (front-parallel) surfaces. If you crank $\beta$ up, you'll reconstruct everything as a flat plane regardless of the data. \emph{Always tune $\beta$ on validation data, not gut feel.}
+\end{pitfallbox}
+
+% =====================================================================
+\section{Simulated annealing}
+
+\textbf{Hill climbing's core defect:} once you reach a local maximum, you stop, even if a better global maximum is one valley over. Simulated annealing fixes this by sometimes accepting downhill moves — but with a probability that decreases over time.
+
+\subsection{The algorithm}
+
+\begin{defbox}[Simulated annealing]
+\begin{enumerate}
+  \item Initialise the state randomly. Initialise temperature $T$ high.
+  \item Generate a random neighbour. Let $\Delta E$ = (objective at neighbour) $-$ (objective at current state). (Maximisation convention: positive $\Delta E$ is uphill.)
+  \item If $\Delta E > 0$ (uphill), accept the move always.
+  \item If $\Delta E \le 0$ (flat or downhill), accept the move with probability $e^{\Delta E / T}$.
+  \item Decrease $T$ according to a cooling schedule.
+  \item Repeat from step 2 until a stopping criterion is met.
+\end{enumerate}
+\end{defbox}
+
+\subsection{The probability formula and what it means}
+
+The acceptance probability for a downhill move is
+\[
+P(\text{accept}) = e^{\Delta E / T}.
+\]
+
+Reading the formula:
+
+\begin{itemize}
+  \item For $\Delta E = 0$ (flat move), $P = e^0 = 1$ — always accept; this is just exploration.
+  \item For $\Delta E < 0$ and $T$ large, $\Delta E / T \approx 0$, so $P \approx 1$ — almost any downhill move is accepted. Wide exploration.
+  \item For $\Delta E < 0$ and $T$ small, $\Delta E / T$ is very negative, so $P \approx 0$ — only the smallest downhill steps have a chance. Behaviour collapses to pure hill climbing.
+  \item Bigger drops ($\Delta E$ very negative) are exponentially less likely to be accepted than small drops.
+\end{itemize}
+
+\subsubsection*{Worked numerical examples}
+
+\begin{exbox}[Acceptance probabilities for sample $\Delta E$ and $T$ values]
+Suppose $\Delta E = -2$ (downhill move, energy decreases by 2). Probability of accepting:
+\begin{itemize}[leftmargin=*, itemsep=0pt, topsep=0pt]
+  \item $T = 5$: $P = e^{-2/5} = e^{-0.4} \approx 0.67$. Likely accepted — strong exploration.
+  \item $T = 1$: $P = e^{-2} \approx 0.135$. Sometimes accepted — modest exploration.
+  \item $T = 0.1$: $P = e^{-20} \approx 2 \times 10^{-9}$. Practically never accepted — local search behaviour.
+\end{itemize}
+\end{exbox}
+
+\subsection{The metallurgy intuition}
+
+The name comes from \textbf{annealing} in metallurgy — heating a metal so it's malleable, then gradually cooling it so it sets in a low-energy crystalline structure. If you cool too fast, defects get locked in.
+
+By analogy, simulated annealing's agent starts ``hot'' (jumping around the state space freely, not committing to any particular hill) and gradually ``cools'' into a local search around the best region it has found. \textbf{Early exploration buys later exploitation.}
+
+\subsection{Cooling schedules}
+
+\begin{defbox}[Cooling schedule]
+A function $T(t)$ specifying how the temperature decreases over iterations. Common choices:
+\begin{itemize}[itemsep=0pt, topsep=0pt]
+  \item \textbf{Linear}: $T(t) = T_0 - \alpha t$. Simple but cools too fast for many problems.
+  \item \textbf{Geometric}: $T(t) = T_0 \cdot \alpha^t$ for $\alpha \in (0, 1)$. Most common in practice.
+  \item \textbf{Logarithmic}: $T(t) = c / \log(t + 1)$. Provably finds the global optimum given infinite time, but \emph{very} slow.
+\end{itemize}
+\end{defbox}
+
+\textbf{Theoretical result.} With logarithmic cooling, simulated annealing converges to the global optimum with probability 1. With faster schedules, no such guarantee. In practice, geometric cooling is the common choice — it's fast enough to be useful and slow enough to often find very good (if not optimal) solutions.
+
+\begin{pitfallbox}[: the cooling schedule matters]
+Cool too fast and you behave like hill climbing — you commit to the first hill you find. Cool too slow and you waste compute wandering. The schedule is a hyperparameter and needs tuning. Past papers don't drill into specific schedules but do test that you understand the role of $T$ and how it changes algorithm behaviour over time.
+\end{pitfallbox}
+
+\subsection{Random walk vs simulated annealing}
+
+\textbf{Random walk:} accept any random neighbour, with mild preference for unvisited ones. Pure exploration, no exploitation. Useless on its own — drifts forever, never converges.
+
+\textbf{Pure hill climbing:} only accept uphill moves. Pure exploitation, no exploration. Gets stuck.
+
+\textbf{Simulated annealing:} hill climbing $+$ a controlled, decaying dose of random walk. The random-walk component is what lets it escape local maxima; the hill-climbing component is what lets it eventually converge.
+
+The temperature parameter $T$ \emph{interpolates} between the two extremes: high $T$ $\to$ random walk; $T \to 0$ $\to$ hill climbing.
+
+% =====================================================================
+\section{Evolutionary algorithms}
+
+\textbf{Where simulated annealing was inspired by physics, evolutionary algorithms are inspired by biology.} Specifically, evolution by natural selection: there's no objectively-defined ``best'' species, only candidates that compete and survive.
+
+\subsection{When to reach for an EA}
+
+\begin{defbox}[Evolutionary algorithm (EA)]
+A population-based local-search algorithm in which candidate solutions (``individuals'') are encoded as strings of values (``genes''), evaluated by a \textbf{fitness function}, and iteratively improved through \textbf{mutation, crossover, and elitism}.
+\end{defbox}
+
+EAs shine specifically when:
+
+\begin{itemize}
+  \item The target is \textbf{latent} or implicit — you can compare two candidates (``which is angrier?'') but you can't write down the goal.
+  \item The objective function is complex, non-differentiable, or noisy.
+  \item The search space is large but candidates can be encoded compactly.
+  \item Multiple good solutions exist and you'd like to find diverse ones.
+\end{itemize}
+
+\subsection{The four ingredients}
+
+\begin{enumerate}
+  \item \textbf{Gene representation.} Each candidate is a string — usually a vector of Booleans, integers, or real numbers. The choice of encoding strongly affects what crossover and mutation do.
+  \item \textbf{Fitness function.} Evaluates each candidate. May be a numeric score or, with latent targets, a relative ranking provided externally (e.g.\ by a human).
+  \item \textbf{Genetic operators.}
+    \begin{itemize}[itemsep=0pt, topsep=0pt]
+      \item \emph{Mutation}: take one parent's gene string, randomly perturb a segment, propagate as a child. Adds novelty and helps escape local optima.
+      \item \emph{Crossover (recombination)}: take two parents, swap segments of their genes, propagate the recombined offspring. Combines good components from different solutions.
+    \end{itemize}
+  \item \textbf{Elitism.} The best-performing samples from the current generation are propagated unchanged to the next, guaranteeing that progress is never lost.
+\end{enumerate}
+
+\subsubsection*{Crossover variants}
+
+Different crossover operators emphasise different exploration patterns:
+
+\begin{itemize}
+  \item \textbf{Single-point crossover}: pick a random index $i$; child takes parent A's genes up to $i$ and parent B's after. Simple, works well for short strings.
+  \item \textbf{Two-point or multi-point crossover}: swap multiple segments. More mixing.
+  \item \textbf{Uniform crossover}: each gene comes independently from one parent or the other (with 50\% probability each). Maximum mixing.
+\end{itemize}
+
+\subsubsection*{Selection methods}
+
+How parents are chosen matters too:
+
+\begin{itemize}
+  \item \textbf{Roulette wheel}: probability of being selected proportional to fitness. Standard but vulnerable to ``super-individuals'' dominating.
+  \item \textbf{Tournament selection}: pick $k$ random individuals, the best wins. Robust and tunable via $k$.
+  \item \textbf{Rank-based}: sort by fitness, select by rank rather than absolute fitness.
+\end{itemize}
+
+\subsection{The algorithm loop}
+
+\begin{exbox}[EA pseudocode]
+\begin{verbatim}
+function EA(problem, population_size, generations):
+    population <- random_initial_population(population_size)
+    for g in 1..generations:
+        evaluate_fitness(population)
+        elite <- top_k_individuals(population, k)
+        offspring <- []
+        while |offspring| < population_size - k:
+            parent1 <- select_parent(population)
+            parent2 <- select_parent(population)
+            child <- crossover(parent1, parent2)
+            child <- mutate(child)
+            offspring.append(child)
+        population <- elite + offspring
+        if convergence_criterion_met(population): break
+    return best_in(population)
+\end{verbatim}
+\end{exbox}
+
+\subsection{Convergence criteria}
+
+EAs are iterative and there's no guaranteed stopping point. Common termination rules:
+
+\begin{itemize}
+  \item \textbf{Stagnation:} the best-performing sample changes very little from one generation to the next.
+  \item \textbf{Fitness threshold:} the best sample is ``fit enough'' on some absolute scale. Often impractical with latent targets.
+  \item \textbf{Iteration cap:} hard limit on number of generations. Useful when budget-bound.
+  \item \textbf{Diversity collapse:} all individuals in the population are similar. Often signals premature convergence to a local optimum.
+\end{itemize}
+
+\subsection{Case study: EmoGen and emotion representation}
+
+The lecturer's case study (her own research). Question: how does each individual mentally represent ``angry,'' ``sad,'' or ``happy''? The target is \textbf{purely latent} — it lives in the participant's head and can't be directly probed.
+
+\begin{center}
+
+\footnotesize\textit{How a facial expression becomes a \emph{gene string}. A face $B$ is built from a fixed neutral face $B_0$ plus a weighted sum of blendshape offsets: $B = B_0 + \sum_k \alpha_k(B_k - B_0)$, with each weight $\alpha_k \in [0,1]$. The three example faces on the left are different settings of those weights. The whole expression is therefore encoded by the weight vector $\boldsymbol{\alpha}=(\alpha_1,\dots,\alpha_K)$ --- and \emph{that vector is the chromosome} the evolutionary algorithm mutates and crosses over. This is the step to internalise: an EA needs a compact string encoding, and blendshape weights supply one for something as fuzzy as a facial emotion. Image credit: Lewis et al., Eurographics 2014 (blendshape model).}
+\end{center}
+
+\begin{exbox}[EmoGen as an evolutionary algorithm]
+\textbf{Gene representation:} a vector $\boldsymbol{\alpha} = (\alpha_1, \dots, \alpha_K)$ of $K \approx 150$ blendshape weights, each in $[0, 1]$. Any 3D facial expression can be reconstructed as a weighted combination of blendshape offsets from a neutral face $B_0$:
+\[
+B = B_0 + \sum_{k=1}^{K} \alpha_k (B_k - B_0).
+\]
+\textbf{Fitness function:} the participant chooses, from a generation of 10 faces, which best match the target emotion (``angry''). They also rank them, providing a fitness signal.\\[0.3em]
+\textbf{Operators:} mutate selected faces (perturb some $\alpha_k$'s), crossover pairs (swap segments of $\boldsymbol{\alpha}$), keep the elite, optionally inject randomness for diversity.\\[0.3em]
+\textbf{Convergence:} after enough iterations, the population converges on the participant's mental representation of the target emotion. The final $\boldsymbol{\alpha}$ vector quantifies that representation, and you can compare individuals/groups statistically.
+\end{exbox}
+
+\begin{center}
+
+\footnotesize\textit{One generation of the EA loop in the EmoGen tool. \emph{Left:} the current \emph{population} --- ten faces, each a different gene vector $\boldsymbol{\alpha}$. \emph{Middle:} the \emph{fitness function} is the human --- the participant ticks the faces that best match the target emotion (``angry''); here faces 2, 4, 5, 9 are selected. \emph{Right:} the \emph{next generation}, bred from the selected parents by crossover and mutation, with the selected faces carried over by \emph{elitism}. Successive generations drift the whole population towards the participant's latent ``angry.'' This is the concrete picture of a population-based search where the goal is never written down --- only compared. Image credit: Roubtsova et al., EmoGen (arXiv:2107.00480).}
+\end{center}
+
+The pedagogical point: classical AI techniques are still applicable today, often in surprising domains. The key is recognising when your problem fits the EA shape — gene-like representation, latent target, available fitness signal.
+
+% =====================================================================
+\section{Local search in continuous spaces}
+
+So far, local search has been on \emph{discrete} state spaces — the agent has a finite number of neighbours at each step. But many real problems live in continuous spaces (real-valued coordinates, weights, angles). The branching factor in a continuous space is \textbf{infinite} — there are uncountably many neighbours.
+
+The lecturer introduces three approaches via a single case study.
+
+\subsection{Case study: airport placement on the Romania map}
+
+\begin{defbox}[The airport problem]
+Place an airport at coordinates $\mathbf{p}_a = (x_a, y_a)$ on the Romania map such that the sum of squared straight-line distances to every city is minimised. The cities $\{\mathbf{p}_i = (x_i, y_i) \mid i \in S\}$ are at fixed coordinates.
+\end{defbox}
+
+\begin{center}
+
+\footnotesize\textit{The airport problem as a continuous-space local search. The red squares are the fixed cities of Romania at known coordinates $\mathbf{p}_i=(x_i,y_i)$; the edge labels are road distances and play no part here. The single \emph{state} is the airport's real-valued position $\mathbf{p}_a=(x_a,y_a)$ --- just two continuous variables, free to sit \emph{anywhere} in the $x$--$y$ plane, not only on a city. The crucial formalisation point the notes stress: the cities are \emph{not} states (as they were in week 2's pathfinding) --- they are fixed \emph{constraints}, the inputs to the objective. Because $\mathbf{p}_a$ ranges over a continuum, the branching factor is infinite.}
+\end{center}
+
+The objective function (squared error loss):
+\[
+f(x_a, y_a) \;=\; \sum_{i \in S} (x_a - x_i)^2 + (y_a - y_i)^2 \;=\; \sum_{i \in S} \|\mathbf{p}_a - \mathbf{p}_i\|^2_2.
+\]
+
+Why this is local search:
+
+\begin{itemize}
+  \item The solution is the airport coordinate (a state), not a path.
+  \item State variables are real-valued — continuous space.
+  \item \textbf{Cities are not states} — they're \emph{constraints} of the problem (fixed inputs).
+  \item Branching factor is infinite (continuous neighbourhoods).
+\end{itemize}
+
+\subsection{Option 1 — Analytical solution (no search)}
+
+If the objective is differentiable and you can solve $\nabla f = 0$ in closed form, you don't need search at all.
+
+\begin{exbox}[Solving the airport problem analytically]
+The objective:
+\[
+f(x_a, y_a) = \sum_{i \in S} (x_a - x_i)^2 + (y_a - y_i)^2.
+\]
+At the optimum, both partial derivatives are zero:
+\[
+\frac{\partial f}{\partial x_a} = 2 \sum_{i \in S} (x_a - x_i) = 0
+\quad \Rightarrow \quad
+|S| \cdot x_a = \sum_{i \in S} x_i
+\quad \Rightarrow \quad
+x_a^* = \frac{1}{|S|} \sum_{i \in S} x_i.
+\]
+By symmetry, $y_a^* = \frac{1}{|S|} \sum_{i \in S} y_i$.\\[0.3em]
+\textbf{The optimal airport is the arithmetic mean of all city coordinates} — the centroid. Solvable on paper. No search needed.
+\end{exbox}
+
+\textbf{When the analytical solution stops working.} It relies on knowing the relevant set $S$ up front and being able to solve the gradient-zero equation in closed form. If you wanted to place \emph{three} airports and let each city be served by its nearest airport, the relevant $S$ for each airport changes as the airports move (the partition of cities by nearest airport changes) — you can't write the gradient in closed form. Then you must search. Likewise for any objective without a tractable closed-form derivative.
+
+\subsection{Option 2 — Discretise the continuous space}
+
+Take the continuous space and impose a grid. From the current state $(x_a^*, y_a^*)$, consider only four (or more, depending on grid shape) discrete neighbours:
+\[
+(x_a^* \pm \delta, y_a^*), \qquad (x_a^*, y_a^* \pm \delta).
+\]
+
+\begin{center}
+
+\footnotesize\textit{Discretising the continuous airport space. \emph{Left:} the airport is dropped at a random initial coordinate $(x_a^*,y_a^*)$ on the map. \emph{Right:} instead of the infinitely many nearby points, the algorithm only ever considers four discrete neighbours, one grid step $\delta$ away along each axis: $(x_a^*\pm\delta,\,y_a^*)$ and $(x_a^*,\,y_a^*\pm\delta)$ --- note each move changes \emph{one} variable at a time. This converts the \emph{infinite} branching factor into a finite one ($2$ variables $\times\;2$ directions $= 4$), so any discrete local-search algorithm (hill climbing, simulated annealing) can now run. The grid is \emph{local}: it re-centres on whatever state the search currently occupies.}
+\end{center}
+
+The hyperparameter $\delta$ controls the resolution: smaller $\delta$ gives a finer search but more steps to converge.
+
+\begin{itemize}
+  \item Branching factor goes from infinite to finite.
+  \item Any discrete local search algorithm now applies (hill climbing, simulated annealing, etc.).
+  \item Each step changes one variable at a time.
+\end{itemize}
+
+\textbf{Limitations:} no optimality guarantee (still a local search), and the choice of $\delta$ is itself a delicate trade-off. Alternatively, instead of a fixed rectangular grid, you can sample successors at distance $\delta$ in random directions.
+
+\textbf{Discretisation does not eliminate local minima.} It only makes the branching factor finite. If the underlying landscape has many local optima, discretisation preserves them.
+
+\subsection{Option 3 — Gradient descent}
+
+If the objective is differentiable but the analytical $\nabla f = 0$ solution isn't tractable (e.g.\ the three-airport case, or non-trivial neural networks), use gradient descent.
+
+\begin{defbox}[Gradient descent]
+\begin{enumerate}
+  \item Initialise state $\mathbf{p}$ randomly.
+  \item Compute the local gradient $\nabla f(\mathbf{p})$ (analytically, if possible; otherwise approximate via finite differences).
+  \item Update: $\;\mathbf{p} \leftarrow \mathbf{p} - \alpha \nabla f(\mathbf{p})$, where $\alpha$ is the \textbf{step size} hyperparameter (also called \emph{learning rate}).
+  \item Repeat steps 2--3 until convergence (i.e.\ the change in state from one iteration to the next is negligible — equivalently, $\nabla f \approx 0$).
+\end{enumerate}
+The objective decreases fastest in the direction of $-\nabla f$, hence the update rule.
+\end{defbox}
+
+For the airport problem, the gradient is computed analytically:
+\[
+\nabla f(x_a, y_a) = \left(2 \sum_{i \in S} (x_a - x_i), \;\; 2 \sum_{i \in S} (y_a - y_i)\right).
+\]
+
+(For one airport this is overkill — the analytical solution is closed-form. The algorithm earns its keep on harder variants where $S$ changes during search, or where the closed-form solution doesn't exist.)
+
+\subsubsection*{Worked example: gradient descent for one-airport with one city}
+
+To make the mechanics concrete, consider a single city at $(x_1, y_1) = (10, 10)$ and the trivial one-city objective $f(x_a, y_a) = (x_a - 10)^2 + (y_a - 10)^2$. The gradient is $\nabla f = (2(x_a - 10), 2(y_a - 10))$. Starting at $\mathbf{p}^{(0)} = (0, 0)$ with $\alpha = 0.1$:
+
+\begin{itemize}
+  \item Iteration 1: $\nabla f = (-20, -20)$. Update: $\mathbf{p}^{(1)} = (0, 0) - 0.1 \cdot (-20, -20) = (2, 2)$.
+  \item Iteration 2: $\nabla f = (-16, -16)$. Update: $\mathbf{p}^{(2)} = (2, 2) + (1.6, 1.6) = (3.6, 3.6)$.
+  \item Iteration 3: $\nabla f = (-12.8, -12.8)$. Update: $\mathbf{p}^{(3)} = (3.6, 3.6) + (1.28, 1.28) = (4.88, 4.88)$.
+  \item \dots converges geometrically to $(10, 10)$.
+\end{itemize}
+
+The convergence rate is determined by $1 - 2\alpha$ (per dimension). With $\alpha = 0.1$, each step shrinks the gap by a factor of $0.8$ — geometric convergence. With $\alpha = 0.5$, exact one-step convergence (special case for this simple problem). With $\alpha > 0.5$, the algorithm overshoots and oscillates or diverges.
+
+\subsection{Choosing among the three options}
+
+\begin{center}
+\renewcommand{\arraystretch}{1.25}
+\begin{tabular}{@{}p{3.5cm}p{4.5cm}p{6cm}@{}}
+\toprule
+\thead{Option} & \thead{Use when} & \thead{Pitfall} \\
+\midrule
+Analytical    & Objective is differentiable AND $\nabla f = 0$ has a closed form & Doesn't generalise to harder variants of the problem \\
+Discretise    & Objective is non-differentiable, or you need a tunable resolution & No optimality guarantee; $\delta$ is sensitive \\
+Gradient descent & Differentiable but no closed form; gradient must be computed or approximated & Step size $\alpha$ is sensitive (too large $\to$ overshoot; too small $\to$ slow); local minima trap \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\textbf{The lecturer's order of preference:} analytical first (cheapest, most accurate), then gradient descent (most principled when search is needed), discretisation last (a hack that works but loses accuracy).
+
+\subsection{Connection to neural networks}
+
+\textbf{Training a neural network is gradient descent on the loss landscape.} The state is the parameter vector $\boldsymbol{\theta}$ (weights and biases of the network); the objective is the loss function (cross-entropy, MSE, etc.); the gradient is computed via \textbf{backpropagation}. Variants:
+
+\begin{itemize}
+  \item \textbf{Stochastic gradient descent (SGD)}: gradient computed on a single training example. Noisy but cheap; the noise can help escape local minima.
+  \item \textbf{Mini-batch gradient descent}: gradient on a small batch. Standard practice in deep learning.
+  \item \textbf{Adam, RMSProp, etc.}: adaptive step sizes per parameter.
+\end{itemize}
+
+The high-dimensional non-convex loss landscapes of deep networks make this a hard local-search problem — the field of neural network optimisation is essentially a study of how to navigate them well.
+
+\begin{pitfallbox}[: gradient descent step size]
+If $\alpha$ is too large, the update overshoots the minimum and the algorithm diverges or oscillates. If $\alpha$ is too small, convergence takes forever. Adaptive schemes (decaying $\alpha$, momentum, Adam) tackle this in modern deep learning, but the canonical algorithm uses a fixed $\alpha$ and asks you to pick well.
+\end{pitfallbox}
+
+% =====================================================================
+\section{Exam-mode answers}
+
+\begin{exambox}[(MCQ): Which of the following statements about hill climbing are true? Mark all that apply.]
+\textit{TRUE:}
+\begin{itemize}[leftmargin=*, itemsep=0pt, topsep=0pt]
+  \item ``In a finite search space, hill climbing is guaranteed to find a \textbf{local} maximum given enough time.''
+  \item ``Hill climbing is highly initialisation-dependent.''
+  \item ``Random-restart hill climbing increases the chance of finding the global maximum but does not guarantee it in arbitrary spaces.''
+  \item ``Local search algorithms like hill climbing are often a good choice when we are not concerned about finding an optimal solution.''
+\end{itemize}
+\textit{FALSE distractors: ``Hill climbing always finds the global maximum'' (false — local maxima trap it). ``Hill climbing requires an admissible heuristic'' (admissibility was for A*, not local search). ``Hill climbing maintains a frontier of candidate states'' (false — local search has no frontier).}
+\end{exambox}
+
+\begin{exambox}[(MCQ): What does the temperature parameter $T$ control in simulated annealing?]
+\textit{Correct: \textbf{The probability that a downhill (worse) move is accepted}. High $T \to$ downhill moves are likely; low $T \to$ algorithm collapses to hill climbing.}\\[0.3em]
+\textit{Trap distractors: ``the step size'' (no, that's gradient descent); ``the size of the neighbourhood'' (no — neighbourhood is fixed by the state space); ``the number of iterations'' (no, iterations and $T$ are separate).}
+\end{exambox}
+
+\begin{exambox}[(MCQ): Which of the following are characteristics of evolutionary algorithms? Mark all that apply.]
+\textit{TRUE: ``population-based,'' ``uses mutation and crossover,'' ``well-suited to latent / ill-defined targets,'' ``elitism preserves the best samples each generation.''}\\[0.3em]
+\textit{FALSE: ``always converges to the global optimum'' (no), ``requires a differentiable objective function'' (no — that's the point), ``maintains a single candidate state at a time'' (that's hill climbing).}
+\end{exambox}
+
+\begin{exambox}[(MCQ): The objective function $F(X) = D(X) + \beta \cdot R(X)$ is being designed for a 3D reconstruction problem. The data term $D(X)$ has high noise because of stereo mismatches. What is the role of the regularisation term $R(X) = (X_1 - X_2)^2$?]
+\textit{Correct: \textbf{It enforces a smoothness prior — neighbouring depths should be similar — to mitigate noise in the data term.}}\\[0.3em]
+\textit{Trap: ``It is the gradient of the data term'' (no, it's a separate term). ``It removes the need for hyperparameter tuning'' (no, $\beta$ is itself a hyperparameter and choosing it is delicate).}
+\end{exambox}
+
+\begin{exambox}[(MCQ): For the airport-placement problem with ONE airport and the squared-error objective, the optimal location is\dots]
+\textit{Correct: \textbf{the arithmetic mean (centroid) of the city coordinates}, $\mathbf{p}_a^* = \frac{1}{|S|} \sum_i \mathbf{p}_i$. Found by setting $\nabla f = 0$.}\\[0.3em]
+\textit{Trap: ``the closest city to the geometric centre'' — close in spirit but the answer is a continuous coordinate, not a city. ``Found by gradient descent'' — gradient descent works but is overkill; the analytical solution is closed-form.}
+\end{exambox}
+
+% =====================================================================
+\section*{Key equations / algorithms cheat sheet}
+
+\textbf{Hill climbing:} initialise random $\to$ move to best neighbour $\to$ stop when none beats current.
+
+\textbf{Random-restart hill climbing:} run hill climbing many times from random starts; return best result. Probability of finding global optimum after $n$ restarts: $1 - (1-p)^n$ where $p$ is the fraction of starts in the global basin.
+
+\textbf{Simulated annealing acceptance probability (downhill move, maximisation):}
+\[
+P(\text{accept}) = e^{\Delta E / T}, \qquad \Delta E = f(n') - f(n) \le 0.
+\]
+$T$ decreases over time per a cooling schedule.
+
+\textbf{Cooling schedules (common):} linear $T_0 - \alpha t$; geometric $T_0 \alpha^t$; logarithmic $c / \log(t+1)$.
+
+\textbf{Objective function template:}
+\[
+F(X) = \text{Data terms} + \beta \cdot \text{Regularisation terms}.
+\]
+
+\textbf{Evolutionary algorithm loop:} initialise population $\to$ evaluate fitness $\to$ select parents $\to$ apply mutation, crossover, elitism $\to$ repeat. Convergence by stagnation, threshold, or iteration cap.
+
+\textbf{Gradient descent update:}
+\[
+\mathbf{p} \;\leftarrow\; \mathbf{p} - \alpha \, \nabla f(\mathbf{p}).
+\]
+
+\textbf{Airport problem analytical optimum:}
+\[
+(x_a^*, y_a^*) = \left(\frac{1}{|S|} \sum_{i \in S} x_i, \;\; \frac{1}{|S|} \sum_{i \in S} y_i\right).
+\]
+
+% =====================================================================
+\section*{Pitfalls and MCQ traps consolidated}
+
+\begin{trapbox}[summary]
+\begin{tabular}{@{}p{6.5cm}p{8cm}@{}}
+\toprule
+\thead{Trap} & \thead{Right answer} \\
+\midrule
+Hill climbing always finds global max?            & \textbf{No} — only a local maximum. \\
+Random-restart hill climbing always finds global? & \textbf{Probabilistic only}; given infinite time and finite space with positive-probability initialisation in every basin, yes — but not in any single run. \\
+Simulated annealing temperature $T$ controls\dots & \textbf{Probability of accepting bad moves}. \\
+At high $T$, simulated annealing behaves like\dots & \textbf{Random walk}. \\
+At low $T$, simulated annealing behaves like\dots  & \textbf{Hill climbing}. \\
+Local search needs a frontier?                    & \textbf{No.} That's systematic search. \\
+Local search returns the path to the goal?        & \textbf{No.} The state \emph{is} the solution. \\
+EAs guaranteed to converge to the optimum?        & \textbf{No} — they're heuristic. \\
+EAs need a differentiable objective?              & \textbf{No.} That's their main appeal vs.\ gradient descent. \\
+Continuous-space branching factor                 & \textbf{Infinite} — must discretise or use gradient methods. \\
+Gradient descent always finds a global minimum    & \textbf{No} — gets stuck in local minima of non-convex objectives. \\
+\bottomrule
+\end{tabular}
+\end{trapbox}
+
+\textbf{Other confusions:}
+
+\begin{itemize}
+  \item \textbf{Local maximum vs plateau vs shoulder.} Three distinct failure modes. Local max: peak below another peak. Plateau: flat region with no slope. Shoulder: flat region attached to a slope.
+  \item \textbf{Maximisation vs minimisation is conventional.} Hill climbing is by convention maximisation; minimisation is the same algorithm with the comparison flipped. Don't get tripped up by which way is ``up.''
+  \item \textbf{Cities are constraints, not states} (in the airport problem). The state is the airport coordinate; cities are fixed input. Past papers like to test this kind of formalisation.
+  \item \textbf{Elitism in EAs is not a side dish.} It guarantees monotonic improvement of the best sample. Without it, mutation/crossover can lose the best candidate.
+  \item \textbf{Step size in gradient descent vs temperature in SA.} Both are hyperparameters that control exploration, but they're not interchangeable. Step size = how big a move; temperature = probability of accepting a worsening move.
+  \item \textbf{Discretisation does not eliminate local minima.} It only makes the branching factor finite. The original landscape's traps are still there.
+  \item \textbf{Local search has constant space complexity.} Per iteration, you generate a neighbourhood, pick one, throw the rest away. No accumulation. Past papers like to test this.
+\end{itemize}
+
+% =====================================================================
+\section*{Self-check questions}
+
+\begin{enumerate}
+  \item \textbf{Distinguish} systematic search and local search. For each of the following, say which paradigm fits and why: (a) finding the shortest route from Bath to Bristol; (b) placing 8 queens on a chess board; (c) training a neural network; (d) solving a Rubik's cube.
+  \item \textbf{Describe} the three failure modes of hill climbing and explain how iterative random-restart mitigates each.
+  \item \textbf{Explain} the role of the temperature parameter $T$ in simulated annealing. What happens to the algorithm at high $T$? At $T \to 0$?
+  \item \textbf{Compute} $P(\text{accept})$ in simulated annealing for $\Delta E = -2$ at $T = 5$ and at $T = 0.1$. Comment on the values.
+  \item \textbf{Compare and contrast} simulated annealing and evolutionary algorithms as approaches to escaping local optima. Which is population-based?
+  \item \textbf{Apply} the data-plus-regularisation template to design an objective function for: (a) image denoising, (b) sparse regression, (c) curve fitting through noisy points.
+  \item \textbf{Describe} mutation, crossover, and elitism in an evolutionary algorithm, and explain why all three are typically used together.
+  \item \textbf{Describe} two crossover variants (single-point, uniform) and one selection method (tournament). When would you prefer each?
+  \item \textbf{Explain} why the airport-placement problem with ONE airport admits a closed-form analytical solution but the THREE-airport variant does not.
+  \item \textbf{Derive} the optimum airport location analytically by setting the gradient of the squared-error objective to zero. Your derivation should produce the centroid.
+  \item \textbf{Compare} the three approaches (analytical, discretisation, gradient descent) for solving a continuous-space local-search problem. When would you reach for each?
+  \item \textbf{Trace} gradient descent for the one-airport problem with cities at $(0, 0), (10, 0), (5, 5)$ starting from $(2, 2)$ with $\alpha = 0.1$. Run 3 iterations and verify convergence to the centroid.
+  \item \textbf{Explain} why the branching factor in a continuous state space is infinite, and why this is a problem for any tree-based search algorithm.
+  \item \textbf{Construct} a small 1-D landscape with one local maximum and one global maximum. Trace hill climbing from a starting point that finds the local maximum, and explain how simulated annealing could escape it.
+  \item \textbf{Connect} the data-plus-regularisation pattern to ridge regression, lasso, and Bayesian MAP estimation. What's the role of $\beta$ in each?
+\end{enumerate}
+
+\end{document}
