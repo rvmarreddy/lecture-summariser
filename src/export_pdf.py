@@ -35,3 +35,39 @@ def to_pdf(markdown: str, out_path: str = "lecture_notes.pdf", title: str = None
     )
     md_file.unlink(missing_ok=True)
     return out_path
+
+
+def _tex_escape(s: str) -> str:
+    """Escape plain-text fields (title/header/author) that get substituted into the LaTeX preamble."""
+    repl = {"&": r"\&", "%": r"\%", "#": r"\#", "_": r"\_", "$": r"\$", "{": r"\{", "}": r"\}",
+            "~": r"\textasciitilde{}", "^": r"\textasciicircum{}", "\\": r"\textbackslash{}"}
+    return "".join(repl.get(c, c) for c in s)
+
+
+def latex_to_pdf(body: str, out_path: str, title: str = "Lecture Notes", subtitle: str = "",
+                 head_l: str = "", head_r: str = "", author: str = "") -> str:
+    """Wrap a model-generated LaTeX body in the styled preamble template and compile via xelatex.
+
+    `body` is LaTeX (left as-is); the title/header/author fields are plain text and get escaped.
+    """
+    template = (Path(__file__).parent / "note_preamble.tex").read_text(encoding="utf-8")
+    body = _DROP_GLYPHS.sub("", body)  # xelatex/Helvetica Neue has no emoji glyphs -> tofu boxes; drop them
+    doc = (template
+           .replace("@@TITLE@@", _tex_escape(title or "Lecture Notes"))
+           .replace("@@SUBTITLE@@", _tex_escape(subtitle))
+           .replace("@@HEADL@@", _tex_escape(head_l))
+           .replace("@@HEADR@@", _tex_escape(head_r or title))
+           .replace("@@AUTHOR@@", _tex_escape(author))
+           .replace("@@BODY@@", body))
+    out = Path(out_path)
+    out.parent.mkdir(parents=True, exist_ok=True)
+    texf = out.with_suffix(".tex")
+    texf.write_text(doc, encoding="utf-8")
+    # Run twice so fancyhdr / section numbering settle. nonstopmode keeps going past minor
+    # glitches in model-generated LaTeX so we still get a PDF.
+    for _ in range(2):
+        subprocess.run(["xelatex", "-interaction=nonstopmode", texf.name],
+                       cwd=str(out.parent), capture_output=True)
+    if not out.exists():
+        raise RuntimeError(f"xelatex failed to produce {out}")
+    return str(out)
