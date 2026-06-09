@@ -1,0 +1,99 @@
+\documentclass[11pt, a4paper]{article}
+
+% --- Fonts and engine ---
+\usepackage{fontspec}
+\setmainfont{Helvetica Neue}
+\setmonofont{Menlo}
+\usepackage{unicode-math}
+\setmathfont{STIX Two Math}
+
+% --- Layout ---
+\usepackage[margin=2cm, top=2cm, bottom=2.5cm]{geometry}
+\usepackage{microtype}
+\usepackage{parskip}
+\setlength{\parskip}{0.5em}
+\setlength{\parindent}{0pt}
+
+% --- Typography and links ---
+\usepackage[colorlinks=true, linkcolor=NavyBlue, urlcolor=NavyBlue, citecolor=NavyBlue]{hyperref}
+\usepackage{xcolor}
+\usepackage[dvipsnames]{xcolor}
+
+% --- Math and tables ---
+\usepackage{amsmath}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{tabularx}
+\newcommand{\thead}[1]{\textbf{#1}}
+
+% --- Graphics ---
+\usepackage{graphicx}
+\graphicspath{{figures/}}
+
+% --- Lists ---
+\usepackage{enumitem}
+\setlist[itemize]{leftmargin=1.3em, itemsep=0.15em, topsep=0.2em}
+\setlist[enumerate]{leftmargin=1.5em, itemsep=0.15em, topsep=0.2em}
+
+% --- Boxed callouts ---
+\usepackage[most]{tcolorbox}
+\tcbuselibrary{breakable, skins, theorems}
+
+% Muted "solid" palette — low-saturation backgrounds, restrained frames, flat title bars
+% (subtle tinted title with dark text instead of a loud coloured bar).
+\definecolor{cardBg}{HTML}{FAF9F5}
+\definecolor{cardBd}{HTML}{C7C2B2}
+\definecolor{defBg}{HTML}{EDF1F5}
+\definecolor{defBd}{HTML}{3F5B74}
+\definecolor{factBg}{HTML}{EEF2F4}
+\definecolor{factBd}{HTML}{45667A}
+\definecolor{tipBg}{HTML}{ECF2EC}
+\definecolor{tipBd}{HTML}{4F7351}
+\definecolor{trapBg}{HTML}{F5ECEC}
+\definecolor{trapBd}{HTML}{9C5B5B}
+\definecolor{pitBg}{HTML}{F4F0E5}
+\definecolor{pitBd}{HTML}{A98F57}
+\definecolor{quizBg}{HTML}{F3EDE7}
+\definecolor{quizBd}{HTML}{8F674B}
+\definecolor{doBg}{HTML}{F0EEF2}
+\definecolor{doBd}{HTML}{6E6080}
+
+\newtcolorbox{card}[1][]{enhanced, breakable, colback=cardBg, colframe=cardBd, colbacktitle=cardBd!20!white, coltitle=black, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries\small, title={#1}}
+\newtcolorbox{defbox}[1][]{enhanced, breakable, colback=defBg, colframe=defBd, colbacktitle=defBd!18!white, coltitle=defBd!75!black, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=6pt, bottom=6pt, fonttitle=\bfseries, title={Definition: #1}}
+\newtcolorbox{factbox}[1][]{enhanced, breakable, colback=factBg, colframe=factBd, colbacktitle=factBd!18!white, coltitle=factBd!75!black, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=5pt, bottom=5pt, fonttitle=\bfseries, title={Fact #1}}
+\newtcolorbox{trapbox}[1][]{enhanced, breakable, colback=trapBg, colframe=trapBd, colbacktitle=trapBd!18!white, coltitle=trapBd!75!black, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=5pt, bottom=5pt, fonttitle=\bfseries, title={MCQ trap #1}}
+\newtcolorbox{pitfallbox}[1][]{enhanced, breakable, colback=pitBg, colframe=pitBd, colbacktitle=pitBd!18!white, coltitle=pitBd!75!black, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=5pt, bottom=5pt, fonttitle=\bfseries, title={Pitfall #1}}
+\newtcolorbox{quizbox}[1][]{enhanced, breakable, colback=quizBg, colframe=quizBd, colbacktitle=quizBd!18!white, coltitle=quizBd!75!black, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=5pt, bottom=5pt, fonttitle=\bfseries, title={Lecturer's in-class quiz #1}}
+\newtcolorbox{dobox}[1][]{enhanced, breakable, colback=doBg, colframe=doBd, colbacktitle=doBd!18!white, coltitle=doBd!75!black, arc=2pt, boxrule=0.6pt, left=8pt, right=8pt, top=5pt, bottom=5pt, fonttitle=\bfseries, title={Worked trace #1}}
+
+\usepackage{titlesec}
+\titleformat{\section}[block]{\Large\bfseries\color{defBd}}{\thesection.}{0.6em}{}
+\titleformat{\subsection}[block]{\large\bfseries\color{defBd!80!black}}{\thesubsection}{0.5em}{}
+\titlespacing*{\section}{0pt}{1.3em}{0.4em}
+\titlespacing*{\subsection}{0pt}{0.9em}{0.3em}
+
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small @@HEADL@@}
+\fancyhead[R]{\small @@HEADR@@}
+\fancyfoot[C]{\small\thepage}
+\renewcommand{\headrulewidth}{0.3pt}
+
+\newcommand{\examflag}{\textcolor{tipBd}{\textbf{[EXAM]}}\,}
+\newcommand{\trapflag}{\textcolor{trapBd}{\textbf{[TRAP]}}\,}
+\newcommand{\doflag}{\textcolor{doBd}{\textbf{[DO]}}\,}
+
+\title{\vspace{-1.5cm}{\Huge\bfseries @@TITLE@@} \\[0.3em]{\large @@SUBTITLE@@}}
+\author{\large @@AUTHOR@@}
+\date{}
+
+\begin{document}
+
+\maketitle
+\thispagestyle{empty}
+\vspace{-1em}
+
+@@BODY@@
+
+\end{document}

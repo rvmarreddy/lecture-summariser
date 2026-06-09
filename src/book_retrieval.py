@@ -112,7 +112,9 @@ class BookRetriever:
     def ready(self) -> bool:
         return self.vectors is not None and len(self.passages) > 0
 
-    def retrieve(self, query: str, k: int = 4) -> List[str]:
+    def retrieve(self, query: str, k: int = 4, min_score: float = 0.0) -> List[str]:
+        """Top-k passages by cosine similarity, dropping any below `min_score` so an off-topic slide
+        doesn't pull in tangential book passages (which the LLM would then faithfully expand)."""
         if not self.ready or not query.strip():
             return []
         q = _get_embedder().encode([query], normalize_embeddings=True, convert_to_numpy=True).astype("float32")
@@ -120,7 +122,34 @@ class BookRetriever:
         k = min(k, len(self.passages))
         top = np.argpartition(-scores, k - 1)[:k]
         top = top[np.argsort(-scores[top])]
-        return [self.passages[i]["text"] for i in top]
+        return [self.passages[i]["text"] for i in top if scores[i] >= min_score]
+
+
+class TextRetriever:
+    """In-memory cosine retriever over chunks of a single text (e.g. a lecture transcript),
+    built fresh per run rather than persisted to disk."""
+
+    def __init__(self, text: str, words_per_chunk: int = 120, overlap: int = 30):
+        self.chunks = chunk_text(text, words_per_chunk, overlap)
+        self.vectors = None
+        if self.chunks:
+            self.vectors = _get_embedder().encode(
+                self.chunks, normalize_embeddings=True, convert_to_numpy=True
+            ).astype("float32")
+
+    @property
+    def ready(self) -> bool:
+        return self.vectors is not None and len(self.chunks) > 0
+
+    def retrieve(self, query: str, k: int = 2, min_score: float = 0.0) -> List[str]:
+        if not self.ready or not query.strip():
+            return []
+        q = _get_embedder().encode([query], normalize_embeddings=True, convert_to_numpy=True).astype("float32")
+        scores = self.vectors @ q[0]
+        k = min(k, len(self.chunks))
+        top = np.argpartition(-scores, k - 1)[:k]
+        top = top[np.argsort(-scores[top])]
+        return [self.chunks[i] for i in top if scores[i] >= min_score]
 
 
 def load_retriever(index_dir: str = INDEX_DIR):
