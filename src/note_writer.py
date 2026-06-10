@@ -189,30 +189,63 @@ STRUCTURE_RULES = (
     "You are a LaTeX formatter for revision notes. Turn the reviewed POINTS into one styled \\section using "
     "ONLY these macros: \\section{...}, \\subsection{...}, \\begin{defbox}[Term]..\\end{defbox} (definition), "
     "\\begin{factbox}..\\end{factbox} (key fact), \\begin{card}[Title]..\\end{card} (summary itemize), "
-    "\\begin{trapbox}[: label]..\\end{trapbox} (mistake), \\begin{pitfallbox}..\\end{pitfallbox}. "
-    "HARD RULES: keep the token [[EXAMPLES]] EXACTLY as-is on its own line wherever it occurs — never edit, "
-    "expand, wrap, or delete it. Add NO new facts, numbers, examples, tables, or matrices; only arrange and "
-    "style the points you are given. Never use '|' to draw a table. STRUCTURE — CONSOLIDATE, do NOT fragment: "
-    "put a comparison of two things in ONE tabularx table or TWO side-by-side cards (never a stack of one-line "
-    "boxes); group several related facts into ONE card's itemize rather than many separate Fact boxes; aim for "
-    "FEW substantive boxes per section. Do NOT cram multiple examples into one box as a run-on paragraph, and "
-    "NEVER nest a box inside another. factbox and pitfallbox take NO label; trapbox/dobox labels have no "
-    "leading colon. NOT everything needs a box — ordinary explanation should be plain prose; reserve callout "
-    "boxes for definitions, key facts, traps, and worked examples. Output ONLY the LaTeX body."
+    "\\begin{trapbox}[Label]..\\end{trapbox} (mistake), \\begin{pitfallbox}..\\end{pitfallbox}. "
+    "HARD RULES: keep the token [[EXAMPLES]] EXACTLY as-is on its own line at TOP LEVEL — never edit, expand, "
+    "delete, or place it inside any box — with one lead-in sentence before it and a one-sentence takeaway "
+    "after it, both drawn from the points. Add NO new facts, numbers, examples, tables, or matrices; only "
+    "arrange and style the points you are given. Never use '|' to draw a table. STRUCTURE — CONSOLIDATE, do "
+    "NOT fragment: put a comparison of two OR MORE things in ONE tabularx table, never parallel per-item "
+    "cards or a stack of one-line boxes; group several related facts into ONE card rather than many separate "
+    "Fact boxes; aim for FEW substantive boxes per section. A card or box title must name its specific "
+    "content ('Why k-NN predictions are slow'), never a generic label like 'Properties' or 'Key Facts', and "
+    "must not repeat the heading above it. NEVER nest a box inside another. factbox and pitfallbox take NO "
+    "label; trapbox/dobox labels have no leading colon. NOT everything needs a box — most explanation should "
+    "be plain prose; reserve boxes for definitions, key facts, traps, and worked examples. Output ONLY the "
+    "LaTeX body."
 )
 
 
+def _bracket_label(m):
+    label = m.group(2).strip().rstrip(".:")
+    if not label or len(label.split()) > 3 or "." in label:
+        return m.group(0)               # a short same-line BODY sentence, not a leaked label: leave it
+    return "%s[%s]" % (m.group(1), label[:1].upper() + label[1:])
+
+
+def _hoist_inner(m):
+    inner = _BLOCK_RE.search(m.group(3))
+    if not inner or inner.group(1) == m.group(1):
+        return m.group(0)
+    content = m.group(3)[:inner.start()] + m.group(3)[inner.end():]
+    return "\\begin{%s}%s%s\\end{%s}\n\n%s" % (m.group(1), m.group(2) or "", content, m.group(1), inner.group(0))
+
+
+def _unnest_boxes(body: str) -> str:
+    """Hoist a box nested inside a DIFFERENT box out to after the outer \\end (the model occasionally nests
+    a worked-trace dobox inside a card; it renders box-in-box with the trace visually subordinated)."""
+    prev = None
+    while prev != body:
+        prev = body
+        body = _BLOCK_RE.sub(_hoist_inner, body)
+    return body
+
+
 def _fix_box_titles(body: str) -> str:
-    """Clean callout-title rendering glitches: factbox/pitfallbox take NO label (a stray one renders as
-    'Fact Punctuation'); and strip a leading ': ' from any box label (which renders as 'Worked trace : x')."""
+    """Repair callout-box glitches: factbox/pitfallbox take NO label (a stray one renders as 'Fact
+    Punctuation'); strip a leading ': ' from any box label (renders as 'Worked trace : x'); bracket a
+    short label the model left outside the brackets ('\\begin{trapbox}normalisation' leaks the word into
+    the body text); and hoist a box nested inside a different box."""
     body = re.sub(r"(\\begin\{(?:factbox|pitfallbox)\})\s*\[[^\]]*\]", r"\1", body)
     body = re.sub(r"(\\begin\{(?:card|defbox|trapbox|dobox|quizbox)\})\[\s*:\s*", r"\1[", body)
-    return body
+    body = re.sub(r"(\\begin\{(?:card|defbox|trapbox|dobox|quizbox)\})[ \t]*:?[ \t]*"
+                  r"([^\s\[\]\\{}][^\[\]\\\n{}]{0,50}?)[ \t]*$",
+                  _bracket_label, body, flags=re.M)
+    return _unnest_boxes(body)
 
 
 def structure_points(topic: str, points: str, max_tokens: int = 1300) -> str:
     """Stage 3 — arrange reviewed points into styled LaTeX, keeping [[EXAMPLES]] untouched (sanitized)."""
-    prompt = ("TWO EXAMPLES OF THE TASK (separated by =====):\n%s\n\nNow format these POINTS for the topic "
+    prompt = ("EXAMPLES OF THE TASK (separated by =====):\n%s\n\nNow format these POINTS for the topic "
               "\"%s\" the same way (keep [[EXAMPLES]] verbatim):\n\nPOINTS:\n%s\n\nLATEX:"
               % (STRUCTURE_FEWSHOT, topic, points))
     return _fix_box_titles(_sanitize_body(_ollama(STRUCTURE_RULES, prompt, max_tokens, 0.3)))
@@ -336,6 +369,32 @@ def dedup_sections(body: str) -> str:
         content = _dedup_subsections(content, drop=section_canons, seen=seen_subs, own=norm)
         out.append(heading + _strip_recover_boxes(content, section_canons, norm))
     return re.sub(r"\n{3,}", "\n\n", "".join(out)).strip()
+
+
+def _tidy_headings(body: str) -> str:
+    """Drop an empty heading layer: a \\subsection whose entire content is ONE box (the heading wraps
+    nothing else, adding navigation noise), or whose title is just echoed by the label of the box placed
+    directly under it (the box's own title bar already says it)."""
+    subs = list(_SUBSECTION_RE.finditer(body))
+    if not subs:
+        return body
+    marks = sorted([m.start() for m in _SECTION_RE.finditer(body)]
+                   + [m.start() for m in subs] + [len(body)])
+    out, prev_end = [], 0
+    for m in subs:
+        nxt = min(p for p in marks if p > m.start())
+        content = body[m.end():nxt]
+        lone = re.fullmatch(
+            r"\s*\\begin\{(card|defbox|factbox|trapbox|pitfallbox|quizbox|dobox)\}"
+            r"(\[[^\]]*\])?.*?\\end\{\1\}\s*", content, re.DOTALL)
+        first = _BLOCK_RE.search(content)
+        echo = (first and first.group(2) and not content[:first.start()].strip()
+                and _canon(first.group(2).strip("[] ")) == _canon(m.group(1)))
+        if lone or echo:
+            out.append(body[prev_end:m.start()])
+            prev_end = m.end()                 # drop just the heading; the box stays
+    out.append(body[prev_end:])
+    return "".join(out)
 
 
 def dedup_blocks(body: str) -> str:
