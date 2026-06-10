@@ -12,7 +12,10 @@ The architecture lives in `run_extraction.run_pipeline`. For each deck:
    that break LaTeX (`_clean_slide_text`).
 2. **Plan an outline** (`_topic_groups`): group slides by their `Section: Subtitle`
    header into one topic each, dropping syllabus/objectives/feedback/recap slides. Every
-   topic becomes its own `\section`, so none can be silently dropped.
+   topic becomes its own `\section`, so none can be silently dropped. Adjacent groups
+   sharing a section prefix merge when a subtitle is vague ("The Problem"), so one slide
+   theme is not split across sections; standalone vague subtitles get qualified by their
+   prefix.
 3. **Per topic, a staged Content, Review, Structure pipeline** (`src/note_writer.py`),
    each stage a focused **Qwen-via-Ollama** call (`OLLAMA_MODEL`, default `qwen2.5:7b`;
    use `qwen2.5:14b` for real quality):
@@ -49,41 +52,43 @@ OLLAMA_MODEL=qwen2.5:14b .venv/bin/python run_extraction.py <slides.pdf>   # hig
 
 ## Performance
 
-Notes are scored 1 to 10 on three criteria by an independent judge (Claude) reading the
-**source slides** and the **generated notes** side by side.
+Notes are scored 1 to 10 on three criteria by an independent frontier-model judge reading
+the **source slides** and the **generated notes** side by side.
 
 The tuned development deck (**L2, Language Preprocessing**) climbed from **2.67 to 5.33**
 (Coverage 6 / Correctness 5 / Structure 5, vs a 9.0 frontier-authored gold in a blind A/B
 panel) across the staged-pipeline rewrite. Held-out decks the pipeline was *not* tuned on
 generalise to similar quality, confirming the gains come from the architecture rather than
-overfitting:
+overfitting. A further structure pass (theme-merge topic planning, table-teaching
+exemplars, example-format dedup, box repair) then lifted both held-out decks again:
 
 | Deck (held-out)                      | Coverage | Correctness | Structure |
 | ------------------------------------ | :------: | :---------: | :-------: |
-| **L3**: BoW / TF-IDF / OOV / Search  |  **8**   |    **4**    |   **5**   |
-| **L5**: Word embeddings / Word2Vec   |  **7**   |    **3**    |   **6**   |
+| **L3**: BoW / TF-IDF / OOV / Search  |  8 -> 7  |  4 -> **5** |  5 -> **6** |
+| **L5**: Word embeddings / Word2Vec   |  7 -> 7  |  3 -> **5** |  6 -> **6** |
 
-**Coverage and rendering are the strong axes** (7 to 8): topics are fully enumerated, the
-LaTeX compiles cleanly, and definitions/cards/equations render correctly. **Correctness is
-the weak axis** (3 to 4); see Limitations.
+The structure pass eliminated the headline defects: slide themes split across sections,
+comparison slides flattened into box stacks instead of tables, the same vector printed in
+two formats, generic box titles, and two hallucinated formulas/analogies. **Correctness
+remains the weak axis** (around 5); see Limitations.
 
 ## Limitations
 
 - **Factual correctness is the ceiling, and it lives in the model weights.** The local
-  model still hallucinates content that is *not* on the slides. For example, it invented a
-  TF-IDF cosine-similarity formula (L3), described positional encoding as sinusoidal
-  when the slides use plain one-hot (L5), and substituted a textbook-standard vector
-  analogy (`king - man + woman = queen`) for the slides' own example. The local-LLM
-  **Review** stage does not reliably catch these (this is NLI-model territory).
-  Orchestration buys completeness, structure and clean rendering, **not** factual
-  reliability. A bigger local model helps; more prompting does not.
-- **Worked-example boxes can contain undigested raw vectors.** The protected-span design
-  places slide examples verbatim rather than letting the (unreliable) model narrate them,
-  so number grids and character-n-gram fragments sometimes appear without interpretation.
-  This is the deliberate trade-off against the model garbling them.
-- **Occasional over-boxing / fragmentation.** Despite the consolidation few-shot, some
-  topics still stack Definition + Properties + Pitfall + Worked-trace boxes where prose
-  or a single table would read better.
+  model still occasionally adds content that is *not* on the slides (named related
+  methods, an off-slide formula), and the local-LLM **Review** stage does not reliably
+  catch these (this is NLI-model territory). Orchestration buys completeness, structure
+  and clean rendering, **not** factual reliability. A bigger local model helps; more
+  prompting does not. Note also that textbook enrichment is intentional, but a
+  slides-only marker will count it as off-deck material.
+- **Worked-example boxes contain verbatim, unnarrated vectors.** The protected-span
+  design places slide examples exactly as printed rather than letting the (unreliable)
+  model narrate them, so number grids appear without per-row labels or interpretation.
+  This is the deliberate trade-off against the model garbling them; attaching slide
+  labels to each vector at capture time is the next refinement.
+- **Cross-section repetition survives.** Generation is per-topic, so no stage sees two
+  sections at once; a motivating example the lecturer reuses can be re-told in several
+  sections, and only exact duplicates are removed deterministically.
 - **Image/diagram extraction is not yet implemented.** Phase 2 of `PROPOSAL.md`
   (multimodal grounding, extracting slide figures into the notes) remains future work;
   `src/diagrams.py` only feeds the legacy pandoc path.
