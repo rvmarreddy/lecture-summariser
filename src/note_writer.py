@@ -172,7 +172,7 @@ def review_points(topic: str, points: str, source_material: str, max_tokens: int
     return _ollama(REVIEW_RULES, prompt, max_tokens, 0.2).strip()
 
 
-# Auto-generated gold-standard exemplars (Claude-written) teaching CONSOLIDATED structure: comparison ->
+# Gold-standard exemplars teaching CONSOLIDATED structure: comparison ->
 # one table, grouped cards, the [[EXAMPLES]] token kept verbatim and interpreted. Loaded from a file so the
 # set can be regenerated; falls back to a minimal inline example if the file is absent.
 def _load_structure_fewshot() -> str:
