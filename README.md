@@ -93,3 +93,4 @@ remains the weak axis** (around 5); see Limitations.
   (multimodal grounding, extracting slide figures into the notes) remains future work;
   `src/diagrams.py` only feeds the legacy pandoc path.
 
+For the project roadmap, see `PROPOSAL.md`.
