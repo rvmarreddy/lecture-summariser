@@ -1,10 +1,47 @@
 POINTS:
+1. Batch, stochastic, and mini-batch gradient descent all minimise the same loss; they differ in how much data each parameter update uses.
+2. Batch gradient descent computes the gradient over the FULL training set per update: smooth, deterministic convergence, but each step is slow and the whole set must fit in memory.
+3. Stochastic gradient descent (SGD) updates on ONE example at a time: cheap, noisy steps that can escape shallow local minima, but the loss curve oscillates and never settles exactly.
+4. Mini-batch gradient descent updates on a small batch (typically 32-256 examples): vectorises well on GPUs, smoother than SGD, cheaper than batch — the practical default.
+5. The noise from small updates acts as implicit regularisation, but it makes convergence diagnostics harder because the loss never settles exactly.
+6. Shuffle the data each epoch so consecutive updates are not correlated by data order.
+7. The learning rate interacts with the update size: noisier (smaller) updates generally need a smaller rate or a decay schedule.
+
+LATEX:
+\section{Gradient Descent Variants}
+
+Batch, stochastic, and mini-batch gradient descent all minimise the same loss; they differ only in how much data each parameter update sees, which sets the trade-off between the cost of a step and the quality of a step.
+
+\begin{center}\begin{tabularx}{\linewidth}{lXXX}
+\midrule
+ & \textbf{Batch} & \textbf{Stochastic} & \textbf{Mini-batch} \\
+\midrule
+Data per update & Full training set & One example & Small batch (32--256) \\
+Step behaviour & Smooth, deterministic & Noisy, oscillates & Mildly noisy \\
+Cost per step & Highest & Lowest & Low (vectorises on GPUs) \\
+Escapes shallow minima & Rarely & Often & Sometimes \\
+When to use & Small datasets & Streaming / online & The practical default \\
+\midrule
+\end{tabularx}\end{center}
+
+The noise from small updates is not purely harmful: it acts as implicit regularisation, though it makes convergence harder to diagnose because the loss never settles exactly.
+
+\begin{card}[Getting stable mini-batch training]
+\begin{itemize}
+  \item Shuffle the data each epoch so consecutive updates are not correlated by data order.
+  \item Match the learning rate to the noise: smaller, noisier updates need a smaller rate or a decay schedule.
+\end{itemize}
+\end{card}
+
+=====
+
+POINTS:
 1. Precision and recall are two evaluation metrics for binary classifiers, both computed from the confusion-matrix counts: true positives (TP), false positives (FP), and false negatives (FN).
 2. Precision = TP / (TP + FP): of all the items the model flagged as positive, the fraction that were actually positive. It answers "when the model says yes, how often is it right?"
 3. Recall (a.k.a. sensitivity, true positive rate) = TP / (TP + FN): of all the actually-positive items, the fraction the model successfully retrieved. It answers "of everything I should have caught, how much did I catch?"
 4. The two trade off against each other: lowering the decision threshold flags more items, which raises recall but usually lowers precision; raising the threshold does the reverse.
 5. Precision is governed by false positives; recall is governed by false negatives. Neither metric looks at true negatives, so both are insensitive to how the model handles the negative class.
-6. Which metric matters depends on the cost of each error type: when a missed positive is costly (cancer screening, fraud detection) optimise for recall; when a false alarm is costly (spam filtering a legit email, recommending content) optimise for precision.
+6. Which metric matters depends on the cost of each error type: when a missed positive is costly (cancer screening, fraud detection) optimise for recall; when a false alarm is costly (spam filtering a legit email) optimise for precision.
 7. The F1 score is the harmonic mean of precision and recall, 2PR / (P + R), used as a single combined number when both errors matter.
 8. [[EXAMPLES]]
 9. A common mistake is reporting a single metric in isolation — a model that predicts "positive" for everything gets 100% recall but useless precision, so precision and recall must always be read together.
@@ -13,44 +50,38 @@ POINTS:
 LATEX:
 \section{Precision vs Recall}
 
-Precision and recall are two evaluation metrics for a binary classifier. Both are computed from confusion-matrix counts---true positives (TP), false positives (FP), and false negatives (FN)---and notably neither uses true negatives, so both ignore how the model treats the negative class.
+Precision and recall are two evaluation metrics for a binary classifier. Both are computed from confusion-matrix counts---true positives (TP), false positives (FP), and false negatives (FN)---and neither uses true negatives, so both ignore how the model treats the negative class.
 
 \begin{defbox}[Precision]
-$\text{Precision} = \dfrac{TP}{TP + FP}$. Of all items the model flagged as positive, the fraction that were actually positive---``when the model says yes, how often is it right?'' It is governed by false positives.
+$\text{Precision} = \dfrac{TP}{TP + FP}$. Of all items the model flagged as positive, the fraction that were actually positive---``when the model says yes, how often is it right?'' Governed by false positives.
 \end{defbox}
 
 \begin{defbox}[Recall]
-$\text{Recall} = \dfrac{TP}{TP + FN}$ (also called sensitivity or true positive rate). Of all actually-positive items, the fraction the model retrieved---``of everything I should have caught, how much did I catch?'' It is governed by false negatives.
+$\text{Recall} = \dfrac{TP}{TP + FN}$ (also called sensitivity or true positive rate). Of all actually-positive items, the fraction the model retrieved---``of everything I should have caught, how much did I catch?'' Governed by false negatives.
 \end{defbox}
 
 \subsection{Contrasting the two metrics}
 
-The two metrics trade off against each other through the decision threshold, and which one to optimise depends on the cost of each error type.
+The two trade off through the decision threshold: lowering it flags more items, raising recall but usually lowering precision. Which to optimise depends on the cost of each error type, and when both error types matter the F1 score $2PR/(P+R)$---the harmonic mean of the two---combines them into one number.
 
-\begin{center}\begin{tabularx}{0.8\linewidth}{lXX}
+\begin{center}\begin{tabularx}{0.9\linewidth}{lXX}
 \midrule
  & \textbf{Precision} & \textbf{Recall} \\
 \midrule
 Formula & $TP / (TP + FP)$ & $TP / (TP + FN)$ \\
 Penalised by & False positives & False negatives \\
-Question answered & How trustworthy is a positive prediction? & How complete is the positive coverage? \\
-Effect of lowering threshold & Usually falls & Rises \\
-Optimise when & False alarms are costly (spam filtering, recommendations) & Missed positives are costly (cancer screening, fraud) \\
+Question answered & How trustworthy is a positive call? & How complete is the coverage? \\
+Optimise when & False alarms are costly (spam filtering) & Misses are costly (cancer screening, fraud) \\
 \midrule
 \end{tabularx}\end{center}
 
-\begin{factbox}
-The F1 score, $2PR / (P + R)$, is the harmonic mean of precision and recall---a single combined number to use when both error types matter.
-\end{factbox}
+The worked example below scores a degenerate classifier that labels every item positive.
 
 [[EXAMPLES]]
-This illustrates the trade-off concretely: classifying every item as positive drives recall to 100\% yet leaves precision near the base rate, showing why one number alone is meaningless.
 
-\begin{pitfallbox}
-Never report precision or recall in isolation---they must be read together, since a degenerate ``always positive'' model achieves perfect recall with useless precision.
-\end{pitfallbox}
+Classifying everything as positive drives recall to 100\% while precision falls to the base rate---one number alone is meaningless, so the two must always be read together.
 
-\begin{trapbox}[precision is not accuracy]
+\begin{trapbox}[Precision is not accuracy]
 On an imbalanced dataset accuracy can look high while recall is near zero, because the majority negative class dominates the count. Do not substitute accuracy for recall.
 \end{trapbox}
 
@@ -74,25 +105,16 @@ LATEX:
 A non-parametric, instance-based (lazy) classifier. It stores all training examples and, to classify a query point, computes the distance to every stored point, selects the $k$ closest, and assigns the majority class label among those $k$ neighbours.
 \end{defbox}
 
-Distances are typically Euclidean, so features must be scaled before use or a large-range feature will dominate the metric. The neighbourhood size $k$ is a hyperparameter: small $k$ yields a flexible, high-variance boundary, while large $k$ yields a smoother, higher-bias one. For two classes, choosing $k$ odd avoids tie votes.
+Distances are typically Euclidean, so features must be scaled first or a single large-range feature will dominate the metric. The neighbourhood size $k$ is a hyperparameter that trades flexibility for stability: small $k$ gives a flexible, high-variance boundary, large $k$ a smoother, higher-bias one, and choosing $k$ odd (for two classes) avoids tie votes.
 
-\subsection{Worked Example}
+The worked trace below classifies one query point by majority vote among its $k=3$ nearest neighbours.
 
 [[EXAMPLES]]
 
-Here the three nearest neighbours vote 2-to-1 for one class, so the query is labelled with the majority class even though its single closest point belonged to the other class, illustrating how $k$ smooths over individual noisy neighbours.
+The three nearest neighbours vote 2-to-1, so the query takes the majority label even though its single closest point belonged to the other class---$k$ smooths over individual noisy neighbours.
 
-\subsection{Properties and Limitations}
+Because nothing is learned up front, training is essentially free but every prediction costs $O(n \cdot d)$, so k-NN scales poorly to large datasets. In high dimensions distances concentrate and neighbours become uninformative (the curse of dimensionality), and the method is sensitive both to irrelevant features and to the choice of distance metric.
 
-\begin{card}[Properties of k-NN]
-\begin{itemize}
-  \item Training is essentially free, but each prediction costs $O(n \cdot d)$, so it scales poorly to large datasets.
-  \item Suffers from the curse of dimensionality: in high dimensions distances concentrate and neighbours become uninformative.
-  \item Sensitive to irrelevant features and to the choice of distance metric.
-  \item Decision boundary is set entirely by the data and $k$ — there is no learned model to inspect.
-\end{itemize}
-\end{card}
-
-\begin{pitfallbox}
-Forgetting to normalise features lets a single large-scale feature dominate the Euclidean distance, so the "nearest" neighbours are chosen almost entirely by that one feature.
-\end{pitfallbox}
+\begin{trapbox}[Unscaled features]
+Forgetting to normalise features lets one large-scale feature dominate the Euclidean distance, so the ``nearest'' neighbours are chosen almost entirely by that single feature.
+\end{trapbox}

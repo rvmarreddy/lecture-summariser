@@ -9,7 +9,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "src
 from extract_slides import extract_slide_content
 from book_retrieval import load_retriever, TextRetriever
 from note_writer import (content_points, review_points, structure_points,
-                          dedup_blocks, dedup_sections, verify_relevant, _fix_box_titles)
+                          dedup_blocks, dedup_sections, verify_relevant, _fix_box_titles, _tidy_headings)
 
 # Minimum slide<->passage cosine similarity for a book passage to be used as grounding. Below this a
 # passage is treated as off-topic and dropped (stops thin-slide topics pulling tangential book content).
@@ -85,7 +85,14 @@ def _num_anchor(texts: List[str], cap: int = 12) -> List[str]:
                 run.append(s)
             else:
                 if len(run) >= 3:
-                    found.append(" ".join(run))
+                    multi = [r for r in run if len(re.findall(r"-?\d[\d.]*", r)) >= 2]
+                    if multi:
+                        # A grid: one item per multi-number row, so each row can dedup against its bracket form.
+                        found.extend(multi)
+                    else:
+                        # A vertical column of lone values is ONE vector printed one element per line
+                        # (the slides' TF-IDF layout) — join it; per-row it would be meaningless singletons.
+                        found.append(" ".join(run))
                 run = []
     seen, out = set(), []
     for v in found:
@@ -113,23 +120,25 @@ def _extract_examples(texts: List[str], cap: int = 10, seen: set = None) -> List
             s = " ".join(line.split())
             if 3 < len(s) < 200 and ("->" in s or "→" in s or " becomes " in s) and ('"' in s or '“' in s or "[" in s):
                 items.append(s)
-    items += _num_anchor(texts, cap=6)
+    items += _num_anchor(texts, cap=12)   # generous inner cap: dedup/subsumption + the final [:cap] bound it
+    core = lambda s: re.sub(r"[^a-z0-9]", "", s.lower())
     if seen is None:
         seen = set()
     out = []
     for v in items:
-        if v and v not in seen and len(v) > 2:
-            seen.add(v)
+        if v and len(v) > 2 and (core(v) or v) not in seen and v not in out:
             out.append(v)
-    # Drop items subsumed by a longer one: a bare "[1, 0, 0, 0]" or "1 0 0 0" when "London -> [1,0,0,0]"
-    # is also present (else the same vector is listed several ways in one box).
-    core = lambda s: re.sub(r"[^a-z0-9]", "", s.lower())
+    # Drop items subsumed by a longer one — INCLUDING equal cores: "[111000000]", "1 1 1 0 0 0 0 0 0" and
+    # "[1, 1, 1, 0, 0, 0, 0, 0, 0]" are the same vector three ways; keep only the longest/labelled form.
     keep = []
     for v in sorted(out, key=len, reverse=True):
         cv = core(v)
-        if cv and not any(cv != core(k) and cv in core(k) for k in keep):
+        if cv and not any(cv in core(k) for k in keep):
             keep.append(v)
-    return [v for v in out if v in keep][:cap]
+    kept = [v for v in out if v in keep][:cap]
+    for v in kept:                      # cores (not verbatim strings) into the cross-topic seen set,
+        seen.add(core(v) or v)          # so a format variant can't re-place the vector in a later topic
+    return kept
 
 
 def _tex_verbatim(s: str) -> str:
@@ -214,10 +223,11 @@ def _sim_matrix(texts: List[str]) -> str:
     return ""
 
 
-def _protected_block(texts: List[str], seen: set = None) -> str:
+def _protected_block(texts: List[str], seen: set = None, topic: str = "") -> str:
     """A dobox of the slide's worked examples, formatted (vectors as math, a real stem/lemma table, the
     similarity matrix as an array) and placed verbatim — the protected content the model must NOT author.
-    `seen` deduplicates the example items across topics so a token list isn't placed in several sections."""
+    `seen` deduplicates the example items across topics so a token list isn't placed in several sections.
+    `topic` qualifies the box title so ten traces don't all carry the identical anonymous title."""
     items = _extract_examples(texts, seen=seen)
     table = _stem_table(texts)
     matrix = _sim_matrix(texts)
@@ -231,7 +241,8 @@ def _protected_block(texts: List[str], seen: set = None) -> str:
         parts.append(matrix)
     if table:
         parts.append(table)
-    return ("\n\n\\begin{dobox}[from the slides]\n"
+    label = "from the slides: %s" % _tex_verbatim(topic[:40]) if topic else "from the slides"
+    return ("\n\n\\begin{dobox}[%s]\n" % label
             + "\n".join(parts) + "\n\\end{dobox}\n")
 
 
@@ -249,23 +260,24 @@ def _section_titles(body: str) -> List[str]:
     return out
 
 
-def _slide_topic(text: str) -> str:
-    """Best-guess topic for a slide. Prefer a 'Section: Subtitle' header (e.g. 'Document Processing:
-    Normalisation' -> 'Normalisation'); otherwise the slide's title line. URLs and sentence-colons are
-    ignored so they don't become spurious topics."""
+def _slide_topic(text: str) -> tuple:
+    """Best-guess (section_prefix, topic) for a slide. Prefer a 'Section: Subtitle' header (e.g.
+    'Document Processing: Normalisation' -> ('Document Processing', 'Normalisation')); otherwise the
+    slide's title line with an empty prefix. URLs and sentence-colons are ignored so they don't become
+    spurious topics."""
     lines = [l.strip() for l in text.splitlines() if l.strip()]
     for l in lines:
         if "://" in l or l.lower().startswith("http"):
             continue
         if ": " in l and len(l) < 60 and not l[0].isdigit():
-            tail = l.split(": ", 1)[1].strip()
+            head, tail = (p.strip() for p in l.split(": ", 1))
             if tail and len(tail.split()) <= 6:       # a real short subtitle, not a sentence
-                return tail
+                return head, tail
     for l in lines:                                    # fallback: first real title line
         if "://" in l or l.lower().startswith("http") or len(l) < 2:
             continue
-        return l
-    return "Notes"
+        return "", l
+    return "", "Notes"
 
 
 _SKIP_TOPICS = {"learning objectives", "feedback", "where are we?", "where are we",
@@ -277,27 +289,69 @@ def _clean_slide_text(text: str) -> str:
     return _EMOJI_RE.sub("(emoji)", text)
 
 
+_VAGUE_TAIL_RE = re.compile(r"(?:the|a|an)\s+\w+", re.I)
+_VAGUE_TAILS = {"motivation", "overview", "introduction", "intro", "recap", "summary",
+                "example", "examples", "the problem", "the concept", "the idea", "the solution"}
+_MERGE_CAP = 6000   # max combined chars when merging same-prefix neighbours (content stage caps at 12000)
+
+
+def _vague_tail(tail: str) -> bool:
+    """A subtitle too generic (or too junky) to stand as a section title on its own — e.g. 'The Problem',
+    'The Concept', or a raw set like '{off, on, lights}'. These merge into / get qualified by their
+    section prefix instead of becoming standalone vague sections."""
+    t = " ".join(tail.lower().split())
+    return (t in _VAGUE_TAILS or _VAGUE_TAIL_RE.fullmatch(t) is not None
+            or not tail[:1].isalpha())
+
+
 def _topic_groups(slides: List[Dict]) -> List[tuple]:
-    """Plan an outline: group slides by their section title into (topic, [slide_texts]) so each lecture
-    topic becomes one focused generation unit. This mimics how a strong writer plans the document before
-    writing — every topic gets its own section, so none can be silently dropped, and there is no arbitrary
-    char-chunk boundary cutting a topic in half. Syllabus/title/objectives/feedback slides are dropped."""
+    """Plan an outline: group slides by their 'Section: Subtitle' header into (topic, [slide_texts]) so each
+    lecture topic becomes one focused generation unit. This mimics how a strong writer plans the document
+    before writing — every topic gets its own section, so none can be silently dropped, and there is no
+    arbitrary char-chunk boundary cutting a topic in half. Syllabus/title/objectives/feedback slides are
+    dropped. Adjacent groups sharing a section prefix are merged when a subtitle is vague — so one slide
+    theme ('Frequency Representations: The Problem' / ': Positional Encoding') is no longer split across
+    sections — and a standalone vague subtitle is qualified by its prefix; specific subtitles keep their
+    own sections."""
     order, by_key = [], {}
     for s in slides:
         t = _clean_slide_text(s.get("text", "").strip())
         if not t:
             continue
-        topic = _slide_topic(t)
-        k = topic.lower()
+        prefix, topic = _slide_topic(t)
+        k = (prefix.lower(), topic.lower())
         if k not in by_key:
-            by_key[k] = (topic, [])
+            by_key[k] = (prefix, topic, [])
             order.append(k)
-        by_key[k][1].append(t)
-    keep = []
+        by_key[k][2].append(t)
+    groups = []
     for k in order:
-        topic, texts = by_key[k]
-        if k in _SKIP_TOPICS or all(_is_boilerplate(x) for x in texts):
+        prefix, topic, texts = by_key[k]
+        if topic.lower() in _SKIP_TOPICS or all(_is_boilerplate(x) for x in texts):
             continue
+        groups.append([prefix, [topic], texts])
+    # Merge an adjacent same-prefix pair when either subtitle is vague, capped so a deck whose slides all
+    # share one prefix (e.g. every L2 slide is 'Document Processing: ...') cannot collapse into a mega-topic.
+    merged = []
+    for g in groups:
+        if merged:
+            m = merged[-1]
+            same = m[0] and g[0] and m[0].lower() == g[0].lower()
+            vague = any(_vague_tail(t) for t in m[1] + g[1])
+            fits = sum(len(x) for x in m[2] + g[2]) <= _MERGE_CAP
+            if same and vague and fits:
+                m[1] += g[1]
+                m[2] += g[2]
+                continue
+        merged.append(g)
+    keep = []
+    for prefix, tails, texts in merged:
+        if len(tails) > 1:                            # a merged theme: the section prefix names it
+            topic = prefix
+        elif prefix and _vague_tail(tails[0]):        # standalone vague subtitle: qualify it
+            topic = f"{prefix}: {tails[0]}" if tails[0][:1].isalpha() else prefix
+        else:
+            topic = tails[0]
         keep.append((topic, texts))
     return keep
 
@@ -329,7 +383,7 @@ def run_pipeline(pdf_path: str, extra_transcript: str = "", output_name: str = N
         # Protected-span tags: the slide's worked examples are formatted and placed verbatim where the model
         # puts the [[EXAMPLES]] tag (it must NOT author or edit them) — it only explains + adds textbook.
         # `seen_ex` dedups example items across topics, so a token list is placed in only its first topic.
-        examples = _protected_block(texts, seen=seen_ex)
+        examples = _protected_block(texts, seen=seen_ex, topic=topic)
         source = (f"LECTURE SLIDES for the topic \"{topic}\":\n" + "\n".join(texts)
                   + f"\n\nTEXTBOOK CONTEXT:\n{book}")
         # Staged pipeline: 1) CONTENT points (coverage+correctness, examples frozen as [[EXAMPLES]]) ->
@@ -360,7 +414,7 @@ def run_pipeline(pdf_path: str, extra_transcript: str = "", output_name: str = N
     joined = "\n\n".join(b for b in bodies if b.strip())
     # Deterministic, lossless dedup: drop only repeated section titles and exact-duplicate callout boxes.
     print("Removing cross-topic repetition (section + box dedup)...")
-    body = _fix_box_titles(dedup_blocks(dedup_sections(joined)))
+    body = _tidy_headings(_fix_box_titles(dedup_blocks(dedup_sections(joined))))
 
     base = str(Path(output_name).with_suffix("")) if output_name else timestamped_output(title.replace(" ", "_"))
     try:
