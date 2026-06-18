@@ -20,3 +20,6 @@ outputs/
 *.pandoc.md
 *_smoke_output.md
 
+# Generated eval artifacts (the eval/*.py and eval/*.js scripts stay tracked)
+eval/out/
+

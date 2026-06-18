@@ -22,15 +22,25 @@ The architecture lives in `run_extraction.run_pipeline`. For each deck:
    - **Scope-linked grounding** (`_ground` + `verify_relevant`): per-slide MiniLM
      retrieval from a local textbook index, then a **local-LLM scope gate** that keeps
      only passages whose *primary subject* is the topic (kills the bi-encoder's
-     surface-word matches). Set `SCOPE_MODEL`; the 14B judges scope far better than 7B.
+     surface-word matches). The "different subject" contrast is derived from the deck's
+     own other topics, so the gate is not hard-wired to one course. Set `SCOPE_MODEL`.
    - **Protected spans** (`_protected_block`): the slide's worked examples, vectors,
      similarity matrices and stem tables are **extracted and frozen** as the opaque token
      `[[EXAMPLES]]`, deduped across topics, and substituted back as real LaTeX only at
      the very end, so no stage can re-author or break them.
    - **Content** (`content_points`): grounded numbered points (coverage + correctness).
-   - **Review** (`review_points`): fact-check each point against the source.
-   - **Structure** (`structure_points`): arrange into styled LaTeX, taught by gold
-     few-shot exemplars in `src/structure_fewshot.tex`.
+   - **Review** (`review_points`): the model fact-checks each point against the source.
+   - **Independent NLI check** (`nli_filter`): a cross-encoder entailment model — a
+     different architecture and failure-mode than the writer — drops points the source
+     *contradicts* (the swapped-definition / invented-number class the same-model review
+     misses). Set `NLI_MODEL`; disable with `NLI_ENABLE=0`.
+   - **Structure** (`structure_points`, deterministic): the model emits a *structured
+     JSON* section (typed blocks — definitions, comparison tables, fact cards, traps,
+     prose) and a Python renderer (`_render_section`) turns it into guaranteed-clean
+     LaTeX — comparisons always become real tables, boxes are always balanced and
+     correctly labelled, nothing nests, empty columns are pruned. Formatting is off the
+     model, so structure can't be the limiting factor. `STRUCTURE_MODE=llm` forces the
+     old free-LaTeX path (taught by `src/structure_fewshot.tex`).
 4. **Deterministic dedup & cleanup**: merge same-titled sections, drop duplicate boxes
    (`dedup_sections`/`dedup_blocks`), fix box titles, and a math-aware `_sanitize_body`
    (escape stray `_`/`#`/`%`/`&`/currency-`$` in prose, balance environments).
@@ -43,54 +53,59 @@ server with the model pulled. Run from the repo root so `inputs/`, `models/` and
 `outputs/` resolve.
 
 ```sh
-ollama serve & ollama pull qwen2.5:7b        # or qwen2.5:14b for quality
+ollama serve & ollama pull qwen2.5:7b        # default; qwen3:8b measured best for correctness
 .venv/bin/python src/book_retrieval.py        # build the textbook index (set BOOKS_DIR)
 .venv/bin/streamlit run app.py                # UI
 .venv/bin/python run_extraction.py <slides.pdf> [transcript.txt]   # CLI
-OLLAMA_MODEL=qwen2.5:14b .venv/bin/python run_extraction.py <slides.pdf>   # higher quality
+OLLAMA_MODEL=qwen3:8b .venv/bin/python run_extraction.py <slides.pdf>      # higher correctness (see Performance)
 ```
+
+The first run downloads the NLI cross-encoder (`NLI_MODEL`, ~440 MB) once, then runs offline.
+Toggles: `STRUCTURE_MODE=llm` (old free-LaTeX path), `NLI_ENABLE=0` (skip the NLI check),
+`NLI_ENTAIL_MIN` / `NLI_CONTRA_MIN` (NLI drop thresholds).
 
 ## Performance
 
-Notes are scored 1 to 10 on three criteria by an independent frontier-model judge reading
-the **source slides** and the **generated notes** side by side.
+Notes are scored 1 to 10 each on Coverage / Correctness / Structure by an independent
+frontier-model judge reading the **source slides** and the **generated notes** side by
+side. The reproducible harness lives in `eval/` (`run_eval.py` generates, `structure_metrics.py`
+counts objective defects, `judge_workflow.js` runs a blind multi-judge panel).
 
-The tuned development deck (**L2, Language Preprocessing**) climbed from **2.67 to 5.33**
-(Coverage 6 / Correctness 5 / Structure 5, vs a 9.0 frontier-authored gold in a blind A/B
-panel) across the staged-pipeline rewrite. Held-out decks the pipeline was *not* tuned on
-generalise to similar quality, confirming the gains come from the architecture rather than
-overfitting. A further structure pass (theme-merge topic planning, table-teaching
-exemplars, example-format dedup, box repair) then lifted both held-out decks again:
+**A/B (held-out L3, blind 3-judge panel, /30 total):** the deterministic structure renderer
+plus the independent NLI fact-check, then a newer model, both improve output:
 
-| Deck (held-out)                      | Coverage | Correctness | Structure |
-| ------------------------------------ | :------: | :---------: | :-------: |
-| **L3**: BoW / TF-IDF / OOV / Search  |  8 -> 7  |  4 -> **5** |  5 -> **6** |
-| **L5**: Word embeddings / Word2Vec   |  7 -> 7  |  3 -> **5** |  6 -> **6** |
+| L3 configuration                                  | Coverage | Correctness | Structure | Total |
+| ------------------------------------------------- | :------: | :---------: | :-------: | :---: |
+| OLD (LLM-authored LaTeX, no NLI)                  |   7.3    |     3.0     |    4.3    | 14.6  |
+| **NEW** (deterministic structure + NLI, qwen2.5-7b) | 6.3    |   **4.3**   |  **5.0**  | **15.6** |
+| **NEW + qwen3-8b**                                |   6.3    |   **5.0**   |    4.7    | **16.0** |
 
-The structure pass eliminated the headline defects: slide themes split across sections,
-comparison slides flattened into box stacks instead of tables, the same vector printed in
-two formats, generic box titles, and two hallucinated formulas/analogies. **Correctness
-remains the weak axis** (around 5); see Limitations.
+Objective (non-LLM) structure metrics on L3: comparison **tables 3 → 6** with **zero**
+LaTeX defects (no column-count mismatches, leaked labels, markdown-bullet leaks, or broken
+rules — the whole LLM-LaTeX defect class is gone). Held-out **L5** generalises (15.0/30,
+Structure 5.3) — the renderer is a pure function of the JSON, so it is deck-independent.
+The cost is **~1 point of Coverage** (the NLI filter and JSON renderer trade breadth for
+fidelity). See Limitations.
 
 ## Limitations
 
-- **Factual correctness is the ceiling, and it lives in the model weights.** The local
-  model still occasionally adds content that is *not* on the slides (named related
-  methods, an off-slide formula), and the local-LLM **Review** stage does not reliably
-  catch these (this is NLI-model territory). Orchestration buys completeness, structure
-  and clean rendering, **not** factual reliability. A bigger local model helps; more
-  prompting does not. Note also that textbook enrichment is intentional, but a
-  slides-only marker will count it as off-deck material.
+- **Correctness improved but the ceiling persists, and it lives in the model weights.**
+  The independent NLI check now drops the *contradiction* class (swapped definitions,
+  inverted formulas, garbled numbers), but by design it keeps *neutral* content — so
+  **fabrication-by-omission survives**: when a slide range has no extractable text, the
+  model can invent a plausible section the source cannot contradict. Cross-topic textbook
+  bleed (e.g. n-gram language-model material in a bag-of-n-grams deck) survives for the
+  same reason. The next lever is a groundedness/*support* gate (drop a block when nothing
+  entails it), not only a contradiction gate. A newer/bigger local model also helps.
 - **Worked-example boxes contain verbatim, unnarrated vectors.** The protected-span
-  design places slide examples exactly as printed rather than letting the (unreliable)
-  model narrate them, so number grids appear without per-row labels or interpretation.
-  This is the deliberate trade-off against the model garbling them; attaching slide
-  labels to each vector at capture time is the next refinement.
+  design (`_protected_block`, outside the structure stage) places slide examples exactly
+  as printed rather than letting the unreliable model narrate them, so number grids appear
+  without per-row labels; attaching slide labels at capture time is the next refinement.
+- **Coverage regressed ~1 point** under the NLI filter + JSON renderer — the breadth-for-
+  fidelity trade. Tuning `NLI_ENTAIL_MIN`/`NLI_CONTRA_MIN` is the lever.
 - **Cross-section repetition survives.** Generation is per-topic, so no stage sees two
-  sections at once; a motivating example the lecturer reuses can be re-told in several
-  sections, and only exact duplicates are removed deterministically.
-- **Image/diagram extraction is not yet implemented.** Phase 2 of `PROPOSAL.md`
-  (multimodal grounding, extracting slide figures into the notes) remains future work;
-  `src/diagrams.py` only feeds the legacy pandoc path.
+  sections at once; only exact duplicates are removed deterministically.
+- **Image/diagram extraction is not implemented** and is now scoped as optional/future
+  (see the proposal); `src/diagrams.py` only feeds the legacy pandoc path.
 
-For the project roadmap, see `PROPOSAL.md`.
+For the project roadmap, see `lecture-summariser-proposal.tex` / `.pdf`.

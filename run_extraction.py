@@ -8,7 +8,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "src
 
 from extract_slides import extract_slide_content
 from book_retrieval import load_retriever, TextRetriever
-from note_writer import (content_points, review_points, structure_points,
+from note_writer import (content_points, review_points, structure_points, nli_filter,
                           dedup_blocks, dedup_sections, verify_relevant, _fix_box_titles, _tidy_headings)
 
 # Minimum slide<->passage cosine similarity for a book passage to be used as grounding. Below this a
@@ -46,11 +46,12 @@ def _is_boilerplate(slide_text: str) -> bool:
 
 
 def _ground(retriever, slide_texts: List[str], k_per_slide: int = 2, k_max: int = 6,
-            min_score: float = 0.0, topic: str = None) -> str:
+            min_score: float = 0.0, topic: str = None, other_topics: List[str] = None) -> str:
     """Retrieve grounding passages slide-by-slide (skipping boilerplate), deduped, so every topic in
     the group is grounded rather than only the group's first ~1000 chars (the old single-query bug).
     `min_score` drops weakly-related passages; if `topic` is given, a local-LLM scope gate then keeps only
-    passages that genuinely explain that topic (fixes the bi-encoder's surface-word mis-attributions)."""
+    passages that genuinely explain that topic (fixes the bi-encoder's surface-word mis-attributions),
+    using `other_topics` (the deck's other topics) as the 'different subject' contrast."""
     seen, out = set(), []
     for st in slide_texts:
         if _is_boilerplate(st):
@@ -64,7 +65,7 @@ def _ground(retriever, slide_texts: List[str], k_per_slide: int = 2, k_max: int 
             break
     passages = out[:k_max]
     if topic and passages:
-        passages = verify_relevant(topic, passages)
+        passages = verify_relevant(topic, passages, other_topics=other_topics)
     return "\n\n".join(passages)
 
 
@@ -376,9 +377,11 @@ def run_pipeline(pdf_path: str, extra_transcript: str = "", output_name: str = N
 
     # One focused, grounded generation per topic, then verify each topic actually produced a section
     # (coverage enforcement: a topic can no longer be silently dropped).
+    all_topics = [t for t, _ in topics]          # passed to the scope gate as the "different subject" contrast
     bodies, covered, missing, seen_ex = [], [], [], set()
     for i, (topic, texts) in enumerate(topics, start=1):
-        book = _ground(retriever, texts, k_per_slide=2, k_max=6, min_score=BOOK_MIN_SCORE, topic=topic) if retriever else ""
+        book = _ground(retriever, texts, k_per_slide=2, k_max=6, min_score=BOOK_MIN_SCORE,
+                       topic=topic, other_topics=all_topics) if retriever else ""
         tctx = _ground(tr, texts, k_per_slide=1, k_max=4) if tr else ""
         # Protected-span tags: the slide's worked examples are formatted and placed verbatim where the model
         # puts the [[EXAMPLES]] tag (it must NOT author or edit them) — it only explains + adds textbook.
@@ -394,6 +397,9 @@ def run_pipeline(pdf_path: str, extra_transcript: str = "", output_name: str = N
                              has_examples=bool(examples))
         print(" review...", end="", flush=True)
         pts = review_points(topic, pts, source)
+        pts, nli = nli_filter(pts, source)           # independent NLI check: drop source-contradicted points
+        if nli.get("dropped"):
+            print(f" nli-dropped {nli['dropped']}...", end="", flush=True)
         print(" structure...", flush=True)
         body = structure_points(topic, pts)
         if body.strip():
