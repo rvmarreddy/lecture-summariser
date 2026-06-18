@@ -1,228 +1,143 @@
-% Options for packages loaded elsewhere
-\PassOptionsToPackage{unicode}{hyperref}
-\PassOptionsToPackage{hyphens}{url}
-\documentclass[
-]{article}
+\documentclass[11pt,a4paper]{article}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[margin=2.4cm]{geometry}
+\usepackage{enumitem}
+\setlist{itemsep=2pt,topsep=3pt}
+\usepackage{booktabs}
+\usepackage{array}
 \usepackage{xcolor}
-\usepackage[margin=2.5cm]{geometry}
-\usepackage{amsmath,amssymb}
-\setcounter{secnumdepth}{-\maxdimen} % remove section numbering
-\usepackage{iftex}
-\ifPDFTeX
-  \usepackage[T1]{fontenc}
-  \usepackage[utf8]{inputenc}
-  \usepackage{textcomp} % provide euro and other symbols
-\else % if luatex or xetex
-  \usepackage{unicode-math} % this also loads fontspec
-  \defaultfontfeatures{Scale=MatchLowercase}
-  \defaultfontfeatures[\rmfamily]{Ligatures=TeX,Scale=1}
-\fi
-\usepackage{lmodern}
-\ifPDFTeX\else
-  % xetex/luatex font selection
-  \setmainfont[]{Arial Unicode MS}
-  \setmonofont[]{Menlo}
-\fi
-% Use upquote if available, for straight quotes in verbatim environments
-\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
-\IfFileExists{microtype.sty}{% use microtype if available
-  \usepackage[]{microtype}
-  \UseMicrotypeSet[protrusion]{basicmath} % disable protrusion for tt fonts
-}{}
-\makeatletter
-\@ifundefined{KOMAClassName}{% if non-KOMA class
-  \IfFileExists{parskip.sty}{%
-    \usepackage{parskip}
-  }{% else
-    \setlength{\parindent}{0pt}
-    \setlength{\parskip}{6pt plus 2pt minus 1pt}}
-}{% if KOMA class
-  \KOMAoptions{parskip=half}}
-\makeatother
-\usepackage{longtable,booktabs,array}
-\newcounter{none} % for unnumbered tables
-\usepackage{calc} % for calculating minipage widths
-% Correct order of tables after \paragraph or \subparagraph
-\usepackage{etoolbox}
-\makeatletter
-\patchcmd\longtable{\par}{\if@noskipsec\mbox{}\fi\par}{}{}
-\makeatother
-% Allow footnotes in longtable head/foot
-\IfFileExists{footnotehyper.sty}{\usepackage{footnotehyper}}{\usepackage{footnote}}
-\makesavenoteenv{longtable}
-\setlength{\emergencystretch}{3em} % prevent overfull lines
-\providecommand{\tightlist}{%
-  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
-\usepackage{bookmark}
-\IfFileExists{xurl.sty}{\usepackage{xurl}}{} % add URL line breaks if available
-\urlstyle{same}
-\hypersetup{
-  hidelinks,
-  pdfcreator={LaTeX via pandoc}}
+\definecolor{accent}{HTML}{3F5B74}
+\usepackage[colorlinks=true,linkcolor=accent,urlcolor=accent]{hyperref}
+\usepackage{titlesec}
+\titleformat{\section}{\large\bfseries\color{accent}}{\thesection.}{0.5em}{}
+\titleformat{\subsection}{\bfseries}{\thesubsection}{0.5em}{}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0.5em}
 
+\title{\vspace{-1.5cm}\textbf{Lecture Summariser --- Proposal}}
 \author{}
-\date{}
+\date{Updated 2026-06-18}
 
 \begin{document}
+\maketitle
+\vspace{-1.2em}
 
-\section{Lecture Summariser ---
-Proposal}\label{lecture-summariser-proposal}
+\noindent\textbf{One line.} A fully-local, offline tool that turns a lecture \emph{slide PDF} into
+structured, textbook-grounded \LaTeX/PDF revision notes --- no external APIs, nothing leaves the machine.
 
-\begin{quote}
-Canonical proposal. A mirror lives in
-\texttt{Project\ Hub/projects/proposal\_Lecture\ Summariser.md} for
-planning. Converted from \texttt{LLM\ lecture\ note\ taker.docx} on
-2026-06-02.
+\begin{quote}\small
+This proposal was rewritten on 2026-06-18 to describe the product that actually ships. The earlier
+roadmap (converted from \texttt{LLM lecture note taker.docx}, 2026-06-02) framed multimodal image/diagram
+grounding as the ``core novelty''; that component was never built, while the working slides-to-notes
+generator was undersold by its own spec. This version makes the shipped tool the headline and demotes the
+unbuilt parts to an explicit, optional future track. The previous version is archived under
+\texttt{\_archive/}.
 \end{quote}
 
-\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
+\section{What it is}
 
-\subsection{\texorpdfstring{\textbf{Lecture Summariser --- Project
-Roadmap}}{Lecture Summariser --- Project Roadmap}}\label{lecture-summariser-project-roadmap}
+The tool ingests a course's lecture slide decks and produces clean, styled revision notes a student can
+revise from. It is deliberately \textbf{fully local and offline}: a small open-weight LLM via
+\href{https://ollama.com}{Ollama} (default \texttt{qwen2.5}, swappable) plus a local sentence-embedding
+retriever over a course textbook. No paid or cloud APIs are used at inference, and no slide, transcript, or
+note ever leaves the user's machine. This offline, privacy-preserving, \LaTeX-native niche is the project's
+genuine differentiation: mainstream study tools (e.g. NotebookLM, Otter, Plaud) are cloud-hosted and do not
+emit compilable \LaTeX.
 
-\subsubsection{\texorpdfstring{\textbf{Phase 1 --- MVP
-Foundation}}{Phase 1 --- MVP Foundation}}\label{phase-1-mvp-foundation}
+\textbf{Primary input:} a slide deck (PDF). \textbf{Optional input:} a plain-text transcript/caption file,
+used as extra retrieval context (not a co-equal source). \textbf{Output:} a compilable \texttt{.tex} file
+and its rendered PDF, with definitions, key facts, comparison tables, worked examples and traps in a muted,
+consistent style.
 
-The goal here is a working end-to-end pipeline with no bells and
-whistles.
+\section{Architecture (the live pipeline)}
 
-\textbf{Inputs:} PDF slide deck + plain text transcript
+For each deck, \texttt{run\_extraction.run\_pipeline}:
 
-\textbf{Deliverables:}
-
-\begin{enumerate}
-\def\labelenumi{\arabic{enumi}.}
-\item
-  Slide parser --- converts PDF pages to images and extracts raw text
-  per slide
-\item
-  Visual region detector --- identifies large non-text regions
-  (diagrams, figures, charts) worth keeping
-\item
-  Transcript chunker --- splits transcript into segments that can be
-  assigned to slides
-\item
-  Basic aligner --- maps transcript chunks to slides using keyword
-  overlap and slide order
-\item
-  Note generator --- prompts an LLM to produce structured notes per
-  slide section using the aligned text
-\item
-  LaTeX exporter --- outputs a compilable .tex file with sections, text,
-  and embedded slide images
+\begin{enumerate}[leftmargin=1.4em]
+\item \textbf{Extract \& clean.} Pull slide text with PyMuPDF; strip placeholder glyphs that break \LaTeX.
+\item \textbf{Plan an outline.} Group slides by their \texttt{Section: Subtitle} header into one topic each
+  (merging split themes, dropping syllabus/objectives/feedback slides). Every topic becomes its own
+  \texttt{\textbackslash section}, so none can be silently dropped.
+\item \textbf{Per topic, a staged Content $\rightarrow$ Review $\rightarrow$ Structure pipeline}, each stage
+  a small focused local-LLM call:
+  \begin{itemize}
+  \item \textbf{Scope-linked grounding:} per-slide retrieval from the local textbook index, then a local-LLM
+    \emph{scope gate} that keeps only passages whose primary subject is the topic. The ``different subject''
+    contrast is derived from the deck's own other topics, so the gate is not hard-wired to one course.
+  \item \textbf{Protected spans:} the slide's own worked examples / vectors / similarity matrices / tables are
+    extracted verbatim, frozen as an opaque \texttt{[[EXAMPLES]]} token, deduped across topics, and
+    substituted back as real \LaTeX{} only at the very end --- so no stage can re-author or break them.
+  \item \textbf{Content:} grounded numbered points (coverage + correctness).
+  \item \textbf{Review:} the model fact-checks each point against the source.
+  \item \textbf{Independent NLI check:} a cross-encoder entailment model (a different architecture and
+    failure-mode than the writer) scores each point against the source and \emph{drops points the source
+    contradicts} --- the swapped-definition / invented-number class of error that same-model self-review
+    misses.
+  \item \textbf{Structure (deterministic):} the model emits a \emph{structured JSON} description of the
+    section (typed blocks --- definitions, comparison tables, fact cards, traps, prose); a Python renderer
+    turns that into guaranteed-clean \LaTeX. Comparisons always become real tables, every box is balanced
+    and correctly labelled, nothing nests. Formatting is taken off the small model, so \textbf{structure can
+    no longer be the limiting factor}.
+  \end{itemize}
+\item \textbf{Deterministic dedup \& cleanup}; then render via a styled preamble and \texttt{xelatex}.
 \end{enumerate}
 
-\textbf{Success criterion:} Given a lecture, produce a readable,
-structured .tex document that a student could use for revision.
+\section{Status and results}
 
-\subsubsection{\texorpdfstring{\textbf{Phase 2 --- Multimodal
-Grounding}}{Phase 2 --- Multimodal Grounding}}\label{phase-2-multimodal-grounding}
+Working end-to-end. Notes are scored 1--10 each on Coverage / Correctness / Structure by an independent
+frontier-model judge reading the source slides and the generated notes side by side (reproducible harness in
+\texttt{eval/}). A blind 3-judge A/B on the held-out L3 deck (out of 30) shows both the deterministic
+structure renderer + NLI check and a newer model improving output: OLD (LLM-authored LaTeX, no NLI)
+\textbf{14.6} $\rightarrow$ NEW (deterministic + NLI, qwen2.5-7b) \textbf{15.6} $\rightarrow$
+NEW + qwen3-8b \textbf{16.0}. Correctness rose $3.0\to4.3\to5.0$ and Structure $4.3\to5.0$; objective metrics
+show comparison tables $3\to6$ on L3 with zero LaTeX defects. Held-out L5 generalises (15.0). The cost is
+about one point of Coverage (the NLI filter and renderer trade breadth for fidelity).
 
-The goal here is making the image-context link meaningful, which is the
-core novelty of the project.
+\textbf{Honest limitations.} (i) \emph{Factual correctness} is still the ceiling: the NLI check catches the
+\emph{contradiction} class but keeps neutral content, so fabrication-by-omission (an invented section from a
+near-empty slide) survives --- the next lever is a groundedness/\emph{support} gate, plus a newer/bigger
+model. (ii) \emph{Evaluation} is stronger (a 3-judge panel + objective metrics) but still NLP-course decks
+only --- no non-NLP deck exists yet to test true generalisation. (iii) \emph{Course coverage:} only one
+textbook is indexed (Jurafsky \& Martin); a different course needs its own book.
 
-\begin{enumerate}
-\def\labelenumi{\arabic{enumi}.}
-\item
-  Improved visual region detection --- filter out decorative elements,
-  logos, and backgrounds; retain only pedagogically useful visuals
-\item
-  Per-figure context extraction --- for each extracted figure, retrieve
-  the transcript span that explains it and generate a short caption or
-  description
-\item
-  Semantic alignment --- replace keyword-based alignment with embedding
-  similarity so the system handles cases where the lecturer paraphrases
-  or elaborates beyond the slide text
-\item
-  Text-image grounding in notes --- figures appear inline next to the
-  explanation that corresponds to them, not just appended at the end of
-  a section
+\section{Roadmap}
+
+\emph{Done (2026-06-18):} deterministic structure renderer, independent NLI fact-check, de-hardcoded scope
+gate, the newer-model A/B (qwen3-8b), and a multi-judge eval harness --- see Status and results.
+
+\subsection*{Active (next, the shipped tool)}
+\begin{itemize}
+\item \textbf{Groundedness / support gate} --- the now-dominant correctness hole: drop a block when nothing
+  in the source \emph{entails} it (not only when it is contradicted), and emit no section for a slide range
+  with no extractable text. Upgrade the NLI checker toward a dedicated model such as MiniCheck.
+\item \textbf{Consolidate comparisons} --- the renderer guarantees a valid table, but the model must emit a
+  single comparison block; tighten the structure prompt so multi-way comparisons stop fragmenting.
+\item \textbf{Recover the $\sim$1-point coverage cost} (tune the NLI thresholds) and run one non-NLP deck once
+  one is supplied.
+\item A stronger local retriever than \texttt{all-MiniLM-L6-v2} (e.g. EmbeddingGemma / BGE / GTE).
+\end{itemize}
+
+\subsection*{Optional / future (only if it earns its keep)}
+\begin{itemize}
+\item \textbf{Figure grounding.} Local, on-laptop multimodal models (e.g. Qwen2.5-VL-7B) make extracting and
+  explaining slide figures feasible. The cheapest viable slice is placing already-extracted slide images
+  inline under their topic with no model narration; full per-figure captioning is deferred because unreliable
+  narration is worse than none.
+\item Borrow source-citation (NotebookLM-style page references) so each claim is traceable to a slide.
+\end{itemize}
+
+\subsection*{Cut (explicitly out of scope)}
+Flashcard generation, multi-lecture stitching, and direct \texttt{.pptx} input are dropped as scope creep
+for a single-user tool. An internet/web-research enrichment agent is dropped outright --- it would violate
+the fully-local/offline premise that is the project's defining constraint.
+
+\section{Core technical challenges}
+\begin{enumerate}[leftmargin=1.4em]
+\item Keeping notes faithful to the slides on a small local model (the correctness ceiling).
+\item Grounding without over-retrieval: keeping only textbook passages genuinely on-topic.
+\item Clean, compilable \LaTeX{} across varied slide layouts --- now owned by the deterministic renderer.
+\item Generalising beyond the one course the tool was tuned on.
 \end{enumerate}
-
-\textbf{Success criterion:} Each extracted figure in the output has a
-contextually accurate explanation drawn from the transcript, not just
-the slide bullet text.
-
-\subsubsection{\texorpdfstring{\textbf{Phase 3 --- Richer Output and
-Quality}}{Phase 3 --- Richer Output and Quality}}\label{phase-3-richer-output-and-quality}
-
-\begin{enumerate}
-\def\labelenumi{\arabic{enumi}.}
-\item
-  Equation extraction and formatting --- detect mathematical content on
-  slides and format it properly in LaTeX
-\item
-  OCR for diagram labels --- read axis labels, annotations, and callouts
-  within figures to improve captions
-\item
-  Note quality refinement --- add key takeaways, definitions, and
-  example callouts where the transcript supports them
-\item
-  Revision mode vs full notes mode --- shorter bullet-driven output vs
-  longer prose explanation, selectable at export time
-\end{enumerate}
-
-\subsubsection{\texorpdfstring{\textbf{Phase 4 --- Extension (if time
-allows)}}{Phase 4 --- Extension (if time allows)}}\label{phase-4-extension-if-time-allows}
-
-\begin{enumerate}
-\def\labelenumi{\arabic{enumi}.}
-\item
-  Flashcard generation --- derive question-answer pairs from grounded
-  notes for spaced repetition
-\item
-  Multi-lecture support --- handle a series of lectures and produce a
-  unified document with consistent section numbering
-\item
-  Slide format flexibility --- support .pptx input directly, not just
-  PDF
-\end{enumerate}
-
-\subsubsection{\texorpdfstring{\textbf{Core Technical Challenges (in
-priority
-order)}}{Core Technical Challenges (in priority order)}}\label{core-technical-challenges-in-priority-order}
-
-\begin{enumerate}
-\def\labelenumi{\arabic{enumi}.}
-\item
-  Deciding which visual regions are worth extracting
-\item
-  Aligning transcript spans to the correct slide and figure
-\item
-  Generating captions that reflect what the lecturer said, not just what
-  the slide shows
-\item
-  Keeping the LaTeX output clean and compilable across varied inputs
-\end{enumerate}
-
-\subsubsection{\texorpdfstring{\textbf{Module
-Summary}}{Module Summary}}\label{module-summary}
-
-{\def\LTcaptype{none} % do not increment counter
-\begin{longtable}[]{@{}
-  >{\raggedright\arraybackslash}p{(\linewidth - 2\tabcolsep) * \real{0.3056}}
-  >{\raggedright\arraybackslash}p{(\linewidth - 2\tabcolsep) * \real{0.2222}}@{}}
-\toprule\noalign{}
-\begin{minipage}[b]{\linewidth}\raggedright
-\textbf{Module}
-\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
-\textbf{Phase}
-\end{minipage} \\
-\midrule\noalign{}
-\endhead
-\bottomrule\noalign{}
-\endlastfoot
-Slide parser & 1 \\
-Visual region detector & 1 → refined in 2 \\
-Transcript chunker & 1 \\
-Transcript-slide aligner & 1 → semantic in 2 \\
-Per-figure context extractor & 2 \\
-Note generator & 1 → richer in 3 \\
-LaTeX exporter & 1 \\
-Equation / OCR extraction & 3 \\
-Flashcard generator & 4 \\
-\end{longtable}
-}
 
 \end{document}

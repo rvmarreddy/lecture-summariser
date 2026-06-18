@@ -1,43 +1,6 @@
-# Lecture Summariser
-
-**Status:** shipped · **Category:** Apps · **Updated:** 2026-06-02
-**Project folder:** `../../Apps/Lecture Summariser/`
-
-## Purpose
-
-A **local, offline** pipeline that turns lecture slides (PDF) + a transcript into structured, revision-ready notes (Markdown → LaTeX → PDF) with grounded figures. No external APIs. The one project with a public GitHub repo, linked on the CV.
-
-## Findings
-
-- Core pipeline works end-to-end (slides + transcript -> structured notes -> LaTeX/PDF), fully local, no external APIs. Public repo on the CV.
-- Open differentiator: multimodal grounding quality (which figures matter, and their context).
-
-## Ideas to improve first
-
-The multimodal grounding is the differentiator, and the next improvements are agentic:
-
-- **Diagram / image extraction tool** — pull useful diagrams and figures from the slides, **rank them by importance**, and embed the important ones inline in the notes (filtering decorative visuals and logos).
-- **Make it agentic** — an agent that decides which visuals matter, where to place them, and how to caption them, for better outputs.
-- **Internet agent** — a web-research agent that fetches better explanations and extra context to enrich the notes beyond the slides and transcript.
-- Whether the fine-tuned note style generalises beyond the NLP course it was trained on.
-
-## Next actions
-- [ ] Build the diagram-extraction + importance-ranking agent; prototype the internet research agent
-
-## Schedule
-| Phase | Target | Status |
-|---|---|---|
-|  |  |  |
-
----
-
-## Proposal
-
-*Mirror of `../../Apps/Lecture Summariser/PROPOSAL.md` (canonical lives in the project folder).*
-
 # Lecture Summariser — Proposal
 
-> Canonical proposal. A mirror lives in `Project Hub/projects/Lecture Summariser/PROPOSAL.md` for planning.
+> Canonical proposal. A mirror lives in `Project Hub/projects/proposal_Lecture Summariser.md` for planning.
 > Converted from `LLM lecture note taker.docx` on 2026-06-02.
 
 ---

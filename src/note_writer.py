@@ -8,8 +8,11 @@ OLLAMA_URL = os.getenv("OLLAMA_URL", "http://localhost:11434/api/generate")
 OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "qwen2.5:7b")
 
 
+_THINK_RE = re.compile(r"<think>.*?</think>", re.DOTALL | re.IGNORECASE)
+
+
 def _strip_fences(text: str) -> str:
-    t = text.strip()
+    t = _THINK_RE.sub("", text).strip()   # drop reasoning blocks from thinking models (e.g. Qwen3)
     if t.startswith("```"):
         inner = t.split("```")
         t = inner[1] if len(inner) >= 2 else t.strip("`")
@@ -120,12 +123,18 @@ def _balance_envs(body: str) -> str:
 # caller substitutes the real LaTeX only at the very end.
 # ---------------------------------------------------------------------------
 
-def _ollama(system: str, prompt: str, max_tokens: int = 1200, temperature: float = 0.3) -> str:
-    payload = json.dumps({"model": OLLAMA_MODEL, "system": system, "prompt": prompt, "stream": False,
-                          "options": {"temperature": temperature, "num_predict": max_tokens}}).encode()
+def _ollama(system: str, prompt: str, max_tokens: int = 1200, temperature: float = 0.3,
+            fmt: str = None) -> str:
+    body = {"model": OLLAMA_MODEL, "system": system, "prompt": prompt, "stream": False,
+            "options": {"temperature": temperature, "num_predict": max_tokens}}
+    if fmt:                       # Ollama structured-output: "json" forces syntactically-valid JSON output
+        body["format"] = fmt
+    if "qwen3" in OLLAMA_MODEL.lower():
+        body["think"] = False     # Qwen3 is a thinking model; disable so stages get the answer, not reasoning
+    payload = json.dumps(body).encode()
     req = urllib.request.Request(OLLAMA_URL, data=payload, headers={"Content-Type": "application/json"})
     with urllib.request.urlopen(req, timeout=600) as r:
-        return json.loads(r.read()).get("response", "")
+        return _THINK_RE.sub("", json.loads(r.read()).get("response", ""))   # strip any leaked <think> block
 
 
 CONTENT_RULES = (
@@ -243,33 +252,241 @@ def _fix_box_titles(body: str) -> str:
     return _unnest_boxes(body)
 
 
-def structure_points(topic: str, points: str, max_tokens: int = 1300) -> str:
-    """Stage 3 — arrange reviewed points into styled LaTeX, keeping [[EXAMPLES]] untouched (sanitized)."""
+def _structure_points_llm(topic: str, points: str, max_tokens: int = 1300) -> str:
+    """Fallback Stage 3 — let the model emit styled LaTeX directly (used only when the structured-JSON
+    path below returns nothing parseable). Kept because a deterministic renderer that produces NO body is
+    worse than a slightly-messy LLM one."""
     prompt = ("EXAMPLES OF THE TASK (separated by =====):\n%s\n\nNow format these POINTS for the topic "
               "\"%s\" the same way (keep [[EXAMPLES]] verbatim):\n\nPOINTS:\n%s\n\nLATEX:"
               % (STRUCTURE_FEWSHOT, topic, points))
     return _fix_box_titles(_sanitize_body(_ollama(STRUCTURE_RULES, prompt, max_tokens, 0.3)))
 
 
+# ---------------------------------------------------------------------------
+# Deterministic structure (Stage 3, primary path). The model no longer writes
+# LaTeX — it emits a STRUCTURED JSON description of the section (typed blocks),
+# and Python renders it. So comparisons ALWAYS become real tables, every box is
+# balanced and correctly labelled, nothing nests, and titles are never leaked
+# into the body: structure can no longer be the limiting factor. The model only
+# does the semantic grouping (which point is a definition / a comparison / a
+# trap) — the thing it is actually okay at.
+# ---------------------------------------------------------------------------
+
+STRUCTURE_JSON_SYS = (
+    "You convert reviewed revision-note POINTS for ONE topic into a STRUCTURED JSON object that a renderer "
+    "turns into LaTeX. Output ONLY one JSON object, no prose, no LaTeX, no markdown fences. Schema:\n"
+    '{"title":"<section title>","blocks":[ <block>, ... ]}\n'
+    "Each block is exactly one of:\n"
+    '  {"t":"prose","text":"<a short paragraph>"}\n'
+    '  {"t":"def","term":"<term>","body":"<1-2 sentence definition>"}\n'
+    '  {"t":"fact","body":"<one key tested fact>"}\n'
+    '  {"t":"card","title":"<specific title>","items":["<point>","<point>"]}\n'
+    '  {"t":"table","title":"<what is compared>","columns":["<A>","<B>"],"rows":[{"label":"<aspect>","cells":["<A val>","<B val>"]}]}\n'
+    '  {"t":"trap","title":"<the mistake>","body":"<why it is wrong>"}\n'
+    '  {"t":"pitfall","body":"<a common pitfall>"}\n'
+    '  {"t":"examples"}\n'
+    "HARD RULES: Put any comparison of two OR MORE things in ONE table block — never parallel cards or a "
+    "stack of boxes. Group related facts into ONE card, not many fact blocks. Use def for definitions, fact "
+    "for a single key fact, trap/pitfall for mistakes; everything else is prose. Most content should be "
+    "prose — reserve boxes for definitions, key facts, traps and worked examples. Keep inline math in $...$. "
+    "Invent NOTHING: every block must come from the given points. Each table row's cells array MUST have "
+    'exactly len(columns) entries. If a point is the literal token [[EXAMPLES]], emit an {"t":"examples"} '
+    "block at that position (at most once), with a one-sentence prose lead-in before it and a one-sentence "
+    "prose takeaway after it, both drawn from the points."
+)
+
+# A worked input->JSON exemplar, built from a dict so the LaTeX backslashes need no hand-escaping.
+_FEWSHOT_INPUT = (
+    'TOPIC: "Precision vs Recall"\nPOINTS:\n'
+    "1. Precision and recall are evaluation metrics for binary classifiers, from confusion-matrix counts TP, FP, FN.\n"
+    "2. Precision = TP/(TP+FP): of items flagged positive, the fraction actually positive.\n"
+    "3. Recall = TP/(TP+FN): of actually-positive items, the fraction retrieved.\n"
+    "4. They trade off through the decision threshold.\n"
+    "5. Precision is governed by false positives, recall by false negatives; neither uses true negatives.\n"
+    "6. F1 = 2PR/(P+R) combines them into one number.\n"
+    "7. [[EXAMPLES]]\n"
+    "8. Predicting positive for everything gives 100% recall but useless precision."
+)
+_FEWSHOT_SECTION = {
+    "title": "Precision vs Recall",
+    "blocks": [
+        {"t": "prose", "text": "Precision and recall are evaluation metrics for a binary classifier, both "
+         "computed from confusion-matrix counts (TP, FP, FN). Neither uses true negatives, so both ignore "
+         "the negative class."},
+        {"t": "def", "term": "Precision", "body": "$\\text{Precision}=\\dfrac{TP}{TP+FP}$ — of all items "
+         "flagged positive, the fraction actually positive. Governed by false positives."},
+        {"t": "def", "term": "Recall", "body": "$\\text{Recall}=\\dfrac{TP}{TP+FN}$ — of all actually-"
+         "positive items, the fraction retrieved. Governed by false negatives."},
+        {"t": "table", "title": "Precision vs recall", "columns": ["Precision", "Recall"], "rows": [
+            {"label": "Formula", "cells": ["$TP/(TP+FP)$", "$TP/(TP+FN)$"]},
+            {"label": "Penalised by", "cells": ["False positives", "False negatives"]},
+            {"label": "Optimise when", "cells": ["False alarms costly (spam)", "Misses costly (fraud)"]}]},
+        {"t": "prose", "text": "When both error types matter, the F1 score $2PR/(P+R)$ combines them. The "
+         "worked example below scores a classifier that labels everything positive."},
+        {"t": "examples"},
+        {"t": "prose", "text": "Labelling everything positive drives recall to 100% while precision falls to "
+         "the base rate — the two must always be read together."},
+        {"t": "trap", "title": "Precision is not accuracy", "body": "On an imbalanced dataset accuracy can "
+         "look high while recall is near zero, because the majority negative class dominates."}]}
+_STRUCT_FEWSHOT_JSON = ("EXAMPLE\n" + _FEWSHOT_INPUT + "\n\nJSON:\n"
+                        + json.dumps(_FEWSHOT_SECTION, ensure_ascii=False))
+
+# Strip section/environment macros the model must not put in a text field; inline $...$ math is left alone.
+_STRIP_MACRO = re.compile(r"\\(?:sub)?section\*?\s*\{[^}]*\}|\\(?:begin|end)\s*\{[^}]*\}")
+
+
+def _plain(s) -> str:
+    """A renderer text field: drop any leaked structural macros and the [[EXAMPLES]] token (only the
+    examples block may emit it), collapse whitespace. Specials are escaped later by _sanitize_body."""
+    s = _STRIP_MACRO.sub("", str(s or ""))
+    s = re.sub(r"\[\[\s*EXAMPLES\s*\]\]", "", s)
+    return " ".join(s.split()).strip()
+
+
+def _render_table(b: dict) -> str:
+    cols = [_plain(c) for c in (b.get("columns") or [])]
+    n0 = len(cols)
+    if n0 < 2:
+        return ""
+    parsed = []                                               # (label, cells padded to n0), empty rows dropped
+    for r in (b.get("rows") or []):
+        if not isinstance(r, dict):
+            continue
+        cells = ([_plain(c) for c in (r.get("cells") or [])] + [""] * n0)[:n0]
+        label = _plain(r.get("label", ""))
+        if not label and not any(cells):
+            continue
+        parsed.append((label, cells))
+    if not parsed:
+        return ""
+    keep = [j for j in range(n0) if any(c[j] for _, c in parsed)]  # prune columns with no data in any row
+    if len(keep) < 2:
+        return ""
+    cols = [cols[j] for j in keep]
+    head = " & " + " & ".join("\\textbf{%s}" % c for c in cols) + " \\\\"
+    lines = ["%s & %s \\\\" % (lab, " & ".join(c[j] for j in keep)) for lab, c in parsed]
+    return ("\\begin{center}\\begin{tabularx}{\\linewidth}{l%s}\n\\toprule\n%s\n\\midrule\n%s\n\\bottomrule\n"
+            "\\end{tabularx}\\end{center}" % ("X" * len(cols), head, "\n".join(lines)))
+
+
+def _render_section(section: dict) -> str:
+    """Deterministically render a parsed section dict to clean LaTeX. Pure function of the JSON — it cannot
+    leak a label, nest a box, leave an environment open, or flatten a comparison into a box stack."""
+    if not isinstance(section, dict):
+        return ""
+    parts = ["\\section{%s}" % (_plain(section.get("title")) or "Notes")]
+    for b in section.get("blocks", []):
+        if not isinstance(b, dict):
+            continue
+        t = (b.get("t") or "").lower()
+        if t == "prose":
+            x = _plain(b.get("text", ""))
+            if x:
+                parts.append(x)
+        elif t == "def":
+            body = _plain(b.get("body", ""))
+            if body:
+                parts.append("\\begin{defbox}[%s]\n%s\n\\end{defbox}" % (_plain(b.get("term", "")), body))
+        elif t == "fact":
+            body = _plain(b.get("body", ""))
+            if body:
+                parts.append("\\begin{factbox}\n%s\n\\end{factbox}" % body)
+        elif t == "card":
+            items = [_plain(i) for i in (b.get("items") or [])]
+            items = [i for i in items if i]
+            if items:
+                lst = "\n".join("  \\item %s" % i for i in items)
+                parts.append("\\begin{card}[%s]\n\\begin{itemize}\n%s\n\\end{itemize}\n\\end{card}"
+                             % (_plain(b.get("title", "")), lst))
+        elif t == "table":
+            tbl = _render_table(b)
+            if tbl:
+                parts.append(tbl)
+        elif t == "trap":
+            body = _plain(b.get("body", ""))
+            if body:
+                parts.append("\\begin{trapbox}[%s]\n%s\n\\end{trapbox}" % (_plain(b.get("title", "")), body))
+        elif t == "pitfall":
+            body = _plain(b.get("body", ""))
+            if body:
+                parts.append("\\begin{pitfallbox}\n%s\n\\end{pitfallbox}" % body)
+        elif t == "examples":
+            parts.append("[[EXAMPLES]]")
+    return "\n\n".join(parts) if len(parts) > 1 else ""
+
+
+def _parse_section(raw: str):
+    """Robustly parse the model's JSON section (tolerates fences / leading prose) — returns a dict with a
+    'blocks' list, or None so the caller can fall back to the LLM-LaTeX path."""
+    if not raw or not raw.strip():
+        return None
+    t = _strip_fences(raw).strip()
+    start, end = t.find("{"), t.rfind("}")
+    if start == -1 or end <= start:
+        return None
+    try:
+        obj = json.loads(t[start:end + 1])
+    except Exception:
+        return None
+    if isinstance(obj, dict) and isinstance(obj.get("blocks"), list) and obj["blocks"]:
+        return obj
+    return None
+
+
+def structure_blocks(topic: str, points: str, max_tokens: int = 1800):
+    """Stage 3 primary — ask the model for a STRUCTURED JSON section (json-mode) and parse it."""
+    prompt = ("%s\n\nNow do the same for this topic. Output ONLY the JSON object.\nTOPIC: \"%s\"\nPOINTS:\n%s\n\nJSON:"
+              % (_STRUCT_FEWSHOT_JSON, topic, points))
+    raw = _ollama(STRUCTURE_JSON_SYS, prompt, max_tokens, 0.2, fmt="json")
+    return _parse_section(raw)
+
+
+# STRUCTURE_MODE=llm forces the old free-LaTeX path (used for A/B comparison); default is the deterministic
+# JSON renderer.
+STRUCTURE_MODE = os.getenv("STRUCTURE_MODE", "json").lower()
+
+
+def structure_points(topic: str, points: str, max_tokens: int = 1800) -> str:
+    """Stage 3 — arrange reviewed points into styled LaTeX. Primary path is the deterministic renderer over a
+    structured-JSON section; falls back to direct LLM LaTeX only if the JSON is unusable. [[EXAMPLES]] is kept
+    verbatim for the caller to substitute."""
+    if STRUCTURE_MODE == "llm":
+        return _structure_points_llm(topic, points, max_tokens=1300)
+    try:
+        section = structure_blocks(topic, points, max_tokens)
+    except Exception:
+        section = None
+    if section:
+        rendered = _render_section(section)
+        if rendered.strip():
+            return _fix_box_titles(_sanitize_body(rendered))
+    return _structure_points_llm(topic, points, max_tokens=1300)
+
+
 SCOPE_MODEL = os.getenv("SCOPE_MODEL", OLLAMA_MODEL)  # the verifier task is simple; can use a small model
 
 
-def verify_relevant(topic: str, passages: list) -> list:
+def verify_relevant(topic: str, passages: list, other_topics: list = None) -> list:
     """Scope-linking gate: keep only the passages that GENUINELY explain `topic`, judged by a local LLM,
-    not just ones that share a surface word (which embedding cosine over-retrieves). Returns the filtered
-    list; fail-open (returns the input) on any connection/parse error so grounding never silently vanishes."""
+    not just ones that share a surface word (which embedding cosine over-retrieves). The "different subject"
+    guidance is derived from the deck's OWN other topics (`other_topics`) rather than a hard-coded NLP-task
+    list, so the gate generalises to any course. Returns the filtered list; fail-open (returns the input) on
+    any connection/parse error so grounding never silently vanishes."""
     if not passages:
         return passages
     listing = "\n".join("[%d] %s" % (i + 1, p[:400].replace("\n", " ")) for i, p in enumerate(passages))
+    tl = topic.strip().lower()
+    others = [t for t in (other_topics or []) if t and t.strip().lower() != tl][:12]
+    other_clause = ((" A DIFFERENT subject here means another topic from this same course, for example: %s."
+                     % "; ".join(others)) if others else "")
     prompt = (
-        'TOPIC: "%s" (a topic taught in an NLP text-preprocessing lecture).\n\n'
+        'TOPIC: "%s".\n\n'
         "Numbered TEXTBOOK PASSAGES:\n%s\n\n"
         "Judge what each passage is PRIMARILY about. Reply with the numbers of ONLY the passages whose primary "
         "subject IS this exact topic and that would directly help teach it. REJECT a passage whose primary "
-        "subject is a DIFFERENT NLP task — e.g. word-sense disambiguation, part-of-speech tagging, parsing, "
-        "machine translation, dialogue systems, named-entity recognition — even when it shares a word such as "
-        "'corpus', 'encoding', 'feature', or 'vector' with the topic. When unsure, REJECT. Reply with just the "
-        "numbers separated by commas, or the single word NONE." % (topic, listing)
+        "subject is a DIFFERENT subject, even when it shares a surface word (such as 'corpus', 'encoding', "
+        "'feature', 'vector', or 'model') with the topic.%s When unsure, REJECT. Reply with just the numbers "
+        "separated by commas, or the single word NONE." % (topic, listing, other_clause)
     )
     payload = json.dumps({"model": SCOPE_MODEL, "prompt": prompt, "stream": False,
                           "options": {"temperature": 0, "num_predict": 40}}).encode()
@@ -411,3 +628,93 @@ def dedup_blocks(body: str) -> str:
 
     out = _BLOCK_RE.sub(keep, body)
     return re.sub(r"\n{3,}", "\n\n", out).strip()
+
+
+# ---------------------------------------------------------------------------
+# Independent NLI fact-check. The Review stage is the SAME generative model that
+# wrote the points grading itself, so it shares the writer's blind spots. This
+# adds a genuinely independent signal: a cross-encoder NLI model (a different
+# architecture and failure-mode) scores each point's entailment against the
+# source, and a point that the source actively CONTRADICTS is dropped — the
+# swapped-definition / wrong-number class of error. Neutral (un-entailed but not
+# contradicted) points are KEPT, so legitimate textbook enrichment is not nuked.
+# Fail-open: if the model can't load (offline / not downloaded), points pass
+# through unchanged. Upgrade path: a dedicated checker such as MiniCheck.
+# ---------------------------------------------------------------------------
+
+NLI_MODEL = os.getenv("NLI_MODEL", "cross-encoder/nli-deberta-v3-base")
+NLI_ENABLE = os.getenv("NLI_ENABLE", "1").lower() not in ("0", "false", "no", "")
+# cross-encoder/nli-* logits are ordered [contradiction, entailment, neutral].
+NLI_ENTAIL_MIN = float(os.getenv("NLI_ENTAIL_MIN", "0.15"))   # below this entailment AND...
+NLI_CONTRA_MIN = float(os.getenv("NLI_CONTRA_MIN", "0.55"))   # ...above this contradiction -> drop
+_nli_model = "uninitialised"
+
+
+def _get_nli():
+    global _nli_model
+    if _nli_model == "uninitialised":
+        try:
+            from sentence_transformers import CrossEncoder
+            _nli_model = CrossEncoder(NLI_MODEL)
+        except Exception:
+            _nli_model = None     # unavailable -> fail-open for the rest of the run
+    return _nli_model
+
+
+def _split_points(points: str) -> list:
+    """Split a numbered list back into the individual point strings (preserving multi-line points)."""
+    items, cur = [], None
+    for line in points.splitlines():
+        m = re.match(r"\s*\d+[.)]\s+(.*)", line)
+        if m:
+            if cur is not None:
+                items.append(cur.strip())
+            cur = m.group(1)
+        elif cur is not None and line.strip():
+            cur += " " + line.strip()
+    if cur is not None:
+        items.append(cur.strip())
+    return [i for i in items if i]
+
+
+def _softmax_rows(x):
+    import numpy as np
+    a = np.asarray(x, dtype=float)
+    if a.ndim == 1:
+        a = a[None, :]
+    a = a - a.max(axis=1, keepdims=True)
+    e = np.exp(a)
+    return e / e.sum(axis=1, keepdims=True)
+
+
+def nli_filter(points: str, source_material: str, keep_token: str = "[[EXAMPLES]]"):
+    """Drop points the SOURCE contradicts, judged by an independent NLI cross-encoder. Returns
+    (filtered_points, stats). Conservative: only removes clearly-contradicted points; keeps neutral ones."""
+    if not NLI_ENABLE:
+        return points, {"checked": 0, "dropped": 0}
+    items = _split_points(points)
+    if not items:
+        return points, {"checked": 0, "dropped": 0}
+    model = _get_nli()
+    if model is None:
+        return points, {"checked": 0, "dropped": 0, "error": "nli unavailable"}
+    src = source_material.strip()
+    chunks = [src[i:i + 1200] for i in range(0, len(src), 1200)] or [src]
+    kept, dropped = [], 0
+    for it in items:
+        if keep_token in it:                          # never touch the frozen-examples placeholder
+            kept.append(it)
+            continue
+        try:
+            probs = _softmax_rows(model.predict([(c, it) for c in chunks]))   # premise=source, hyp=point
+            ent = float(probs[:, 1].max())
+            con = float(probs[:, 0].max())
+        except Exception:
+            kept.append(it)                           # scoring error -> keep (fail-open per point)
+            continue
+        if ent < NLI_ENTAIL_MIN and con >= NLI_CONTRA_MIN:
+            dropped += 1
+            continue
+        kept.append(it)
+    out = "\n".join("%d. %s" % (i + 1, t) for i, t in enumerate(kept))
+    return (out or points), {"checked": len(items), "dropped": dropped}
