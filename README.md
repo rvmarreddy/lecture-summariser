@@ -105,7 +105,5 @@ fidelity). See Limitations.
   fidelity trade. Tuning `NLI_ENTAIL_MIN`/`NLI_CONTRA_MIN` is the lever.
 - **Cross-section repetition survives.** Generation is per-topic, so no stage sees two
   sections at once; only exact duplicates are removed deterministically.
-- **Image/diagram extraction is not implemented** and is now scoped as optional/future
-  (see the proposal); `src/diagrams.py` only feeds the legacy pandoc path.
-
-For the project roadmap, see `lecture-summariser-proposal.tex` / `.pdf`.
+- **Image/diagram extraction is not implemented** and is now scoped as optional/future;
+  `src/diagrams.py` only feeds the legacy pandoc path.
