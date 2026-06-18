@@ -1,0 +1,228 @@
+% Options for packages loaded elsewhere
+\PassOptionsToPackage{unicode}{hyperref}
+\PassOptionsToPackage{hyphens}{url}
+\documentclass[
+]{article}
+\usepackage{xcolor}
+\usepackage[margin=2.5cm]{geometry}
+\usepackage{amsmath,amssymb}
+\setcounter{secnumdepth}{-\maxdimen} % remove section numbering
+\usepackage{iftex}
+\ifPDFTeX
+  \usepackage[T1]{fontenc}
+  \usepackage[utf8]{inputenc}
+  \usepackage{textcomp} % provide euro and other symbols
+\else % if luatex or xetex
+  \usepackage{unicode-math} % this also loads fontspec
+  \defaultfontfeatures{Scale=MatchLowercase}
+  \defaultfontfeatures[\rmfamily]{Ligatures=TeX,Scale=1}
+\fi
+\usepackage{lmodern}
+\ifPDFTeX\else
+  % xetex/luatex font selection
+  \setmainfont[]{Arial Unicode MS}
+  \setmonofont[]{Menlo}
+\fi
+% Use upquote if available, for straight quotes in verbatim environments
+\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
+\IfFileExists{microtype.sty}{% use microtype if available
+  \usepackage[]{microtype}
+  \UseMicrotypeSet[protrusion]{basicmath} % disable protrusion for tt fonts
+}{}
+\makeatletter
+\@ifundefined{KOMAClassName}{% if non-KOMA class
+  \IfFileExists{parskip.sty}{%
+    \usepackage{parskip}
+  }{% else
+    \setlength{\parindent}{0pt}
+    \setlength{\parskip}{6pt plus 2pt minus 1pt}}
+}{% if KOMA class
+  \KOMAoptions{parskip=half}}
+\makeatother
+\usepackage{longtable,booktabs,array}
+\newcounter{none} % for unnumbered tables
+\usepackage{calc} % for calculating minipage widths
+% Correct order of tables after \paragraph or \subparagraph
+\usepackage{etoolbox}
+\makeatletter
+\patchcmd\longtable{\par}{\if@noskipsec\mbox{}\fi\par}{}{}
+\makeatother
+% Allow footnotes in longtable head/foot
+\IfFileExists{footnotehyper.sty}{\usepackage{footnotehyper}}{\usepackage{footnote}}
+\makesavenoteenv{longtable}
+\setlength{\emergencystretch}{3em} % prevent overfull lines
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+\usepackage{bookmark}
+\IfFileExists{xurl.sty}{\usepackage{xurl}}{} % add URL line breaks if available
+\urlstyle{same}
+\hypersetup{
+  hidelinks,
+  pdfcreator={LaTeX via pandoc}}
+
+\author{}
+\date{}
+
+\begin{document}
+
+\section{Lecture Summariser ---
+Proposal}\label{lecture-summariser-proposal}
+
+\begin{quote}
+Canonical proposal. A mirror lives in
+\texttt{Project\ Hub/projects/proposal\_Lecture\ Summariser.md} for
+planning. Converted from \texttt{LLM\ lecture\ note\ taker.docx} on
+2026-06-02.
+\end{quote}
+
+\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
+
+\subsection{\texorpdfstring{\textbf{Lecture Summariser --- Project
+Roadmap}}{Lecture Summariser --- Project Roadmap}}\label{lecture-summariser-project-roadmap}
+
+\subsubsection{\texorpdfstring{\textbf{Phase 1 --- MVP
+Foundation}}{Phase 1 --- MVP Foundation}}\label{phase-1-mvp-foundation}
+
+The goal here is a working end-to-end pipeline with no bells and
+whistles.
+
+\textbf{Inputs:} PDF slide deck + plain text transcript
+
+\textbf{Deliverables:}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\item
+  Slide parser --- converts PDF pages to images and extracts raw text
+  per slide
+\item
+  Visual region detector --- identifies large non-text regions
+  (diagrams, figures, charts) worth keeping
+\item
+  Transcript chunker --- splits transcript into segments that can be
+  assigned to slides
+\item
+  Basic aligner --- maps transcript chunks to slides using keyword
+  overlap and slide order
+\item
+  Note generator --- prompts an LLM to produce structured notes per
+  slide section using the aligned text
+\item
+  LaTeX exporter --- outputs a compilable .tex file with sections, text,
+  and embedded slide images
+\end{enumerate}
+
+\textbf{Success criterion:} Given a lecture, produce a readable,
+structured .tex document that a student could use for revision.
+
+\subsubsection{\texorpdfstring{\textbf{Phase 2 --- Multimodal
+Grounding}}{Phase 2 --- Multimodal Grounding}}\label{phase-2-multimodal-grounding}
+
+The goal here is making the image-context link meaningful, which is the
+core novelty of the project.
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\item
+  Improved visual region detection --- filter out decorative elements,
+  logos, and backgrounds; retain only pedagogically useful visuals
+\item
+  Per-figure context extraction --- for each extracted figure, retrieve
+  the transcript span that explains it and generate a short caption or
+  description
+\item
+  Semantic alignment --- replace keyword-based alignment with embedding
+  similarity so the system handles cases where the lecturer paraphrases
+  or elaborates beyond the slide text
+\item
+  Text-image grounding in notes --- figures appear inline next to the
+  explanation that corresponds to them, not just appended at the end of
+  a section
+\end{enumerate}
+
+\textbf{Success criterion:} Each extracted figure in the output has a
+contextually accurate explanation drawn from the transcript, not just
+the slide bullet text.
+
+\subsubsection{\texorpdfstring{\textbf{Phase 3 --- Richer Output and
+Quality}}{Phase 3 --- Richer Output and Quality}}\label{phase-3-richer-output-and-quality}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\item
+  Equation extraction and formatting --- detect mathematical content on
+  slides and format it properly in LaTeX
+\item
+  OCR for diagram labels --- read axis labels, annotations, and callouts
+  within figures to improve captions
+\item
+  Note quality refinement --- add key takeaways, definitions, and
+  example callouts where the transcript supports them
+\item
+  Revision mode vs full notes mode --- shorter bullet-driven output vs
+  longer prose explanation, selectable at export time
+\end{enumerate}
+
+\subsubsection{\texorpdfstring{\textbf{Phase 4 --- Extension (if time
+allows)}}{Phase 4 --- Extension (if time allows)}}\label{phase-4-extension-if-time-allows}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\item
+  Flashcard generation --- derive question-answer pairs from grounded
+  notes for spaced repetition
+\item
+  Multi-lecture support --- handle a series of lectures and produce a
+  unified document with consistent section numbering
+\item
+  Slide format flexibility --- support .pptx input directly, not just
+  PDF
+\end{enumerate}
+
+\subsubsection{\texorpdfstring{\textbf{Core Technical Challenges (in
+priority
+order)}}{Core Technical Challenges (in priority order)}}\label{core-technical-challenges-in-priority-order}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\item
+  Deciding which visual regions are worth extracting
+\item
+  Aligning transcript spans to the correct slide and figure
+\item
+  Generating captions that reflect what the lecturer said, not just what
+  the slide shows
+\item
+  Keeping the LaTeX output clean and compilable across varied inputs
+\end{enumerate}
+
+\subsubsection{\texorpdfstring{\textbf{Module
+Summary}}{Module Summary}}\label{module-summary}
+
+{\def\LTcaptype{none} % do not increment counter
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\linewidth - 2\tabcolsep) * \real{0.3056}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 2\tabcolsep) * \real{0.2222}}@{}}
+\toprule\noalign{}
+\begin{minipage}[b]{\linewidth}\raggedright
+\textbf{Module}
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+\textbf{Phase}
+\end{minipage} \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+Slide parser & 1 \\
+Visual region detector & 1 → refined in 2 \\
+Transcript chunker & 1 \\
+Transcript-slide aligner & 1 → semantic in 2 \\
+Per-figure context extractor & 2 \\
+Note generator & 1 → richer in 3 \\
+LaTeX exporter & 1 \\
+Equation / OCR extraction & 3 \\
+Flashcard generator & 4 \\
+\end{longtable}
+}
+
+\end{document}
