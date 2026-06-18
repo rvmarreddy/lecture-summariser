@@ -23,3 +23,15 @@ outputs/
 # Generated eval artifacts (the eval/*.py and eval/*.js scripts stay tracked)
 eval/out/
 
+# Internal / private — kept local, not for the public CV repo.
+# CLAUDE.md = local dev instructions; STATUS.md = internal planner digest;
+# _archive/ = legacy docs; data/ = the user's own course revision notes
+# (unused by the pipeline); Other/ = old scratch / test / training data;
+# the proposal docs are kept local too.
+CLAUDE.md
+STATUS.md
+_archive/
+data/
+Other/
+lecture-summariser-proposal.*
+
