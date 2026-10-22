@@ -7,7 +7,7 @@ __pycache__/
 .venv/
 venv/
 
-# Inputs (large / copyrighted source material)
+# Slides and textbooks
 books/
 archived_books/
 inputs/
@@ -20,9 +20,5 @@ outputs/
 *.pandoc.md
 *_smoke_output.md
 
-# Generated eval artifacts (the eval scripts stay tracked)
+# Eval output
 eval/out/
-
-
-
-
